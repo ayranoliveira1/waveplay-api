@@ -67,7 +67,8 @@ waveplay-api/
 │       ├── identity/                    # BC: Identidade & Acesso
 │       │   ├── domain/
 │       │   │   ├── entities/
-│       │   │   │   └── user.ts
+│       │   │   │   ├── user.ts
+│       │   │   │   └── refresh-token.ts
 │       │   │   ├── repositories/
 │       │   │   │   ├── users-repository.ts
 │       │   │   │   ├── refresh-tokens-repository.ts
@@ -94,12 +95,13 @@ waveplay-api/
 │       │       ├── cryptography/
 │       │       │   ├── argon2-hasher.ts
 │       │       │   └── jwt-encrypter.ts
-│       │       ├── persistence/
+│       │       ├── mappers/
 │       │       │   ├── prisma-user-mapper.ts
-│       │       │   ├── prisma-users-repository.ts
 │       │       │   ├── prisma-refresh-token-mapper.ts
+│       │       │   └── prisma-password-reset-token-mapper.ts
+│       │       ├── repositories/
+│       │       │   ├── prisma-users-repository.ts
 │       │       │   ├── prisma-refresh-tokens-repository.ts
-│       │       │   ├── prisma-password-reset-token-mapper.ts
 │       │       │   └── prisma-password-reset-tokens-repository.ts
 │       │       ├── controllers/
 │       │       │   ├── register.controller.ts
@@ -133,8 +135,9 @@ waveplay-api/
 │       │   │       └── delete-profile-use-case.ts
 │       │   └── infra/
 │       │       ├── profile.module.ts
-│       │       ├── persistence/
-│       │       │   ├── prisma-profile-mapper.ts
+│       │       ├── mappers/
+│       │       │   └── prisma-profile-mapper.ts
+│       │       ├── repositories/
 │       │       │   └── prisma-profiles-repository.ts
 │       │       ├── controllers/
 │       │       │   ├── create-profile.controller.ts
@@ -183,9 +186,10 @@ waveplay-api/
 │       │   │       └── list-watchlist-use-case.ts
 │       │   └── infra/
 │       │       ├── library.module.ts
-│       │       ├── persistence/
+│       │       ├── mappers/
 │       │       │   ├── prisma-favorite-mapper.ts
-│       │       │   ├── prisma-watchlist-mapper.ts
+│       │       │   └── prisma-watchlist-mapper.ts
+│       │       ├── repositories/
 │       │       │   ├── prisma-favorites-repository.ts
 │       │       │   └── prisma-watchlist-repository.ts
 │       │       ├── controllers/
@@ -216,9 +220,10 @@ waveplay-api/
 │       │   │       └── cleanup-expired-streams-use-case.ts
 │       │   └── infra/
 │       │       ├── subscription.module.ts
-│       │       ├── persistence/
+│       │       ├── mappers/
 │       │       │   ├── prisma-plan-mapper.ts
-│       │       │   ├── prisma-active-stream-mapper.ts
+│       │       │   └── prisma-active-stream-mapper.ts
+│       │       ├── repositories/
 │       │       │   ├── prisma-plans-repository.ts
 │       │       │   └── prisma-active-streams-repository.ts
 │       │       ├── controllers/
@@ -246,9 +251,10 @@ waveplay-api/
 │           │       └── clear-history-use-case.ts
 │           └── infra/
 │               ├── playback.module.ts
-│               ├── persistence/
+│               ├── mappers/
 │               │   ├── prisma-progress-mapper.ts
-│               │   ├── prisma-history-mapper.ts
+│               │   └── prisma-history-mapper.ts
+│               ├── repositories/
 │               │   ├── prisma-progress-repository.ts
 │               │   └── prisma-history-repository.ts
 │               ├── controllers/
