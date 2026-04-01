@@ -9,6 +9,7 @@ import { FakeEncrypter } from 'test/cryptography/fake-encrypter'
 import { FakePlansGateway } from 'test/ports/fake-plans-gateway'
 import { EmailAlreadyExistsError } from '../../domain/errors/email-already-exists.error'
 import { WeakPasswordError } from '../../domain/errors/weak-password.error'
+import { PasswordMismatchError } from '../../domain/errors/password-mismatch.error'
 import { User } from '../../domain/entities/user'
 
 let usersRepository: InMemoryUsersRepository
@@ -40,6 +41,7 @@ describe('RegisterUseCase', () => {
       name: 'João Silva',
       email: 'joao@email.com',
       password: '12345678',
+      confirmPassword: '12345678',
     })
 
     expect(result.isRight()).toBe(true)
@@ -61,12 +63,14 @@ describe('RegisterUseCase', () => {
       name: 'João Silva',
       email: 'joao@email.com',
       password: '12345678',
+      confirmPassword: '12345678',
     })
 
     const result = await sut.execute({
       name: 'João Outro',
       email: 'joao@email.com',
       password: '87654321',
+      confirmPassword: '87654321',
     })
 
     expect(result.isLeft()).toBe(true)
@@ -78,6 +82,7 @@ describe('RegisterUseCase', () => {
       name: 'João Silva',
       email: 'joao@email.com',
       password: '12345678',
+      confirmPassword: '12345678',
     })
 
     expect(result.isRight()).toBe(true)
@@ -92,6 +97,7 @@ describe('RegisterUseCase', () => {
       name: 'João Silva',
       email: 'joao@email.com',
       password: '12345678',
+      confirmPassword: '12345678',
     })
 
     expect(result.isRight()).toBe(true)
@@ -105,10 +111,24 @@ describe('RegisterUseCase', () => {
       name: 'João Silva',
       email: 'joao@email.com',
       password: '1234567',
+      confirmPassword: '1234567',
     })
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(WeakPasswordError)
+    expect(usersRepository.items).toHaveLength(0)
+  })
+
+  it('should return error when confirmPassword does not match password', async () => {
+    const result = await sut.execute({
+      name: 'João Silva',
+      email: 'joao@email.com',
+      password: '12345678',
+      confirmPassword: '87654321',
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(PasswordMismatchError)
     expect(usersRepository.items).toHaveLength(0)
   })
 
@@ -117,6 +137,7 @@ describe('RegisterUseCase', () => {
       name: 'João Silva',
       email: 'joao@email.com',
       password: '12345678',
+      confirmPassword: '12345678',
     })
 
     // O use case só cria o user, não o perfil
@@ -129,6 +150,7 @@ describe('RegisterUseCase', () => {
       name: 'João Silva',
       email: 'joao@email.com',
       password: '12345678',
+      confirmPassword: '12345678',
     })
 
     expect(result.isRight()).toBe(true)

@@ -11,17 +11,19 @@ import { EncrypterPort } from '../ports/encrypter.port'
 import { PlansGatewayPort } from '../ports/plans-gateway.port'
 import { EmailAlreadyExistsError } from '../../domain/errors/email-already-exists.error'
 import { WeakPasswordError } from '../../domain/errors/weak-password.error'
+import { PasswordMismatchError } from '../../domain/errors/password-mismatch.error'
 
 interface RegisterUseCaseRequest {
   name: string
   email: string
   password: string
+  confirmPassword: string
   ipAddress?: string
   userAgent?: string
 }
 
 type RegisterUseCaseResponse = Either<
-  EmailAlreadyExistsError | WeakPasswordError,
+  EmailAlreadyExistsError | WeakPasswordError | PasswordMismatchError,
   {
     user: User
     accessToken: string
@@ -44,7 +46,12 @@ export class RegisterUseCase {
   async execute(
     request: RegisterUseCaseRequest,
   ): Promise<RegisterUseCaseResponse> {
-    const { name, email, password, ipAddress, userAgent } = request
+    const { name, email, password, confirmPassword, ipAddress, userAgent } =
+      request
+
+    if (password !== confirmPassword) {
+      return left(new PasswordMismatchError())
+    }
 
     if (password.length < 8) {
       return left(new WeakPasswordError())
