@@ -7,11 +7,12 @@ export const envSchema = z.object({
     .optional()
     .default('development'),
   DATABASE_URL: z.string().url(),
-  JWT_SECRET: z.string(),
+  JWT_SECRET: z.string().min(32),
   JWT_ACCESS_EXPIRES_IN: z.string().optional().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().optional().default('48h'),
   TMDB_ACCESS_TOKEN: z.string(),
   TMDB_BASE_URL: z.string().url(),
+  CORS_ORIGIN: z.string().optional().default('http://localhost:3000'),
   REDIS_URL: z.string(),
 })
 
