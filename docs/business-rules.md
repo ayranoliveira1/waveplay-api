@@ -30,6 +30,7 @@
 | Regra | Descrição |
 |-------|-----------|
 | Email único | Não pode existir dois usuários com o mesmo email |
+| Confirmação de senha | `confirmPassword` deve ser igual a `password` no registro |
 | Senha mínima 8 caracteres | Validação no register via Zod |
 | Senha salva com Argon2id | Parâmetros: memoryCost=65536 (64MB), timeCost=3, parallelism=1 |
 | Access token expira em 15 minutos | JWT stateless, validado pela assinatura |
@@ -46,7 +47,7 @@
 ### Fluxo de autenticação
 
 ```
-Register → cria user + hash senha + plano Básico → retorna tokens
+Register → valida confirmPassword → cria user + hash senha + plano Básico → retorna tokens
 Login    → verifica lockout → valida email + argon2 verify → gera family → retorna tokens
 Refresh  → valida hash do token → revoga atual → gera novo com mesma family
 Logout   → revoga todos tokens da family

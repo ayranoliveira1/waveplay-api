@@ -38,7 +38,8 @@ Cria conta + primeiro perfil automático + plano Básico.
 {
   "name": "João Silva",
   "email": "joao@email.com",
-  "password": "12345678"
+  "password": "12345678",
+  "confirmPassword": "12345678"
 }
 ```
 
@@ -89,7 +90,7 @@ Set-Cookie: refreshToken=a1b2c3d4-e5f6-...; HttpOnly; Secure; SameSite=Strict; P
 
 | Status | Mensagem |
 |--------|----------|
-| 400 | Validação (email inválido, senha < 8 chars) |
+| 400 | Validação (email inválido, senha < 8 chars, senhas não coincidem) |
 | 409 | "Email já cadastrado" |
 
 ---
