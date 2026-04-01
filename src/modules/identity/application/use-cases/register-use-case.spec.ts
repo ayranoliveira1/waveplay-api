@@ -142,7 +142,7 @@ describe('RegisterUseCase', () => {
       const storedToken = refreshTokensRepository.items[0]
       expect(storedToken.tokenHash).toBe(expectedHash)
       expect(storedToken.family).toBeDefined()
-      expect(storedToken.revokedAt).toBeNull()
+      expect(storedToken.isRevoked()).toBe(false)
     }
   })
 })

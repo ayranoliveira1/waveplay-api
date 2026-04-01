@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { createHash, randomUUID } from 'node:crypto'
-import { uuidv7 } from 'uuidv7'
+import { randomUUID } from 'node:crypto'
 
 import { Either, left, right } from '@/core/either'
 import { User } from '../../domain/entities/user'
+import { RefreshToken } from '../../domain/entities/refresh-token'
 import { UsersRepository } from '../../domain/repositories/users-repository'
 import { RefreshTokensRepository } from '../../domain/repositories/refresh-tokens-repository'
 import { HasherPort } from '../ports/hasher.port'
@@ -27,6 +27,8 @@ type AuthenticateUseCaseResponse = Either<
     refreshToken: string
   }
 >
+
+const REFRESH_TOKEN_EXPIRY_MS = 48 * 60 * 60 * 1000 // 48h
 
 @Injectable()
 export class AuthenticateUseCase {
@@ -73,23 +75,16 @@ export class AuthenticateUseCase {
 
     await this.accountLockout.resetFailures(email)
 
-    const rawRefreshToken = randomUUID()
-    const tokenHash = createHash('sha256')
-      .update(rawRefreshToken)
-      .digest('hex')
-    const family = randomUUID()
-
-    await this.refreshTokensRepository.create({
-      id: uuidv7(),
+    const rawToken = randomUUID()
+    const { refreshToken } = RefreshToken.createFromRawToken({
+      rawToken,
       userId: user.id.toValue(),
-      tokenHash,
-      family,
-      expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
-      revokedAt: null,
-      ipAddress: ipAddress ?? null,
-      userAgent: userAgent ?? null,
-      createdAt: new Date(),
+      expiresInMs: REFRESH_TOKEN_EXPIRY_MS,
+      ipAddress,
+      userAgent,
     })
+
+    await this.refreshTokensRepository.create(refreshToken)
 
     const accessToken = await this.encrypter.sign(
       { sub: user.id.toValue() },
@@ -99,7 +94,7 @@ export class AuthenticateUseCase {
     return right({
       user,
       accessToken,
-      refreshToken: rawRefreshToken,
+      refreshToken: rawToken,
     })
   }
 }
