@@ -1,24 +1,27 @@
-import { RefreshTokenProps } from '../../domain/repositories/refresh-tokens-repository'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import { RefreshToken } from '../../domain/entities/refresh-token'
 import { RefreshToken as PrismaRefreshToken } from '@/shared/database/generated/prisma'
 
 export class PrismaRefreshTokenMapper {
-  static toDomain(raw: PrismaRefreshToken): RefreshTokenProps {
-    return {
-      id: raw.id,
-      userId: raw.userId,
-      tokenHash: raw.tokenHash,
-      family: raw.family,
-      expiresAt: raw.expiresAt,
-      revokedAt: raw.revokedAt,
-      ipAddress: raw.ipAddress,
-      userAgent: raw.userAgent,
-      createdAt: raw.createdAt,
-    }
+  static toDomain(raw: PrismaRefreshToken): RefreshToken {
+    return RefreshToken.create(
+      {
+        userId: raw.userId,
+        tokenHash: raw.tokenHash,
+        family: raw.family,
+        expiresAt: raw.expiresAt,
+        revokedAt: raw.revokedAt,
+        ipAddress: raw.ipAddress,
+        userAgent: raw.userAgent,
+        createdAt: raw.createdAt,
+      },
+      new UniqueEntityID(raw.id),
+    )
   }
 
-  static toPrisma(token: RefreshTokenProps) {
+  static toPrisma(token: RefreshToken) {
     return {
-      id: token.id,
+      id: token.id.toValue(),
       userId: token.userId,
       tokenHash: token.tokenHash,
       family: token.family,
