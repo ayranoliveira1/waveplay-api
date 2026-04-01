@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/shared/database/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique(map: "users_email_unique")
+  passwordHash String    @map("password_hash")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  planId        String?        @map("plan_id")
+  plan          Plan?          @relation(fields: [planId], references: [id])
+  profiles      Profile[]
+  refreshTokens      RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  activeStreams       ActiveStream[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  family    String
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  ipAddress String?   @map("ip_address")
+  userAgent String?   @map("user_agent")
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([family])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+
+model Plan {
+  id              String   @id @default(uuid())
+  name            String
+  slug            String   @unique
+  priceCents      Int      @map("price_cents")
+  maxProfiles     Int      @map("max_profiles")
+  maxStreams      Int      @map("max_streams")
+  description     String?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  users           User[]
+
+  @@map("plans")
+}
+
+
+model ActiveStream {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  profileId String   @map("profile_id")
+  tmdbId    Int      @map("tmdb_id")
+  type      String
+  startedAt DateTime @default(now()) @map("started_at")
+  lastPing  DateTime @default(now()) @map("last_ping")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, profileId])
+  @@index([userId])
+  @@map("active_streams")
+}
+
+
+model Profile {
+  id        String          @id @default(uuid())
+  userId    String          @map("user_id")
+  name      String
+  avatarUrl String?         @map("avatar_url")
+  isKid     Boolean         @default(false) @map("is_kid")
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  favorites     Favorite[]
+  watchlist     WatchlistItem[]
+  progress      Progress[]
+  history       HistoryItem[]
+  activeStreams ActiveStream[]
+
+  @@index([userId])
+  @@map("profiles")
+}
+
+
+model Favorite {
+  id           String   @id @default(uuid())
+  profileId    String   @map("profile_id")
+  tmdbId       Int      @map("tmdb_id")
+  type         String
+  title        String
+  posterPath   String?  @map("poster_path")
+  backdropPath String?  @map("backdrop_path")
+  rating       Float    @default(0)
+  createdAt    DateTime @default(now())
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, tmdbId, type])
+  @@index([profileId])
+  @@map("favorites")
+}
+
+model WatchlistItem {
+  id           String   @id @default(uuid())
+  profileId    String   @map("profile_id")
+  tmdbId       Int      @map("tmdb_id")
+  type         String
+  title        String
+  posterPath   String?  @map("poster_path")
+  backdropPath String?  @map("backdrop_path")
+  rating       Float    @default(0)
+  createdAt    DateTime @default(now())
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, tmdbId, type])
+  @@index([profileId])
+  @@map("watchlist_items")
+}
+
+
+model Progress {
+  id              String   @id @default(uuid())
+  profileId       String   @map("profile_id")
+  tmdbId          Int      @map("tmdb_id")
+  type            String
+  season          Int?
+  episode         Int?
+  progressSeconds Int      @map("progress_seconds")
+  durationSeconds Int      @map("duration_seconds")
+  updatedAt       DateTime @updatedAt
+  profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, tmdbId, type, season, episode])
+  @@index([profileId])
+  @@map("progress")
+}
+
+model HistoryItem {
+  id              String   @id @default(uuid())
+  profileId       String   @map("profile_id")
+  tmdbId          Int      @map("tmdb_id")
+  type            String
+  title           String
+  posterPath      String?  @map("poster_path")
+  season          Int?
+  episode         Int?
+  progressSeconds Int?     @map("progress_seconds")
+  durationSeconds Int?     @map("duration_seconds")
+  watchedAt       DateTime @default(now()) @map("watched_at")
+  profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, tmdbId, type, season, episode])
+  @@index([profileId])
+  @@index([profileId, watchedAt])
+  @@map("history_items")
+}
