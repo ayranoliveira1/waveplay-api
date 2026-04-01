@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto'
+
 interface UniqueCodeRules {
   length: number
   chars: string
@@ -9,10 +11,11 @@ function createUniqueCode(
     chars: 'abcdefghijklmnopqrstuvwxyz1234567890',
   },
 ) {
-  let code: string = ''
+  const bytes = randomBytes(length)
+  let code = ''
 
   for (let i = 0; i < length; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)].toUpperCase()
+    code += chars[bytes[i] % chars.length].toUpperCase()
   }
 
   return code
