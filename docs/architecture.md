@@ -81,7 +81,8 @@ waveplay-api/
 │       │   ├── application/
 │       │   │   ├── ports/
 │       │   │   │   ├── hasher.port.ts       # Interface: hash(), compare()
-│       │   │   │   └── encrypter.port.ts    # Interface: sign(), verify()
+│       │   │   │   ├── encrypter.port.ts    # Interface: sign(), verify()
+│       │   │   │   └── auth-config.port.ts  # Interface: getAccessTokenExpiresIn(), getRefreshTokenExpiresInMs()
 │       │   │   └── use-cases/
 │       │   │       ├── register-use-case.ts
 │       │   │       ├── authenticate-use-case.ts
@@ -92,6 +93,8 @@ waveplay-api/
 │       │   │       └── reset-password-use-case.ts
 │       │   └── infra/
 │       │       ├── identity.module.ts
+│       │       ├── config/
+│       │       │   └── env-auth-config.ts   # AuthConfigPort ← EnvService
 │       │       ├── cryptography/
 │       │       │   ├── argon2-hasher.ts
 │       │       │   └── jwt-encrypter.ts
