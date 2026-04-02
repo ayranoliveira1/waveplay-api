@@ -73,9 +73,11 @@ waveplay-api/
 │       ├── identity/                    # BC: Identidade & Acesso
 │       │   ├── domain/
 │       │   │   ├── entities/
-│       │   │   │   ├── user.ts
+│       │   │   │   ├── user.ts          # AggregateRoot — emite UserRegisteredEvent
 │       │   │   │   ├── refresh-token.ts
 │       │   │   │   └── password-reset-token.ts
+│       │   │   ├── events/
+│       │   │   │   └── user-registered-event.ts  # DomainEvent: disparado em User.create()
 │       │   │   ├── repositories/
 │       │   │   │   ├── users-repository.ts
 │       │   │   │   ├── refresh-tokens-repository.ts
@@ -151,8 +153,14 @@ waveplay-api/
 │       │   │   ├── repositories/
 │       │   │   │   └── profiles-repository.ts
 │       │   │   └── errors/
-│       │   │       └── max-profiles-reached.error.ts
+│       │   │       ├── max-profiles-reached.error.ts
+│       │   │       ├── profile-not-found.error.ts
+│       │   │       └── last-profile.error.ts
 │       │   ├── application/
+│       │   │   ├── ports/
+│       │   │   │   └── user-plan-gateway.port.ts  # Interface: getMaxProfiles() — cross-BC query
+│       │   │   ├── subscribers/
+│       │   │   │   └── on-user-registered.ts      # EventHandler: cria primeiro perfil via domain event
 │       │   │   └── use-cases/
 │       │   │       ├── create-profile-use-case.ts
 │       │   │       ├── list-profiles-use-case.ts
@@ -164,6 +172,8 @@ waveplay-api/
 │       │       │   └── prisma-profile-mapper.ts
 │       │       ├── repositories/
 │       │       │   └── prisma-profiles-repository.ts
+│       │       ├── gateways/
+│       │       │   └── prisma-user-plan-gateway.ts  # UserPlanGatewayPort ← Prisma (cross-BC query)
 │       │       ├── controllers/
 │       │       │   ├── create-profile.controller.ts
 │       │       │   ├── list-profiles.controller.ts
@@ -311,6 +321,11 @@ waveplay-api/
          └────────────┘ └──────────┘ └──────────┘
 ```
 
+### Comunicação entre Bounded Contexts
+
+- **Domain Events:** O Identity BC emite `UserRegisteredEvent`, e o Profile BC escuta via `OnUserRegistered` subscriber. O subscriber importa diretamente o tipo do evento do Identity BC — aceitável em monolito modular, mas a ser revisado se os BCs forem extraídos para microserviços (usar shared kernel ou mensageria).
+- **Gateways cross-BC:** O Profile BC consulta dados do plano do usuário via `UserPlanGatewayPort` → `PrismaUserPlanGateway` (acessa `user.plan.maxProfiles`). O Identity BC consulta planos via `PlansGatewayPort` → `PrismaPlansGateway`. Ambos seguem o padrão Port/Adapter para evitar acoplamento direto.
+
 ---
 
 ## Fluxo de Dados
@@ -368,6 +383,38 @@ Em caso de erro:
 - **Reset-password:** POST /auth/reset-password → valida token → atualiza senha → revoga todas as families
 - **Guard:** JwtAuthGuard protege todas as rotas exceto @Public()
 - **Storage no app:** accessToken em memória, refreshToken em expo-secure-store
+
+---
+
+## Domain Events
+
+O sistema usa **Domain Events** para comunicação desacoplada entre Bounded Contexts, seguindo DDD.
+
+### Infraestrutura (core/)
+
+| Componente | Descrição |
+|------------|-----------|
+| `DomainEvent` | Interface: `ocurredAt`, `getAggregateId()` |
+| `DomainEvents` | Registry estático: `register()`, `dispatchEventsForAggregate()`, `markForDispatch()` |
+| `AggregateRoot` | Extends Entity: `addDomainEvent()`, `domainEvents` getter, `clearEvents()` |
+| `EventHandler` | Interface: `setupSubscriptions()` |
+
+### Fluxo: Criação automática do primeiro perfil
+
+```
+User.create() (Identity BC)
+    ↓ addDomainEvent(new UserRegisteredEvent(user))
+Repository.create(user) (Identity BC)
+    ↓ DomainEvents.dispatchEventsForAggregate(user.id)
+OnUserRegistered (Profile BC — subscriber)
+    ↓ Profile.create({ userId, name: user.name })
+ProfilesRepository.create(profile) (Profile BC)
+```
+
+- `User` é um `AggregateRoot` que emite `UserRegisteredEvent` quando criado (sem ID pré-existente)
+- `OnUserRegistered` implementa `EventHandler` + `OnModuleInit`, registrando o handler em `DomainEvents` ao inicializar o módulo
+- O dispatch acontece no repositório, após o persist, garantindo que o evento só é disparado se o user foi salvo com sucesso
+- `DomainEvents.clearHandlers()` + `clearMarkedAggregates()` devem ser chamados no `afterEach` dos testes para evitar acúmulo de handlers
 
 ---
 
