@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Test } from '@nestjs/testing'
 import { INestApplication } from '@nestjs/common'
+import { APP_GUARD } from '@nestjs/core'
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import request from 'supertest'
 import cookieParser from 'cookie-parser'
 
@@ -27,6 +29,11 @@ let usersRepository: InMemoryUsersRepository
 describe('AuthenticateController', () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
+      imports: [
+        ThrottlerModule.forRoot({
+          throttlers: [{ ttl: 60000, limit: 300 }],
+        }),
+      ],
       controllers: [AuthenticateController],
       providers: [
         AuthenticateUseCase,
@@ -39,6 +46,7 @@ describe('AuthenticateController', () => {
         { provide: EncrypterPort, useClass: FakeEncrypter },
         { provide: AuthConfigPort, useClass: FakeAuthConfig },
         { provide: AccountLockoutPort, useClass: FakeAccountLockout },
+        { provide: APP_GUARD, useClass: ThrottlerGuard },
       ],
     }).compile()
 
@@ -105,6 +113,22 @@ describe('AuthenticateController', () => {
         .send({ email: 'joao@email.com', password: 'SenhaErrada1' })
     }
 
+    const response = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'joao@email.com', password: 'Abc12345' })
+
+    expect(response.status).toBe(429)
+  })
+
+  it('should return 429 after exceeding rate limit (10 req/min)', async () => {
+    // Limit is 10 per minute on login
+    for (let i = 0; i < 10; i++) {
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: `user${i}@email.com`, password: 'SenhaErrada1' })
+    }
+
+    // 11th request should be throttled
     const response = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ email: 'joao@email.com', password: 'Abc12345' })

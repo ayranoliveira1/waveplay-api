@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Test } from '@nestjs/testing'
 import { INestApplication } from '@nestjs/common'
+import { APP_GUARD } from '@nestjs/core'
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import request from 'supertest'
 import cookieParser from 'cookie-parser'
 
@@ -25,6 +27,11 @@ let app: INestApplication
 describe('RegisterController', () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
+      imports: [
+        ThrottlerModule.forRoot({
+          throttlers: [{ ttl: 60000, limit: 300 }],
+        }),
+      ],
       controllers: [RegisterController],
       providers: [
         RegisterUseCase,
@@ -37,6 +44,7 @@ describe('RegisterController', () => {
         { provide: EncrypterPort, useClass: FakeEncrypter },
         { provide: AuthConfigPort, useClass: FakeAuthConfig },
         { provide: PlansGatewayPort, useClass: FakePlansGateway },
+        { provide: APP_GUARD, useClass: ThrottlerGuard },
       ],
     }).compile()
 

@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Test } from '@nestjs/testing'
 import { INestApplication } from '@nestjs/common'
+import { APP_GUARD } from '@nestjs/core'
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import request from 'supertest'
 import cookieParser from 'cookie-parser'
 import { randomUUID } from 'node:crypto'
@@ -23,6 +25,11 @@ let authConfig: FakeAuthConfig
 describe('RefreshTokenController', () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
+      imports: [
+        ThrottlerModule.forRoot({
+          throttlers: [{ ttl: 60000, limit: 300 }],
+        }),
+      ],
       controllers: [RefreshTokenController],
       providers: [
         RefreshTokenUseCase,
@@ -32,6 +39,7 @@ describe('RefreshTokenController', () => {
         },
         { provide: EncrypterPort, useClass: FakeEncrypter },
         { provide: AuthConfigPort, useClass: FakeAuthConfig },
+        { provide: APP_GUARD, useClass: ThrottlerGuard },
       ],
     }).compile()
 
