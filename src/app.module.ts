@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common'
 import { ThrottlerModule } from '@nestjs/throttler'
 import { DatabaseModule } from '@/shared/database/database.module'
 import { EnvModule } from '@/shared/env/env.module'
+import { RedisModule } from '@/shared/redis/redis.module'
+import { IdentityModule } from '@/modules/identity/infra/identity.module'
 
 @Module({
   imports: [
@@ -15,6 +17,8 @@ import { EnvModule } from '@/shared/env/env.module'
     }),
     EnvModule,
     DatabaseModule,
+    RedisModule,
+    IdentityModule,
   ],
 })
 export class AppModule {}
