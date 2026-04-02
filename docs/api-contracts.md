@@ -28,7 +28,7 @@ Erro:
 
 ### POST /auth/register
 
-Cria conta + primeiro perfil automático + plano Básico.
+Cria conta + primeiro perfil automático + subscription (plano Básico) via domain events.
 
 **Headers (opcional):** `X-Platform: mobile`
 
@@ -53,13 +53,6 @@ Cria conta + primeiro perfil automático + plano Básico.
       "id": "uuid",
       "name": "João Silva",
       "email": "joao@email.com",
-      "plan": {
-        "id": "uuid",
-        "name": "Básico",
-        "slug": "basico",
-        "maxProfiles": 1,
-        "maxStreams": 1
-      },
       "createdAt": "2026-04-01T00:00:00.000Z"
     },
     "accessToken": "eyJhbGciOiJIUzI1NiIs...",
@@ -118,13 +111,6 @@ Set-Cookie: refreshToken=a1b2c3d4-e5f6-...; HttpOnly; Secure; SameSite=Strict; P
       "id": "uuid",
       "name": "João Silva",
       "email": "joao@email.com",
-      "plan": {
-        "id": "uuid",
-        "name": "Básico",
-        "slug": "basico",
-        "maxProfiles": 1,
-        "maxStreams": 1
-      },
       "createdAt": "2026-04-01T00:00:00.000Z"
     },
     "accessToken": "eyJhbGciOiJIUzI1NiIs...",

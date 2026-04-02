@@ -2,16 +2,19 @@
 
 ---
 
-## 1. Planos
+## 1. Planos e Assinaturas
 
-### Models envolvidos: `Plan`, `User`
+### Models envolvidos: `Plan`, `Subscription`
 
 | Regra | Descrição |
 |-------|-----------|
-| Todo usuário deve ter um plano | Ao registrar, o user recebe o plano padrão (Básico) |
-| Plano define limite de perfis | `plan.maxProfiles` controla quantos perfis o user pode criar |
-| Plano define limite de telas | `plan.maxStreams` controla quantas reproduções simultâneas |
+| Todo usuário recebe uma assinatura ao registrar | Via domain event, o user recebe uma Subscription com plano "basico" (status: active) |
+| Subscription conecta User a Plan | `User ← Subscription → Plan` (não há relação direta User→Plan) |
+| Plano define limite de perfis | `plan.maxProfiles` via subscription ativa do user |
+| Plano define limite de telas | `plan.maxStreams` via subscription ativa do user |
 | Planos inativos não podem ser assinados | `plan.active = false` impede novas assinaturas mas não afeta quem já tem |
+| Subscription tem status | `active`, `canceled`, `expired` — queries usam a subscription ativa mais recente |
+| Admin pode setar subscription | Futuramente, painel admin poderá alterar a subscription de um usuário manualmente |
 
 ### Planos iniciais
 
@@ -47,7 +50,7 @@
 ### Fluxo de autenticação
 
 ```
-Register → valida confirmPassword → cria user + hash senha + plano Básico → retorna tokens
+Register → valida confirmPassword → cria user + hash senha → domain event → cria subscription (basico) + perfil → retorna tokens
 Login    → verifica lockout → valida email + argon2 verify → gera family → retorna tokens
 Refresh  → valida hash do token → revoga atual → gera novo com mesma family
 Logout   → revoga todos tokens da family

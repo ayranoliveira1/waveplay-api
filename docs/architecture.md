@@ -235,18 +235,22 @@ waveplay-api/
 │       │       └── presenters/
 │       │           └── media-list-presenter.ts
 │       │
-│       ├── subscription/                # BC: Planos & Telas Simultâneas
+│       ├── subscription/                # BC: Planos, Assinaturas & Telas Simultâneas
 │       │   ├── domain/
 │       │   │   ├── entities/
 │       │   │   │   ├── plan.ts
+│       │   │   │   ├── subscription.ts
 │       │   │   │   └── active-stream.ts
 │       │   │   ├── repositories/
 │       │   │   │   ├── plans-repository.ts
+│       │   │   │   ├── subscriptions-repository.ts
 │       │   │   │   └── active-streams-repository.ts
 │       │   │   └── errors/
 │       │   │       ├── max-profiles-reached.error.ts
 │       │   │       └── max-streams-reached.error.ts
 │       │   ├── application/
+│       │   │   ├── subscribers/
+│       │   │   │   └── on-user-registered.ts  # Cria subscription "basico" via domain event
 │       │   │   └── use-cases/
 │       │   │       ├── list-plans-use-case.ts
 │       │   │       ├── start-stream-use-case.ts
@@ -257,9 +261,11 @@ waveplay-api/
 │       │       ├── subscription.module.ts
 │       │       ├── mappers/
 │       │       │   ├── prisma-plan-mapper.ts
+│       │       │   ├── prisma-subscription-mapper.ts
 │       │       │   └── prisma-active-stream-mapper.ts
 │       │       ├── repositories/
 │       │       │   ├── prisma-plans-repository.ts
+│       │       │   ├── prisma-subscriptions-repository.ts
 │       │       │   └── prisma-active-streams-repository.ts
 │       │       ├── controllers/
 │       │       │   ├── list-plans.controller.ts
@@ -323,8 +329,11 @@ waveplay-api/
 
 ### Comunicação entre Bounded Contexts
 
-- **Domain Events:** O Identity BC emite `UserRegisteredEvent`, e o Profile BC escuta via `OnUserRegistered` subscriber. O subscriber importa diretamente o tipo do evento do Identity BC — aceitável em monolito modular, mas a ser revisado se os BCs forem extraídos para microserviços (usar shared kernel ou mensageria).
-- **Gateways cross-BC:** O Profile BC consulta dados do plano do usuário via `UserPlanGatewayPort` → `PrismaUserPlanGateway` (acessa `user.plan.maxProfiles`). O Identity BC consulta planos via `PlansGatewayPort` → `PrismaPlansGateway`. Ambos seguem o padrão Port/Adapter para evitar acoplamento direto.
+- **Domain Events:** O Identity BC emite `UserRegisteredEvent`. Dois BCs escutam:
+  - **Profile BC** (`OnUserRegistered`): cria o primeiro perfil do usuário
+  - **Subscription BC** (`OnUserRegisteredSubscription`): cria subscription com plano "basico"
+  - Os subscribers importam diretamente o tipo do evento do Identity BC — aceitável em monolito modular, mas a ser revisado se os BCs forem extraídos para microserviços.
+- **Gateways cross-BC:** O Profile BC consulta dados do plano do usuário via `UserPlanGatewayPort` → `PrismaUserPlanGateway` (acessa `subscription.plan.maxProfiles` pela subscription ativa). Segue o padrão Port/Adapter para evitar acoplamento direto.
 
 ---
 
@@ -399,20 +408,20 @@ O sistema usa **Domain Events** para comunicação desacoplada entre Bounded Con
 | `AggregateRoot` | Extends Entity: `addDomainEvent()`, `domainEvents` getter, `clearEvents()` |
 | `EventHandler` | Interface: `setupSubscriptions()` |
 
-### Fluxo: Criação automática do primeiro perfil
+### Fluxo: Registro de novo usuário (domain events)
 
 ```
 User.create() (Identity BC)
     ↓ addDomainEvent(new UserRegisteredEvent(user))
 Repository.create(user) (Identity BC)
     ↓ DomainEvents.dispatchEventsForAggregate(user.id)
-OnUserRegistered (Profile BC — subscriber)
-    ↓ Profile.create({ userId, name: user.name })
-ProfilesRepository.create(profile) (Profile BC)
+    ├── OnUserRegistered (Profile BC) → cria primeiro perfil
+    └── OnUserRegisteredSubscription (Subscription BC) → cria subscription "basico"
 ```
 
 - `User` é um `AggregateRoot` que emite `UserRegisteredEvent` quando criado (sem ID pré-existente)
-- `OnUserRegistered` implementa `EventHandler` + `OnModuleInit`, registrando o handler em `DomainEvents` ao inicializar o módulo
+- Dois subscribers escutam o evento: Profile BC (perfil) e Subscription BC (assinatura)
+- Ambos implementam `EventHandler` + `OnModuleInit`, registrando o handler em `DomainEvents` ao inicializar o módulo
 - O dispatch acontece no repositório, após o persist, garantindo que o evento só é disparado se o user foi salvo com sucesso
 - `DomainEvents.clearHandlers()` + `clearMarkedAggregates()` devem ser chamados no `afterEach` dos testes para evitar acúmulo de handlers
 
