@@ -6,6 +6,7 @@ import { EnvModule } from '@/shared/env/env.module'
 import { RedisModule } from '@/shared/redis/redis.module'
 import { EmailModule } from '@/shared/email/email.module'
 import { IdentityModule } from '@/modules/identity/infra/identity.module'
+import { ProfileModule } from '@/modules/profile/infra/profile.module'
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { IdentityModule } from '@/modules/identity/infra/identity.module'
     RedisModule,
     EmailModule,
     IdentityModule,
+    ProfileModule,
   ],
   providers: [
     {
