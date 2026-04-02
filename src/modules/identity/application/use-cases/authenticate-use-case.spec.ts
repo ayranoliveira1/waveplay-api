@@ -6,6 +6,7 @@ import { InMemoryRefreshTokensRepository } from 'test/repositories/in-memory-ref
 import { FakeHasher } from 'test/cryptography/fake-hasher'
 import { FakeEncrypter } from 'test/cryptography/fake-encrypter'
 import { FakeAccountLockout } from 'test/ports/fake-account-lockout'
+import { FakeAuthConfig } from 'test/ports/fake-auth-config'
 import { InvalidCredentialsError } from '../../domain/errors/invalid-credentials.error'
 import { AccountLockedError } from '../../domain/errors/account-locked.error'
 import { User } from '../../domain/entities/user'
@@ -15,6 +16,7 @@ let refreshTokensRepository: InMemoryRefreshTokensRepository
 let hasher: FakeHasher
 let encrypter: FakeEncrypter
 let accountLockout: FakeAccountLockout
+let authConfig: FakeAuthConfig
 let sut: AuthenticateUseCase
 
 describe('AuthenticateUseCase', () => {
@@ -24,6 +26,7 @@ describe('AuthenticateUseCase', () => {
     hasher = new FakeHasher()
     encrypter = new FakeEncrypter()
     accountLockout = new FakeAccountLockout()
+    authConfig = new FakeAuthConfig()
 
     sut = new AuthenticateUseCase(
       usersRepository,
@@ -31,6 +34,7 @@ describe('AuthenticateUseCase', () => {
       encrypter,
       refreshTokensRepository,
       accountLockout,
+      authConfig,
     )
 
     // Cria um user padrão para os testes de login

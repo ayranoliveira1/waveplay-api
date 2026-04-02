@@ -9,6 +9,7 @@ import { RefreshTokensRepository } from '../../domain/repositories/refresh-token
 import { HasherPort } from '../ports/hasher.port'
 import { EncrypterPort } from '../ports/encrypter.port'
 import { AccountLockoutPort } from '../ports/account-lockout.port'
+import { AuthConfigPort } from '../ports/auth-config.port'
 import { InvalidCredentialsError } from '../../domain/errors/invalid-credentials.error'
 import { AccountLockedError } from '../../domain/errors/account-locked.error'
 
@@ -28,7 +29,8 @@ type AuthenticateUseCaseResponse = Either<
   }
 >
 
-const REFRESH_TOKEN_EXPIRY_MS = 48 * 60 * 60 * 1000 // 48h
+// Hash pré-computado para comparação quando email não existe (anti timing attack)
+const DUMMY_HASH = '$argon2id$v=19$m=65536,t=3,p=1$dW5rbm93bg$dW5rbm93bg'
 
 @Injectable()
 export class AuthenticateUseCase {
@@ -40,6 +42,7 @@ export class AuthenticateUseCase {
     private encrypter: EncrypterPort,
     private refreshTokensRepository: RefreshTokensRepository,
     private accountLockout: AccountLockoutPort,
+    private authConfig: AuthConfigPort,
   ) {}
 
   async execute(
@@ -56,18 +59,12 @@ export class AuthenticateUseCase {
 
     const user = await this.usersRepository.findByEmail(email)
 
-    if (!user) {
-      await this.accountLockout.incrementFailures(email)
-      this.logger.warn(`Failed login attempt: ${email}`)
-      return left(new InvalidCredentialsError())
-    }
-
     const passwordMatch = await this.hasher.compare(
       password,
-      user.passwordHash,
+      user?.passwordHash ?? DUMMY_HASH,
     )
 
-    if (!passwordMatch) {
+    if (!user || !passwordMatch) {
       await this.accountLockout.incrementFailures(email)
       this.logger.warn(`Failed login attempt: ${email}`)
       return left(new InvalidCredentialsError())
@@ -79,7 +76,7 @@ export class AuthenticateUseCase {
     const { refreshToken } = RefreshToken.createFromRawToken({
       rawToken,
       userId: user.id.toValue(),
-      expiresInMs: REFRESH_TOKEN_EXPIRY_MS,
+      expiresInMs: this.authConfig.getRefreshTokenExpiresInMs(),
       ipAddress,
       userAgent,
     })
@@ -88,7 +85,7 @@ export class AuthenticateUseCase {
 
     const accessToken = await this.encrypter.sign(
       { sub: user.id.toValue() },
-      { expiresIn: '15m' },
+      { expiresIn: this.authConfig.getAccessTokenExpiresIn() },
     )
 
     return right({

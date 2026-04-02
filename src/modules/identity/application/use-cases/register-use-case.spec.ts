@@ -7,6 +7,7 @@ import { InMemoryRefreshTokensRepository } from 'test/repositories/in-memory-ref
 import { FakeHasher } from 'test/cryptography/fake-hasher'
 import { FakeEncrypter } from 'test/cryptography/fake-encrypter'
 import { FakePlansGateway } from 'test/ports/fake-plans-gateway'
+import { FakeAuthConfig } from 'test/ports/fake-auth-config'
 import { EmailAlreadyExistsError } from '../../domain/errors/email-already-exists.error'
 import { WeakPasswordError } from '../../domain/errors/weak-password.error'
 import { PasswordMismatchError } from '../../domain/errors/password-mismatch.error'
@@ -17,6 +18,7 @@ let refreshTokensRepository: InMemoryRefreshTokensRepository
 let hasher: FakeHasher
 let encrypter: FakeEncrypter
 let plansGateway: FakePlansGateway
+let authConfig: FakeAuthConfig
 let sut: RegisterUseCase
 
 describe('RegisterUseCase', () => {
@@ -26,6 +28,7 @@ describe('RegisterUseCase', () => {
     hasher = new FakeHasher()
     encrypter = new FakeEncrypter()
     plansGateway = new FakePlansGateway()
+    authConfig = new FakeAuthConfig()
 
     sut = new RegisterUseCase(
       usersRepository,
@@ -33,6 +36,7 @@ describe('RegisterUseCase', () => {
       encrypter,
       refreshTokensRepository,
       plansGateway,
+      authConfig,
     )
   })
 

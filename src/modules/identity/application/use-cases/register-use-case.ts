@@ -9,6 +9,7 @@ import { RefreshTokensRepository } from '../../domain/repositories/refresh-token
 import { HasherPort } from '../ports/hasher.port'
 import { EncrypterPort } from '../ports/encrypter.port'
 import { PlansGatewayPort } from '../ports/plans-gateway.port'
+import { AuthConfigPort } from '../ports/auth-config.port'
 import { EmailAlreadyExistsError } from '../../domain/errors/email-already-exists.error'
 import { WeakPasswordError } from '../../domain/errors/weak-password.error'
 import { PasswordMismatchError } from '../../domain/errors/password-mismatch.error'
@@ -31,8 +32,6 @@ type RegisterUseCaseResponse = Either<
   }
 >
 
-const REFRESH_TOKEN_EXPIRY_MS = 48 * 60 * 60 * 1000 // 48h
-
 @Injectable()
 export class RegisterUseCase {
   private readonly logger = new Logger(RegisterUseCase.name)
@@ -43,6 +42,7 @@ export class RegisterUseCase {
     private encrypter: EncrypterPort,
     private refreshTokensRepository: RefreshTokensRepository,
     private plansGateway: PlansGatewayPort,
+    private authConfig: AuthConfigPort,
   ) {}
 
   async execute(
@@ -91,7 +91,7 @@ export class RegisterUseCase {
     const { refreshToken } = RefreshToken.createFromRawToken({
       rawToken,
       userId: user.id.toValue(),
-      expiresInMs: REFRESH_TOKEN_EXPIRY_MS,
+      expiresInMs: this.authConfig.getRefreshTokenExpiresInMs(),
       ipAddress,
       userAgent,
     })
@@ -100,7 +100,7 @@ export class RegisterUseCase {
 
     const accessToken = await this.encrypter.sign(
       { sub: user.id.toValue() },
-      { expiresIn: '15m' },
+      { expiresIn: this.authConfig.getAccessTokenExpiresIn() },
     )
 
     this.logger.log(`User registered successfully: ${user.id.toValue()}`)
