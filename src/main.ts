@@ -3,6 +3,7 @@ import { AppModule } from './app.module'
 import { AllExceptionsFilter } from '@/shared/filters/nest-exception-filter'
 import { EnvService } from '@/shared/env/env.service'
 import helmet from 'helmet'
+import cookieParser from 'cookie-parser'
 import { Logger } from '@nestjs/common'
 
 async function bootstrap() {
@@ -12,6 +13,7 @@ async function bootstrap() {
   const env = app.get(EnvService)
 
   app.use(helmet())
+  app.use(cookieParser())
   app.useGlobalFilters(new AllExceptionsFilter())
   app.enableCors({
     origin: [env.get('CORS_ORIGIN')],
