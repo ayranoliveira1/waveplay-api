@@ -6,7 +6,6 @@ import {
   Res,
   HttpCode,
   HttpStatus,
-  UsePipes,
 } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 import type { Request, Response } from 'express'
@@ -36,8 +35,7 @@ export class RegisterController {
   @Post('/register')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.CREATED)
-  @UsePipes(new ZodValidationPipe(registerSchema))
-  async handle(@Body() body: RegisterBody, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async handle(@Body(new ZodValidationPipe(registerSchema)) body: RegisterBody, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const result = await this.registerUseCase.execute({
       name: body.name,
       email: body.email,

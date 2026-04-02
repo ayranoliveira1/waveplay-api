@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  HttpCode,
-  HttpStatus,
-  UsePipes,
-} from '@nestjs/common'
+import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 import { z } from 'zod'
 
@@ -27,8 +20,7 @@ export class ForgotPasswordController {
   @Post('/forgot-password')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ZodValidationPipe(forgotPasswordSchema))
-  async handle(@Body() body: ForgotPasswordBody) {
+  async handle(@Body(new ZodValidationPipe(forgotPasswordSchema)) body: ForgotPasswordBody) {
     const result = await this.forgotPasswordUseCase.execute({
       email: body.email,
     })
