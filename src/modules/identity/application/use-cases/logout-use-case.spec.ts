@@ -47,9 +47,13 @@ describe('LogoutUseCase', () => {
     await refreshTokensRepository.create(token2)
     await refreshTokensRepository.create(tokenOtherFamily)
 
-    const result = await sut.execute({ family: 'family-1' })
+    const result = await sut.execute({ userId: 'user-1', family: 'family-1' })
 
     expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.message).toBe('Sessão encerrada com sucesso')
+    }
 
     // Tokens da family-1 revogados
     expect(token1.isRevoked()).toBe(true)
