@@ -77,7 +77,7 @@ export class RefreshTokenUseCase {
     await this.refreshTokensRepository.create(newToken)
 
     const accessToken = await this.encrypter.sign(
-      { sub: storedToken.userId },
+      { sub: storedToken.userId, family: newToken.family },
       { expiresIn: this.authConfig.getAccessTokenExpiresIn() },
     )
 

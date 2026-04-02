@@ -99,7 +99,7 @@ export class RegisterUseCase {
     await this.refreshTokensRepository.create(refreshToken)
 
     const accessToken = await this.encrypter.sign(
-      { sub: user.id.toValue() },
+      { sub: user.id.toValue(), family: refreshToken.family },
       { expiresIn: this.authConfig.getAccessTokenExpiresIn() },
     )
 
