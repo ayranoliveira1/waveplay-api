@@ -14,6 +14,12 @@ export const envSchema = z.object({
   TMDB_BASE_URL: z.string().url(),
   CORS_ORIGIN: z.string().optional().default('http://localhost:3000'),
   REDIS_URL: z.string(),
+  EMAIL_USER: z.string().email(),
+  EMAIL_CLIENT_ID: z.string(),
+  EMAIL_CLIENT_SECRET: z.string(),
+  EMAIL_REDIRECT_URI: z.string().url(),
+  EMAIL_REFRESH_TOKEN: z.string(),
+  FRONTEND_URL: z.string().url(),
 })
 
 export type Env = z.infer<typeof envSchema>
