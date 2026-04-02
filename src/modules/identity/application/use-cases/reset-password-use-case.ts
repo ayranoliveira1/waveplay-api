@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { createHash } from 'node:crypto'
+import { createHash, timingSafeEqual } from 'node:crypto'
 
 import { Either, left, right } from '@/core/either'
 import { UsersRepository } from '../../domain/repositories/users-repository'
@@ -47,6 +47,14 @@ export class ResetPasswordUseCase {
       await this.passwordResetTokensRepository.findByTokenHash(tokenHash)
 
     if (!storedToken) {
+      return left(new InvalidResetTokenError())
+    }
+
+    // Defense-in-depth: timing-safe comparison (security-checklist §15.6)
+    const computedHashBuffer = Buffer.from(tokenHash, 'hex')
+    const storedHashBuffer = Buffer.from(storedToken.tokenHash, 'hex')
+
+    if (!timingSafeEqual(computedHashBuffer, storedHashBuffer)) {
       return left(new InvalidResetTokenError())
     }
 
