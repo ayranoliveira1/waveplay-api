@@ -15,12 +15,11 @@ model User {
   passwordHash String    @map("password_hash")
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
-  planId        String?        @map("plan_id")
-  plan          Plan?          @relation(fields: [planId], references: [id])
-  profiles      Profile[]
-  refreshTokens      RefreshToken[]
+  subscriptions       Subscription[]
+  profiles            Profile[]
+  refreshTokens       RefreshToken[]
   passwordResetTokens PasswordResetToken[]
-  activeStreams       ActiveStream[]
+  activeStreams        ActiveStream[]
 
   @@map("users")
 }
@@ -57,19 +56,36 @@ model PasswordResetToken {
 
 
 model Plan {
-  id              String   @id @default(uuid())
+  id              String         @id @default(uuid())
   name            String
-  slug            String   @unique
-  priceCents      Int      @map("price_cents")
-  maxProfiles     Int      @map("max_profiles")
-  maxStreams      Int      @map("max_streams")
+  slug            String         @unique
+  priceCents      Int            @map("price_cents")
+  maxProfiles     Int            @map("max_profiles")
+  maxStreams      Int            @map("max_streams")
   description     String?
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  users           User[]
+  active          Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  subscriptions   Subscription[]
 
   @@map("plans")
+}
+
+model Subscription {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  planId    String    @map("plan_id")
+  status    String    @default("active")
+  startedAt DateTime  @default(now()) @map("started_at")
+  endsAt    DateTime? @map("ends_at")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@map("subscriptions")
 }
 
 
