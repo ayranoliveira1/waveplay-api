@@ -6,6 +6,7 @@ import {
   HttpStatus,
   UsePipes,
 } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import { z } from 'zod'
 
 import { ForgotPasswordUseCase } from '../../application/use-cases/forgot-password-use-case'
@@ -24,6 +25,7 @@ export class ForgotPasswordController {
 
   @Public()
   @Post('/forgot-password')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(forgotPasswordSchema))
   async handle(@Body() body: ForgotPasswordBody) {

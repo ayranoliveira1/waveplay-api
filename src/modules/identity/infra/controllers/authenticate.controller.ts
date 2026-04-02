@@ -8,6 +8,7 @@ import {
   HttpStatus,
   UsePipes,
 } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import type { Request, Response } from 'express'
 import { z } from 'zod'
 
@@ -31,6 +32,7 @@ export class AuthenticateController {
 
   @Public()
   @Post('/login')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(authenticateSchema))
   async handle(@Body() body: AuthenticateBody, @Req() req: Request, @Res({ passthrough: true }) res: Response) {

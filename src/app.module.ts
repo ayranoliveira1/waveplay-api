@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
-import { ThrottlerModule } from '@nestjs/throttler'
+import { APP_GUARD } from '@nestjs/core'
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { DatabaseModule } from '@/shared/database/database.module'
 import { EnvModule } from '@/shared/env/env.module'
 import { RedisModule } from '@/shared/redis/redis.module'
@@ -21,6 +22,12 @@ import { IdentityModule } from '@/modules/identity/infra/identity.module'
     RedisModule,
     EmailModule,
     IdentityModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

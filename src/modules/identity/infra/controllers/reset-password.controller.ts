@@ -6,6 +6,7 @@ import {
   HttpStatus,
   UsePipes,
 } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import { z } from 'zod'
 
 import { ResetPasswordUseCase } from '../../application/use-cases/reset-password-use-case'
@@ -26,6 +27,7 @@ export class ResetPasswordController {
 
   @Public()
   @Post('/reset-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(resetPasswordSchema))
   async handle(@Body() body: ResetPasswordBody) {

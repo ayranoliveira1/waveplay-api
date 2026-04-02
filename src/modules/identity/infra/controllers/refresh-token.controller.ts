@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import type { Request, Response } from 'express'
 
 import { RefreshTokenUseCase } from '../../application/use-cases/refresh-token-use-case'
@@ -21,6 +22,7 @@ export class RefreshTokenController {
 
   @Public()
   @Post('/refresh')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async handle(
     @Body() body: { refreshToken?: string },
