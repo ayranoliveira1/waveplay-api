@@ -44,7 +44,7 @@ export class AllExceptionsFilter implements NestExceptionFilter {
       }
     } else if (isAxiosError(exception)) {
       status = exception.response?.status || 500
-      const data = exception.response?.data as any
+      const data = exception.response?.data
       if (data?.errors) {
         errorMessages = Array.isArray(data.errors) ? data.errors : [data.errors]
       } else if (data?.message) {

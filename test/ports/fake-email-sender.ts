@@ -1,4 +1,4 @@
-import { EmailSenderPort } from '@/shared/email/email-sender.port'
+import type { EmailSenderPort } from '@/shared/email/email-sender.port'
 
 export class FakeEmailSender implements EmailSenderPort {
   public emailsSent: Array<{ to: string; subject: string; body: string }> = []

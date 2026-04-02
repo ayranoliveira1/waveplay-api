@@ -1,4 +1,4 @@
-import { EncrypterPort } from '@/modules/identity/application/ports/encrypter.port'
+import type { EncrypterPort } from '@/modules/identity/application/ports/encrypter.port'
 
 export class FakeEncrypter implements EncrypterPort {
   async sign(

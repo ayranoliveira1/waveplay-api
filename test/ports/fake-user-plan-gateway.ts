@@ -1,4 +1,4 @@
-import { UserPlanGatewayPort } from '@/modules/profile/application/ports/user-plan-gateway.port'
+import type { UserPlanGatewayPort } from '@/modules/profile/application/ports/user-plan-gateway.port'
 
 export class FakeUserPlanGateway implements UserPlanGatewayPort {
   public maxProfiles = 3

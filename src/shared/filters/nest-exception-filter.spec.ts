@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { AllExceptionsFilter } from './nest-exception-filter'
-import { ArgumentsHost, HttpException } from '@nestjs/common'
+import type { ArgumentsHost } from '@nestjs/common'
+import { HttpException } from '@nestjs/common'
 import { UseCaseError } from '@/core/errors/use-case-error'
 
 function createMockHost() {

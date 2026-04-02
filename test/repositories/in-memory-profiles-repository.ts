@@ -1,5 +1,5 @@
-import { Profile } from '@/modules/profile/domain/entities/profile'
-import { ProfilesRepository } from '@/modules/profile/domain/repositories/profiles-repository'
+import type { Profile } from '@/modules/profile/domain/entities/profile'
+import type { ProfilesRepository } from '@/modules/profile/domain/repositories/profiles-repository'
 import { MaxProfilesReachedError } from '@/modules/profile/domain/errors/max-profiles-reached.error'
 
 export class InMemoryProfilesRepository implements ProfilesRepository {
@@ -30,8 +30,8 @@ export class InMemoryProfilesRepository implements ProfilesRepository {
   }
 
   async save(profile: Profile): Promise<void> {
-    const index = this.items.findIndex((item) =>
-      item.id.toValue() === profile.id.toValue(),
+    const index = this.items.findIndex(
+      (item) => item.id.toValue() === profile.id.toValue(),
     )
 
     if (index >= 0) {

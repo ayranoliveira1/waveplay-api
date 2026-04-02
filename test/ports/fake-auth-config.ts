@@ -1,4 +1,4 @@
-import { AuthConfigPort } from '@/modules/identity/application/ports/auth-config.port'
+import type { AuthConfigPort } from '@/modules/identity/application/ports/auth-config.port'
 
 export class FakeAuthConfig implements AuthConfigPort {
   getAccessTokenExpiresIn(): string {

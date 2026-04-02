@@ -1,4 +1,4 @@
-import { HasherPort } from '@/modules/identity/application/ports/hasher.port'
+import type { HasherPort } from '@/modules/identity/application/ports/hasher.port'
 
 export class FakeHasher implements HasherPort {
   async hash(plain: string): Promise<string> {

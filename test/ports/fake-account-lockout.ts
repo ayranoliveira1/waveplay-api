@@ -1,4 +1,4 @@
-import { AccountLockoutPort } from '@/modules/identity/application/ports/account-lockout.port'
+import type { AccountLockoutPort } from '@/modules/identity/application/ports/account-lockout.port'
 
 export class FakeAccountLockout implements AccountLockoutPort {
   private failures = new Map<string, number>()

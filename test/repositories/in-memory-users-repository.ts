@@ -1,6 +1,6 @@
 import { DomainEvents } from '@/core/events/domain-events'
-import { UsersRepository } from '@/modules/identity/domain/repositories/users-repository'
-import { User } from '@/modules/identity/domain/entities/user'
+import type { UsersRepository } from '@/modules/identity/domain/repositories/users-repository'
+import type { User } from '@/modules/identity/domain/entities/user'
 import { EmailAlreadyExistsError } from '@/modules/identity/domain/errors/email-already-exists.error'
 
 export class InMemoryUsersRepository implements UsersRepository {
@@ -27,9 +27,7 @@ export class InMemoryUsersRepository implements UsersRepository {
   }
 
   async save(user: User): Promise<void> {
-    const index = this.items.findIndex((item) =>
-      item.id.equals(user.id),
-    )
+    const index = this.items.findIndex((item) => item.id.equals(user.id))
 
     if (index >= 0) {
       this.items[index] = user

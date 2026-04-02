@@ -1,4 +1,4 @@
-import { UseCaseError } from '@/core/errors/use-case-error'
+import type { UseCaseError } from '@/core/errors/use-case-error'
 import { HttpException } from '@nestjs/common'
 
 export class CustomHttpException extends HttpException {

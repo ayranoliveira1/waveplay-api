@@ -1,14 +1,10 @@
-import { PasswordResetToken } from '@/modules/identity/domain/entities/password-reset-token'
-import { PasswordResetTokensRepository } from '@/modules/identity/domain/repositories/password-reset-tokens-repository'
+import type { PasswordResetToken } from '@/modules/identity/domain/entities/password-reset-token'
+import type { PasswordResetTokensRepository } from '@/modules/identity/domain/repositories/password-reset-tokens-repository'
 
-export class InMemoryPasswordResetTokensRepository
-  implements PasswordResetTokensRepository
-{
+export class InMemoryPasswordResetTokensRepository implements PasswordResetTokensRepository {
   public items: PasswordResetToken[] = []
 
-  async findByTokenHash(
-    tokenHash: string,
-  ): Promise<PasswordResetToken | null> {
+  async findByTokenHash(tokenHash: string): Promise<PasswordResetToken | null> {
     return this.items.find((t) => t.tokenHash === tokenHash) ?? null
   }
 

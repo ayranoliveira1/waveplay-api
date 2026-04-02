@@ -1,15 +1,11 @@
-import { RefreshToken } from '@/modules/identity/domain/entities/refresh-token'
-import { RefreshTokensRepository } from '@/modules/identity/domain/repositories/refresh-tokens-repository'
+import type { RefreshToken } from '@/modules/identity/domain/entities/refresh-token'
+import type { RefreshTokensRepository } from '@/modules/identity/domain/repositories/refresh-tokens-repository'
 
-export class InMemoryRefreshTokensRepository
-  implements RefreshTokensRepository
-{
+export class InMemoryRefreshTokensRepository implements RefreshTokensRepository {
   public items: RefreshToken[] = []
 
   async findByTokenHash(tokenHash: string): Promise<RefreshToken | null> {
-    return (
-      this.items.find((token) => token.tokenHash === tokenHash) ?? null
-    )
+    return this.items.find((token) => token.tokenHash === tokenHash) ?? null
   }
 
   async create(token: RefreshToken): Promise<void> {
