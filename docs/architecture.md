@@ -59,8 +59,14 @@ waveplay-api/
 │   │   ├── http/
 │   │   │   ├── response-type.ts         # Interface HttpResponse<T, E>
 │   │   │   └── custom-http.exception.ts # UseCaseError → HttpException
-│   │   └── pipes/
-│   │       └── zod-validation.pipe.ts   # ZodError → CustomHttpException
+│   │   ├── pipes/
+│   │   │   └── zod-validation.pipe.ts   # ZodError → CustomHttpException
+│   │   ├── redis/
+│   │   │   └── redis.module.ts          # @Global() módulo que provê ioredis client
+│   │   └── email/
+│   │       ├── email-sender.port.ts     # Port abstrato: sendEmail({ to, subject, body })
+│   │       ├── nodemailer-email-sender.ts # Implementação Gmail OAuth2 (Nodemailer + googleapis)
+│   │       └── email.module.ts          # @Global() módulo que provê EmailSenderPort
 │   │
 │   └── modules/                         # Bounded Contexts
 │       │
@@ -87,9 +93,11 @@ waveplay-api/
 │       │   │   ├── ports/
 │       │   │   │   ├── hasher.port.ts       # Interface: hash(), compare()
 │       │   │   │   ├── encrypter.port.ts    # Interface: sign(), verify()
-│       │   │   │   ├── auth-config.port.ts  # Interface: getAccessTokenExpiresIn(), getRefreshTokenExpiresInMs()
+│       │   │   │   ├── auth-config.port.ts  # Interface: getAccessTokenExpiresIn(), getRefreshTokenExpiresInMs(), getFrontendUrl()
 │   │   │   ├── account-lockout.port.ts  # Interface: isLocked(), incrementFailures(), resetFailures()
 │   │   │   └── plans-gateway.port.ts    # Interface: findBySlug() — cross-BC query
+│       │   │   ├── emails/
+│       │   │   │   └── password-reset-email.ts  # Template HTML para email de reset de senha
 │       │   │   └── use-cases/
 │       │   │       ├── register-use-case.ts
 │       │   │       ├── authenticate-use-case.ts
@@ -113,7 +121,14 @@ waveplay-api/
 │       │       │   ├── prisma-users-repository.ts
 │       │       │   ├── prisma-refresh-tokens-repository.ts
 │       │       │   └── prisma-password-reset-tokens-repository.ts
+│       │       ├── strategies/
+│       │       │   └── jwt.strategy.ts      # Passport JWT: extrai sub + family do token
+│       │       ├── lockout/
+│       │       │   └── redis-account-lockout.ts  # AccountLockoutPort ← Redis
+│       │       ├── gateways/
+│       │       │   └── prisma-plans-gateway.ts   # PlansGatewayPort ← Prisma (cross-BC query)
 │       │       ├── controllers/
+│       │       │   ├── platform-utils.ts    # isMobile(), setRefreshTokenCookie()
 │       │       │   ├── register.controller.ts
 │       │       │   ├── authenticate.controller.ts
 │       │       │   ├── refresh-token.controller.ts
@@ -124,9 +139,9 @@ waveplay-api/
 │       │       ├── presenters/
 │       │       │   └── user-presenter.ts
 │       │       ├── guards/
-│       │       │   └── auth.guard.ts
+│       │       │   └── auth.guard.ts        # JwtAuthGuard global com @Public() exemption
 │       │       └── decorators/
-│       │           ├── get-user.decorator.ts
+│       │           ├── get-user.decorator.ts  # @GetUser() extrai { userId, family } do JWT
 │       │           └── public.decorator.ts
 │       │
 │       ├── profile/                     # BC: Perfis (estilo Netflix)
