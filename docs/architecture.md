@@ -77,12 +77,16 @@ waveplay-api/
 │       │   │       ├── invalid-credentials.error.ts
 │       │   │       ├── email-already-exists.error.ts
 │       │   │       ├── account-locked.error.ts
-│       │   │       └── invalid-reset-token.error.ts
+│       │   │       ├── invalid-reset-token.error.ts
+│       │   │       ├── weak-password.error.ts
+│       │   │       └── password-mismatch.error.ts
 │       │   ├── application/
 │       │   │   ├── ports/
 │       │   │   │   ├── hasher.port.ts       # Interface: hash(), compare()
 │       │   │   │   ├── encrypter.port.ts    # Interface: sign(), verify()
-│       │   │   │   └── auth-config.port.ts  # Interface: getAccessTokenExpiresIn(), getRefreshTokenExpiresInMs()
+│       │   │   │   ├── auth-config.port.ts  # Interface: getAccessTokenExpiresIn(), getRefreshTokenExpiresInMs()
+│   │   │   ├── account-lockout.port.ts  # Interface: isLocked(), incrementFailures(), resetFailures()
+│   │   │   └── plans-gateway.port.ts    # Interface: findBySlug() — cross-BC query
 │       │   │   └── use-cases/
 │       │   │       ├── register-use-case.ts
 │       │   │       ├── authenticate-use-case.ts

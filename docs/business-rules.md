@@ -31,7 +31,7 @@
 |-------|-----------|
 | Email único | Não pode existir dois usuários com o mesmo email |
 | Confirmação de senha | `confirmPassword` deve ser igual a `password` no registro |
-| Senha mínima 8 caracteres | Validação no register via Zod |
+| Senha forte obrigatória | Min 8 caracteres, pelo menos 1 maiúscula, 1 minúscula e 1 número. Validação no register via Zod |
 | Senha salva com Argon2id | Parâmetros: memoryCost=65536 (64MB), timeCost=3, parallelism=1 |
 | Access token expira em 15 minutos | JWT stateless, validado pela assinatura |
 | Refresh token expira em 48 horas | Salvo como SHA-256 no banco |
