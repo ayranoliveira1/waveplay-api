@@ -40,8 +40,8 @@ describe('RegisterUseCase', () => {
     const result = await sut.execute({
       name: 'João Silva',
       email: 'joao@email.com',
-      password: '12345678',
-      confirmPassword: '12345678',
+      password: 'Abc12345',
+      confirmPassword: 'Abc12345',
     })
 
     expect(result.isRight()).toBe(true)
@@ -62,15 +62,15 @@ describe('RegisterUseCase', () => {
     await sut.execute({
       name: 'João Silva',
       email: 'joao@email.com',
-      password: '12345678',
-      confirmPassword: '12345678',
+      password: 'Abc12345',
+      confirmPassword: 'Abc12345',
     })
 
     const result = await sut.execute({
       name: 'João Outro',
       email: 'joao@email.com',
-      password: '87654321',
-      confirmPassword: '87654321',
+      password: 'Bcd23456',
+      confirmPassword: 'Bcd23456',
     })
 
     expect(result.isLeft()).toBe(true)
@@ -81,23 +81,23 @@ describe('RegisterUseCase', () => {
     const result = await sut.execute({
       name: 'João Silva',
       email: 'joao@email.com',
-      password: '12345678',
-      confirmPassword: '12345678',
+      password: 'Abc12345',
+      confirmPassword: 'Abc12345',
     })
 
     expect(result.isRight()).toBe(true)
 
     const savedUser = usersRepository.items[0]
-    expect(savedUser.passwordHash).toBe('12345678-hashed')
-    expect(savedUser.passwordHash).not.toBe('12345678')
+    expect(savedUser.passwordHash).toBe('Abc12345-hashed')
+    expect(savedUser.passwordHash).not.toBe('Abc12345')
   })
 
   it('should assign the Básico plan to the user', async () => {
     const result = await sut.execute({
       name: 'João Silva',
       email: 'joao@email.com',
-      password: '12345678',
-      confirmPassword: '12345678',
+      password: 'Abc12345',
+      confirmPassword: 'Abc12345',
     })
 
     expect(result.isRight()).toBe(true)
@@ -119,12 +119,48 @@ describe('RegisterUseCase', () => {
     expect(usersRepository.items).toHaveLength(0)
   })
 
+  it('should return error when password has no uppercase letter', async () => {
+    const result = await sut.execute({
+      name: 'João Silva',
+      email: 'joao@email.com',
+      password: 'abcd1234',
+      confirmPassword: 'abcd1234',
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(WeakPasswordError)
+  })
+
+  it('should return error when password has no lowercase letter', async () => {
+    const result = await sut.execute({
+      name: 'João Silva',
+      email: 'joao@email.com',
+      password: 'ABCD1234',
+      confirmPassword: 'ABCD1234',
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(WeakPasswordError)
+  })
+
+  it('should return error when password has no number', async () => {
+    const result = await sut.execute({
+      name: 'João Silva',
+      email: 'joao@email.com',
+      password: 'Abcdefgh',
+      confirmPassword: 'Abcdefgh',
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(WeakPasswordError)
+  })
+
   it('should return error when confirmPassword does not match password', async () => {
     const result = await sut.execute({
       name: 'João Silva',
       email: 'joao@email.com',
-      password: '12345678',
-      confirmPassword: '87654321',
+      password: 'Abc12345',
+      confirmPassword: 'Xyz98765',
     })
 
     expect(result.isLeft()).toBe(true)
@@ -136,8 +172,8 @@ describe('RegisterUseCase', () => {
     await sut.execute({
       name: 'João Silva',
       email: 'joao@email.com',
-      password: '12345678',
-      confirmPassword: '12345678',
+      password: 'Abc12345',
+      confirmPassword: 'Abc12345',
     })
 
     // O use case só cria o user, não o perfil
@@ -149,8 +185,8 @@ describe('RegisterUseCase', () => {
     const result = await sut.execute({
       name: 'João Silva',
       email: 'joao@email.com',
-      password: '12345678',
-      confirmPassword: '12345678',
+      password: 'Abc12345',
+      confirmPassword: 'Abc12345',
     })
 
     expect(result.isRight()).toBe(true)

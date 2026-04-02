@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { randomUUID } from 'node:crypto'
 
 import { Either, left, right } from '@/core/either'
@@ -35,6 +35,8 @@ const REFRESH_TOKEN_EXPIRY_MS = 48 * 60 * 60 * 1000 // 48h
 
 @Injectable()
 export class RegisterUseCase {
+  private readonly logger = new Logger(RegisterUseCase.name)
+
   constructor(
     private usersRepository: UsersRepository,
     private hasher: HasherPort,
@@ -53,19 +55,28 @@ export class RegisterUseCase {
       return left(new PasswordMismatchError())
     }
 
-    if (password.length < 8) {
+    const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
+
+    if (!PASSWORD_REGEX.test(password)) {
       return left(new WeakPasswordError())
     }
 
     const existingUser = await this.usersRepository.findByEmail(email)
 
     if (existingUser) {
+      this.logger.warn(`Registration attempt with existing email: ${email}`)
       return left(new EmailAlreadyExistsError())
     }
 
     const passwordHash = await this.hasher.hash(password)
 
     const plan = await this.plansGateway.findBySlug('basico')
+
+    if (!plan) {
+      this.logger.warn(
+        'Default plan "basico" not found — user created without plan',
+      )
+    }
 
     const user = User.create({
       name,
@@ -91,6 +102,8 @@ export class RegisterUseCase {
       { sub: user.id.toValue() },
       { expiresIn: '15m' },
     )
+
+    this.logger.log(`User registered successfully: ${user.id.toValue()}`)
 
     return right({
       user,
