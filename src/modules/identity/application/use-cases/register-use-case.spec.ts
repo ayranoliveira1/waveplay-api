@@ -12,6 +12,7 @@ import { EmailAlreadyExistsError } from '../../domain/errors/email-already-exist
 import { WeakPasswordError } from '../../domain/errors/weak-password.error'
 import { PasswordMismatchError } from '../../domain/errors/password-mismatch.error'
 import { User } from '../../domain/entities/user'
+import { UserRegisteredEvent } from '../../domain/events/user-registered-event'
 
 let usersRepository: InMemoryUsersRepository
 let refreshTokensRepository: InMemoryRefreshTokensRepository
@@ -172,17 +173,20 @@ describe('RegisterUseCase', () => {
     expect(usersRepository.items).toHaveLength(0)
   })
 
-  it('should not create a default profile (responsibility of controller/event)', async () => {
-    await sut.execute({
+  it('should emit UserRegisteredEvent when user is created', async () => {
+    // Testa diretamente que User.create() sem id emite o evento
+    const user = User.create({
       name: 'João Silva',
       email: 'joao@email.com',
-      password: 'Abc12345',
-      confirmPassword: 'Abc12345',
+      passwordHash: 'hash',
     })
 
-    // O use case só cria o user, não o perfil
-    // Perfil é responsabilidade do controller ou domain event
-    expect(usersRepository.items).toHaveLength(1)
+    expect(user.domainEvents).toHaveLength(1)
+    expect(user.domainEvents[0]).toBeInstanceOf(UserRegisteredEvent)
+
+    const event = user.domainEvents[0] as UserRegisteredEvent
+    expect(event.user.name).toBe('João Silva')
+    expect(event.getAggregateId()).toEqual(user.id)
   })
 
   it('should store refresh token hash in the repository', async () => {
