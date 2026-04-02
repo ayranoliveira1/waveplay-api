@@ -8,4 +8,8 @@ export class FakeAuthConfig implements AuthConfigPort {
   getRefreshTokenExpiresInMs(): number {
     return 48 * 60 * 60 * 1000
   }
+
+  getFrontendUrl(): string {
+    return 'http://localhost:3000'
+  }
 }

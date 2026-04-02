@@ -3,10 +3,14 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { ForgotPasswordUseCase } from './forgot-password-use-case'
 import { InMemoryUsersRepository } from 'test/repositories/in-memory-users-repository'
 import { InMemoryPasswordResetTokensRepository } from 'test/repositories/in-memory-password-reset-tokens-repository'
+import { FakeEmailSender } from 'test/ports/fake-email-sender'
+import { FakeAuthConfig } from 'test/ports/fake-auth-config'
 import { User } from '../../domain/entities/user'
 
 let usersRepository: InMemoryUsersRepository
 let passwordResetTokensRepository: InMemoryPasswordResetTokensRepository
+let emailSender: FakeEmailSender
+let authConfig: FakeAuthConfig
 let sut: ForgotPasswordUseCase
 
 describe('ForgotPasswordUseCase', () => {
@@ -14,10 +18,14 @@ describe('ForgotPasswordUseCase', () => {
     usersRepository = new InMemoryUsersRepository()
     passwordResetTokensRepository =
       new InMemoryPasswordResetTokensRepository()
+    emailSender = new FakeEmailSender()
+    authConfig = new FakeAuthConfig()
 
     sut = new ForgotPasswordUseCase(
       usersRepository,
       passwordResetTokensRepository,
+      emailSender,
+      authConfig,
     )
 
     const user = User.create({
@@ -73,5 +81,27 @@ describe('ForgotPasswordUseCase', () => {
     expect(storedToken.expiresAt.getTime()).toBeLessThanOrEqual(
       after + fifteenMinMs,
     )
+  })
+
+  it('should send email with reset link when user exists', async () => {
+    await sut.execute({ email: 'joao@email.com' })
+
+    // Aguardar fire-and-forget resolver
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    expect(emailSender.emailsSent).toHaveLength(1)
+    expect(emailSender.emailsSent[0].to).toBe('joao@email.com')
+    expect(emailSender.emailsSent[0].subject).toContain('senha')
+    expect(emailSender.emailsSent[0].body).toContain(
+      'http://localhost:3000/reset-password?token=',
+    )
+  })
+
+  it('should not send email when user does not exist', async () => {
+    await sut.execute({ email: 'inexistente@email.com' })
+
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    expect(emailSender.emailsSent).toHaveLength(0)
   })
 })
