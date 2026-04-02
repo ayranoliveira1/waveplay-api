@@ -36,4 +36,8 @@ export class EnvAuthConfig implements AuthConfigPort {
   getRefreshTokenExpiresInMs(): number {
     return parseDurationToMs(this.env.get('JWT_REFRESH_EXPIRES_IN'))
   }
+
+  getFrontendUrl(): string {
+    return this.env.get('FRONTEND_URL')
+  }
 }
