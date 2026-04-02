@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { Test } from '@nestjs/testing'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { Test, TestingModule } from '@nestjs/testing'
 import { INestApplication } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
@@ -21,12 +21,19 @@ import { EncrypterPort } from '../../application/ports/encrypter.port'
 import { AuthConfigPort } from '../../application/ports/auth-config.port'
 import { PlansGatewayPort } from '../../application/ports/plans-gateway.port'
 import { AllExceptionsFilter } from '@/shared/filters/nest-exception-filter'
+import { DomainEvents } from '@/core/events/domain-events'
+import { OnUserRegistered } from '@/modules/profile/application/subscribers/on-user-registered'
+import { ProfilesRepository } from '@/modules/profile/domain/repositories/profiles-repository'
+import { UserPlanGatewayPort } from '@/modules/profile/application/ports/user-plan-gateway.port'
+import { InMemoryProfilesRepository } from 'test/repositories/in-memory-profiles-repository'
+import { FakeUserPlanGateway } from 'test/ports/fake-user-plan-gateway'
 
 let app: INestApplication
+let testModule: TestingModule
 
 describe('RegisterController', () => {
   beforeEach(async () => {
-    const module = await Test.createTestingModule({
+    testModule = await Test.createTestingModule({
       imports: [
         ThrottlerModule.forRoot({
           throttlers: [{ ttl: 60000, limit: 300 }],
@@ -45,13 +52,23 @@ describe('RegisterController', () => {
         { provide: AuthConfigPort, useClass: FakeAuthConfig },
         { provide: PlansGatewayPort, useClass: FakePlansGateway },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
+
+        // Profile BC — auto-profile via domain event
+        { provide: ProfilesRepository, useClass: InMemoryProfilesRepository },
+        { provide: UserPlanGatewayPort, useClass: FakeUserPlanGateway },
+        OnUserRegistered,
       ],
     }).compile()
 
-    app = module.createNestApplication()
+    app = testModule.createNestApplication()
     app.use(cookieParser())
     app.useGlobalFilters(new AllExceptionsFilter())
     await app.init()
+  })
+
+  afterEach(() => {
+    DomainEvents.clearHandlers()
+    DomainEvents.clearMarkedAggregates()
   })
 
   it('should return tokens in body for mobile platform', async () => {
@@ -103,5 +120,26 @@ describe('RegisterController', () => {
     expect(refreshCookie).toContain('HttpOnly')
     expect(refreshCookie).toContain('SameSite=Strict')
     expect(refreshCookie).toContain('Path=/auth')
+  })
+
+  it('should create first profile automatically via domain event', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/auth/register')
+      .set('X-Platform', 'mobile')
+      .send({
+        name: 'João Silva',
+        email: 'joao@email.com',
+        password: 'Abc12345',
+        confirmPassword: 'Abc12345',
+      })
+
+    expect(response.status).toBe(201)
+
+    // Aguarda handler async do domain event executar
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    const profilesRepository = testModule.get(ProfilesRepository)
+    expect(profilesRepository.items).toHaveLength(1)
+    expect(profilesRepository.items[0].name).toBe('João Silva')
   })
 })
