@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { Test, TestingModule } from '@nestjs/testing'
-import { INestApplication } from '@nestjs/common'
+import type { TestingModule } from '@nestjs/testing'
+import { Test } from '@nestjs/testing'
+import type { INestApplication } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import request from 'supertest'
@@ -88,13 +89,11 @@ describe('CreateProfileController', () => {
   })
 
   it('should create profile with optional fields', async () => {
-    const response = await request(app.getHttpServer())
-      .post('/profiles')
-      .send({
-        name: 'Perfil Kids',
-        avatarUrl: 'https://example.com/avatar.png',
-        isKid: true,
-      })
+    const response = await request(app.getHttpServer()).post('/profiles').send({
+      name: 'Perfil Kids',
+      avatarUrl: 'https://example.com/avatar.png',
+      isKid: true,
+    })
 
     expect(response.status).toBe(201)
     expect(response.body.data.profile.avatarUrl).toBe(

@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Delete,
-  Param,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common'
+import { Controller, Delete, Param, HttpCode, HttpStatus } from '@nestjs/common'
 
 import { DeleteProfileUseCase } from '../../application/use-cases/delete-profile-use-case'
 import { CustomHttpException } from '@/shared/http/custom-http.exception'
@@ -16,10 +10,7 @@ export class DeleteProfileController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async handle(
-    @Param('id') id: string,
-    @GetUser('userId') userId: string,
-  ) {
+  async handle(@Param('id') id: string, @GetUser('userId') userId: string) {
     const result = await this.deleteProfileUseCase.execute({
       userId,
       profileId: id,

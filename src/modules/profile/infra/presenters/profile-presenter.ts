@@ -1,4 +1,4 @@
-import { Profile } from '../../domain/entities/profile'
+import type { Profile } from '../../domain/entities/profile'
 
 export class ProfilePresenter {
   static toHTTP(profile: Profile) {

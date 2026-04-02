@@ -1,6 +1,6 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Profile } from '../../domain/entities/profile'
-import { Profile as PrismaProfile } from '@/shared/database/generated/prisma'
+import type { Profile as PrismaProfile } from '@/shared/database/generated/prisma'
 
 export class PrismaProfileMapper {
   static toDomain(raw: PrismaProfile): Profile {

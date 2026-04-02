@@ -1,4 +1,4 @@
-import { Profile } from '../entities/profile'
+import type { Profile } from '../entities/profile'
 
 export abstract class ProfilesRepository {
   abstract findById(id: string): Promise<Profile | null>

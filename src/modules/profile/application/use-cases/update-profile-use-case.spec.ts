@@ -64,9 +64,7 @@ describe('UpdateProfileUseCase', () => {
 
     if (result.isRight()) {
       expect(result.value.profile.name).toBe('Nome Atualizado')
-      expect(result.value.profile.avatarUrl).toBe(
-        'https://example.com/old.png',
-      )
+      expect(result.value.profile.avatarUrl).toBe('https://example.com/old.png')
       expect(result.value.profile.isKid).toBe(false)
     }
   })

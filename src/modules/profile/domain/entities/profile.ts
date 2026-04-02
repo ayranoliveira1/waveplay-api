@@ -1,6 +1,6 @@
 import { Entity } from '@/core/entities/entity'
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import { Optional } from '@/core/types/optional'
+import type { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import type { Optional } from '@/core/types/optional'
 
 export interface ProfileProps {
   userId: string
@@ -56,7 +56,10 @@ export class Profile extends Entity<ProfileProps> {
   }
 
   static create(
-    props: Optional<ProfileProps, 'createdAt' | 'updatedAt' | 'avatarUrl' | 'isKid'>,
+    props: Optional<
+      ProfileProps,
+      'createdAt' | 'updatedAt' | 'avatarUrl' | 'isKid'
+    >,
     id?: UniqueEntityID,
   ) {
     return new Profile(
