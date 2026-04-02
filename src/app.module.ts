@@ -3,6 +3,7 @@ import { ThrottlerModule } from '@nestjs/throttler'
 import { DatabaseModule } from '@/shared/database/database.module'
 import { EnvModule } from '@/shared/env/env.module'
 import { RedisModule } from '@/shared/redis/redis.module'
+import { EmailModule } from '@/shared/email/email.module'
 import { IdentityModule } from '@/modules/identity/infra/identity.module'
 
 @Module({
@@ -18,6 +19,7 @@ import { IdentityModule } from '@/modules/identity/infra/identity.module'
     EnvModule,
     DatabaseModule,
     RedisModule,
+    EmailModule,
     IdentityModule,
   ],
 })
