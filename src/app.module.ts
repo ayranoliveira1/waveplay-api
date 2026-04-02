@@ -7,6 +7,7 @@ import { RedisModule } from '@/shared/redis/redis.module'
 import { EmailModule } from '@/shared/email/email.module'
 import { IdentityModule } from '@/modules/identity/infra/identity.module'
 import { ProfileModule } from '@/modules/profile/infra/profile.module'
+import { SubscriptionModule } from '@/modules/subscription/infra/subscription.module'
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ProfileModule } from '@/modules/profile/infra/profile.module'
     EmailModule,
     IdentityModule,
     ProfileModule,
+    SubscriptionModule,
   ],
   providers: [
     {
