@@ -20,7 +20,7 @@ export class OnUserRegistered implements EventHandler, OnModuleInit {
 
   setupSubscriptions(): void {
     DomainEvents.register(
-      this.handleEvent.bind(this),
+      (event: UserRegisteredEvent) => this.handleEvent(event),
       UserRegisteredEvent.name,
     )
   }

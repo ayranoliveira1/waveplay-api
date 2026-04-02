@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 
 import { DomainEvents } from '@/core/events/domain-events'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { OnUserRegistered } from './on-user-registered'
 import { InMemoryProfilesRepository } from 'test/repositories/in-memory-profiles-repository'
 import { FakeUserPlanGateway } from 'test/ports/fake-user-plan-gateway'
@@ -60,10 +61,6 @@ describe('OnUserRegistered', () => {
   })
 
   it('should not create profile when user is reconstituted (has existing id)', async () => {
-    const { UniqueEntityID } = await import(
-      '@/core/entities/unique-entity-id'
-    )
-
     // User com id existente (reconstituído do banco) não emite evento
     const user = User.create(
       {

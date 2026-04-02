@@ -7,11 +7,12 @@ export class PrismaUserPlanGateway implements UserPlanGatewayPort {
   constructor(private prisma: PrismaService) {}
 
   async getMaxProfiles(userId: string): Promise<number> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const subscription = await this.prisma.subscription.findFirst({
+      where: { userId, status: 'active' },
       include: { plan: { select: { maxProfiles: true } } },
+      orderBy: { startedAt: 'desc' },
     })
 
-    return user?.plan?.maxProfiles ?? 1
+    return subscription?.plan?.maxProfiles ?? 1
   }
 }
