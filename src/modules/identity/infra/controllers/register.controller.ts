@@ -1,0 +1,77 @@
+import {
+  Controller,
+  Post,
+  Body,
+  Req,
+  Res,
+  HttpCode,
+  HttpStatus,
+  UsePipes,
+} from '@nestjs/common'
+import type { Request, Response } from 'express'
+import { z } from 'zod'
+
+import { RegisterUseCase } from '../../application/use-cases/register-use-case'
+import { ZodValidationPipe } from '@/shared/pipes/zod-validation.pipe'
+import { CustomHttpException } from '@/shared/http/custom-http.exception'
+import { Public } from '../decorators/public.decorator'
+import { UserPresenter } from '../presenters/user-presenter'
+import { isMobile, setRefreshTokenCookie } from './platform-utils'
+
+const registerSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório'),
+  email: z.string().email('Email inválido'),
+  password: z.string(),
+  confirmPassword: z.string(),
+})
+
+type RegisterBody = z.infer<typeof registerSchema>
+
+@Controller('/auth')
+export class RegisterController {
+  constructor(private registerUseCase: RegisterUseCase) {}
+
+  @Public()
+  @Post('/register')
+  @HttpCode(HttpStatus.CREATED)
+  @UsePipes(new ZodValidationPipe(registerSchema))
+  async handle(@Body() body: RegisterBody, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const result = await this.registerUseCase.execute({
+      name: body.name,
+      email: body.email,
+      password: body.password,
+      confirmPassword: body.confirmPassword,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    })
+
+    if (result.isLeft()) {
+      throw new CustomHttpException(result.value)
+    }
+
+    const { user, accessToken, refreshToken } = result.value
+
+    if (isMobile(req)) {
+      return {
+        success: true,
+        data: {
+          user: UserPresenter.toHTTP(user),
+          accessToken,
+          refreshToken,
+        },
+        error: null,
+      }
+    }
+
+    setRefreshTokenCookie(res, refreshToken)
+
+    return {
+      success: true,
+      data: {
+        user: UserPresenter.toHTTP(user),
+        accessToken,
+      },
+      error: null,
+    }
+  }
+}
