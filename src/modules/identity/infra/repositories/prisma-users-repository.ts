@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common'
+import { Prisma } from '@/shared/database/generated/prisma'
 import { PrismaService } from '@/shared/database/prisma.service'
 import { UsersRepository } from '../../domain/repositories/users-repository'
 import { User } from '../../domain/entities/user'
+import { EmailAlreadyExistsError } from '../../domain/errors/email-already-exists.error'
 import { PrismaUserMapper } from '../mappers/prisma-user-mapper'
 
 @Injectable()
@@ -35,7 +37,18 @@ export class PrismaUsersRepository implements UsersRepository {
   async create(user: User): Promise<void> {
     const data = PrismaUserMapper.toPrisma(user)
 
-    await this.prisma.user.create({ data })
+    try {
+      await this.prisma.user.create({ data })
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new EmailAlreadyExistsError()
+      }
+
+      throw error
+    }
   }
 
   async save(user: User): Promise<void> {

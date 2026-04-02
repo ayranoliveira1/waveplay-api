@@ -1,5 +1,6 @@
 import { UsersRepository } from '@/modules/identity/domain/repositories/users-repository'
 import { User } from '@/modules/identity/domain/entities/user'
+import { EmailAlreadyExistsError } from '@/modules/identity/domain/errors/email-already-exists.error'
 
 export class InMemoryUsersRepository implements UsersRepository {
   public items: User[] = []
@@ -13,6 +14,12 @@ export class InMemoryUsersRepository implements UsersRepository {
   }
 
   async create(user: User): Promise<void> {
+    const exists = this.items.some((item) => item.email === user.email)
+
+    if (exists) {
+      throw new EmailAlreadyExistsError()
+    }
+
     this.items.push(user)
   }
 
