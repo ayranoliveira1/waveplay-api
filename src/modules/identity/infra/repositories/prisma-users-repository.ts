@@ -40,15 +40,15 @@ export class PrismaUsersRepository implements UsersRepository {
 
     try {
       await this.prisma.user.create({ data })
-    } catch (error) {
+    } catch (error: any) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
+        error === ('P2002' as unknown)
       ) {
         throw new EmailAlreadyExistsError()
       }
 
-      throw error
+      throw error as Error
     }
 
     DomainEvents.dispatchEventsForAggregate(user.id)

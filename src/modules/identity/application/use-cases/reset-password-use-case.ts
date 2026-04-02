@@ -82,9 +82,7 @@ export class ResetPasswordUseCase {
 
     await this.refreshTokensRepository.revokeAllByUserId(storedToken.userId)
 
-    this.logger.log(
-      `Password reset completed for user: ${storedToken.userId}`,
-    )
+    this.logger.log(`Password reset completed for user: ${storedToken.userId}`)
 
     return right({ message: 'Senha alterada com sucesso' })
   }

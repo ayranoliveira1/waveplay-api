@@ -6,7 +6,6 @@ import { InMemoryUsersRepository } from 'test/repositories/in-memory-users-repos
 import { InMemoryRefreshTokensRepository } from 'test/repositories/in-memory-refresh-tokens-repository'
 import { FakeHasher } from 'test/cryptography/fake-hasher'
 import { FakeEncrypter } from 'test/cryptography/fake-encrypter'
-import { FakePlansGateway } from 'test/ports/fake-plans-gateway'
 import { FakeAuthConfig } from 'test/ports/fake-auth-config'
 import { EmailAlreadyExistsError } from '../../domain/errors/email-already-exists.error'
 import { WeakPasswordError } from '../../domain/errors/weak-password.error'
@@ -18,7 +17,6 @@ let usersRepository: InMemoryUsersRepository
 let refreshTokensRepository: InMemoryRefreshTokensRepository
 let hasher: FakeHasher
 let encrypter: FakeEncrypter
-let plansGateway: FakePlansGateway
 let authConfig: FakeAuthConfig
 let sut: RegisterUseCase
 
@@ -28,7 +26,6 @@ describe('RegisterUseCase', () => {
     refreshTokensRepository = new InMemoryRefreshTokensRepository()
     hasher = new FakeHasher()
     encrypter = new FakeEncrypter()
-    plansGateway = new FakePlansGateway()
     authConfig = new FakeAuthConfig()
 
     sut = new RegisterUseCase(
@@ -36,7 +33,6 @@ describe('RegisterUseCase', () => {
       hasher,
       encrypter,
       refreshTokensRepository,
-      plansGateway,
       authConfig,
     )
   })
@@ -95,20 +91,6 @@ describe('RegisterUseCase', () => {
     const savedUser = usersRepository.items[0]
     expect(savedUser.passwordHash).toBe('Abc12345-hashed')
     expect(savedUser.passwordHash).not.toBe('Abc12345')
-  })
-
-  it('should assign the Básico plan to the user', async () => {
-    const result = await sut.execute({
-      name: 'João Silva',
-      email: 'joao@email.com',
-      password: 'Abc12345',
-      confirmPassword: 'Abc12345',
-    })
-
-    expect(result.isRight()).toBe(true)
-
-    const savedUser = usersRepository.items[0]
-    expect(savedUser.planId).toBe('plan-basico-id')
   })
 
   it('should return error when password has less than 8 characters', async () => {
@@ -201,9 +183,7 @@ describe('RegisterUseCase', () => {
 
     if (result.isRight()) {
       const rawToken = result.value.refreshToken
-      const expectedHash = createHash('sha256')
-        .update(rawToken)
-        .digest('hex')
+      const expectedHash = createHash('sha256').update(rawToken).digest('hex')
 
       const storedToken = refreshTokensRepository.items[0]
       expect(storedToken.tokenHash).toBe(expectedHash)

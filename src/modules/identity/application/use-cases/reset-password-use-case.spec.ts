@@ -10,7 +10,6 @@ import { User } from '../../domain/entities/user'
 import { RefreshToken } from '../../domain/entities/refresh-token'
 import { PasswordResetToken } from '../../domain/entities/password-reset-token'
 import { InvalidResetTokenError } from '../../domain/errors/invalid-reset-token.error'
-import { WeakPasswordError } from '../../domain/errors/weak-password.error'
 
 let usersRepository: InMemoryUsersRepository
 let passwordResetTokensRepository: InMemoryPasswordResetTokensRepository
@@ -24,8 +23,7 @@ let rawToken: string
 describe('ResetPasswordUseCase', () => {
   beforeEach(async () => {
     usersRepository = new InMemoryUsersRepository()
-    passwordResetTokensRepository =
-      new InMemoryPasswordResetTokensRepository()
+    passwordResetTokensRepository = new InMemoryPasswordResetTokensRepository()
     refreshTokensRepository = new InMemoryRefreshTokensRepository()
     hasher = new FakeHasher()
 
@@ -40,7 +38,6 @@ describe('ResetPasswordUseCase', () => {
       name: 'João Silva',
       email: 'joao@email.com',
       passwordHash: 'Abc12345-hashed',
-      planId: 'plan-basico-id',
     })
 
     await usersRepository.create(user)

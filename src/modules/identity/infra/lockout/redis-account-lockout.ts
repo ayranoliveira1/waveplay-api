@@ -33,9 +33,6 @@ export class RedisAccountLockout implements AccountLockoutPort {
   }
 
   async resetFailures(email: string): Promise<void> {
-    await this.redis.del(
-      `lockout:${email}:failures`,
-      `lockout:${email}:locked`,
-    )
+    await this.redis.del(`lockout:${email}:failures`, `lockout:${email}:locked`)
   }
 }

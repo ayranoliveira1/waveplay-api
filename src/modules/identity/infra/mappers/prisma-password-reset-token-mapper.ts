@@ -1,6 +1,6 @@
 import { PasswordResetToken } from '../../domain/entities/password-reset-token'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import { PasswordResetToken as PrismaPasswordResetToken } from '@/shared/database/generated/prisma'
+import type { PasswordResetToken as PrismaPasswordResetToken } from '@/shared/database/generated/prisma'
 
 export class PrismaPasswordResetTokenMapper {
   static toDomain(raw: PrismaPasswordResetToken): PasswordResetToken {

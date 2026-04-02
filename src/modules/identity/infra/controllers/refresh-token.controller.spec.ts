@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Test } from '@nestjs/testing'
-import { INestApplication } from '@nestjs/common'
+import type { INestApplication } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import request from 'supertest'

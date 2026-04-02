@@ -13,7 +13,6 @@ describe('User', () => {
     expect(user.name).toBe('John Doe')
     expect(user.email).toBe('john@example.com')
     expect(user.passwordHash).toBe('hashed-password')
-    expect(user.planId).toBeNull()
     expect(user.createdAt).toBeInstanceOf(Date)
     expect(user.updatedAt).toBeInstanceOf(Date)
     expect(user.id).toBeDefined()
@@ -73,16 +72,5 @@ describe('User', () => {
     )
 
     expect(user1.equals(user2)).toBe(true)
-  })
-
-  it('should create a user with planId', () => {
-    const user = User.create({
-      name: 'John Doe',
-      email: 'john@example.com',
-      passwordHash: 'hashed-password',
-      planId: 'plan-basico-id',
-    })
-
-    expect(user.planId).toBe('plan-basico-id')
   })
 })

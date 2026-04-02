@@ -1,4 +1,4 @@
-import { RefreshToken } from '../entities/refresh-token'
+import type { RefreshToken } from '../entities/refresh-token'
 
 export abstract class RefreshTokensRepository {
   abstract findByTokenHash(tokenHash: string): Promise<RefreshToken | null>

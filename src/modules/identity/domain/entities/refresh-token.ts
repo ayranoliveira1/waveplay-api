@@ -1,6 +1,6 @@
 import { Entity } from '@/core/entities/entity'
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import { Optional } from '@/core/types/optional'
+import type { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import type { Optional } from '@/core/types/optional'
 import { createHash, randomUUID } from 'node:crypto'
 
 export interface RefreshTokenProps {
@@ -81,9 +81,7 @@ export class RefreshToken extends Entity<RefreshTokenProps> {
     ipAddress?: string
     userAgent?: string
   }) {
-    const tokenHash = createHash('sha256')
-      .update(params.rawToken)
-      .digest('hex')
+    const tokenHash = createHash('sha256').update(params.rawToken).digest('hex')
 
     const refreshToken = RefreshToken.create({
       userId: params.userId,

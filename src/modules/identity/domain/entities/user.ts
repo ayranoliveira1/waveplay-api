@@ -1,13 +1,12 @@
 import { AggregateRoot } from '@/core/entities/aggregate-root'
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import { Optional } from '@/core/types/optional'
+import type { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import type { Optional } from '@/core/types/optional'
 import { UserRegisteredEvent } from '../events/user-registered-event'
 
 export interface UserProps {
   name: string
   email: string
   passwordHash: string
-  planId: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -40,15 +39,6 @@ export class User extends AggregateRoot<UserProps> {
     this.touch()
   }
 
-  get planId() {
-    return this.props.planId
-  }
-
-  set planId(planId: string | null) {
-    this.props.planId = planId
-    this.touch()
-  }
-
   get createdAt() {
     return this.props.createdAt
   }
@@ -62,7 +52,7 @@ export class User extends AggregateRoot<UserProps> {
   }
 
   static create(
-    props: Optional<UserProps, 'createdAt' | 'updatedAt' | 'planId'>,
+    props: Optional<UserProps, 'createdAt' | 'updatedAt'>,
     id?: UniqueEntityID,
   ) {
     const isNewUser = !id
@@ -70,7 +60,6 @@ export class User extends AggregateRoot<UserProps> {
     const user = new User(
       {
         ...props,
-        planId: props.planId ?? null,
         createdAt: props.createdAt ?? new Date(),
         updatedAt: props.updatedAt ?? new Date(),
       },

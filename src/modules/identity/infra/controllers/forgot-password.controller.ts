@@ -20,7 +20,9 @@ export class ForgotPasswordController {
   @Post('/forgot-password')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  async handle(@Body(new ZodValidationPipe(forgotPasswordSchema)) body: ForgotPasswordBody) {
+  async handle(
+    @Body(new ZodValidationPipe(forgotPasswordSchema)) body: ForgotPasswordBody,
+  ) {
     const result = await this.forgotPasswordUseCase.execute({
       email: body.email,
     })

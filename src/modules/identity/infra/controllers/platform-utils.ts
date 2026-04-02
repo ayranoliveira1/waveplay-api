@@ -6,10 +6,7 @@ export function isMobile(request: Request): boolean {
   return request.headers['x-platform'] === 'mobile'
 }
 
-export function setRefreshTokenCookie(
-  response: Response,
-  token: string,
-): void {
+export function setRefreshTokenCookie(response: Response, token: string): void {
   response.cookie('refreshToken', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

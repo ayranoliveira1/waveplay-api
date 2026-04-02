@@ -16,8 +16,7 @@ let sut: ForgotPasswordUseCase
 describe('ForgotPasswordUseCase', () => {
   beforeEach(async () => {
     usersRepository = new InMemoryUsersRepository()
-    passwordResetTokensRepository =
-      new InMemoryPasswordResetTokensRepository()
+    passwordResetTokensRepository = new InMemoryPasswordResetTokensRepository()
     emailSender = new FakeEmailSender()
     authConfig = new FakeAuthConfig()
 
@@ -32,7 +31,6 @@ describe('ForgotPasswordUseCase', () => {
       name: 'João Silva',
       email: 'joao@email.com',
       passwordHash: 'Abc12345-hashed',
-      planId: 'plan-basico-id',
     })
 
     await usersRepository.create(user)

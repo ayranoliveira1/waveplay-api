@@ -1,4 +1,4 @@
-import { PasswordResetToken } from '../entities/password-reset-token'
+import type { PasswordResetToken } from '../entities/password-reset-token'
 
 export abstract class PasswordResetTokensRepository {
   abstract findByTokenHash(

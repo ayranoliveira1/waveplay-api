@@ -11,7 +11,7 @@ export class JwtEncrypter implements EncrypterPort {
     options?: { expiresIn?: string },
   ): Promise<string> {
     return this.jwt.signAsync(payload, {
-      expiresIn: options?.expiresIn as string | undefined,
+      expiresIn: options?.expiresIn,
     } as Record<string, unknown>)
   }
 

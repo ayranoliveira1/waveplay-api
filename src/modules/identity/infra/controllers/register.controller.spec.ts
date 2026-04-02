@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { Test, TestingModule } from '@nestjs/testing'
-import { INestApplication } from '@nestjs/common'
+import type { TestingModule } from '@nestjs/testing'
+import { Test } from '@nestjs/testing'
+import type { INestApplication } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import request from 'supertest'
@@ -13,13 +14,11 @@ import { InMemoryRefreshTokensRepository } from 'test/repositories/in-memory-ref
 import { FakeHasher } from 'test/cryptography/fake-hasher'
 import { FakeEncrypter } from 'test/cryptography/fake-encrypter'
 import { FakeAuthConfig } from 'test/ports/fake-auth-config'
-import { FakePlansGateway } from 'test/ports/fake-plans-gateway'
 import { UsersRepository } from '../../domain/repositories/users-repository'
 import { RefreshTokensRepository } from '../../domain/repositories/refresh-tokens-repository'
 import { HasherPort } from '../../application/ports/hasher.port'
 import { EncrypterPort } from '../../application/ports/encrypter.port'
 import { AuthConfigPort } from '../../application/ports/auth-config.port'
-import { PlansGatewayPort } from '../../application/ports/plans-gateway.port'
 import { AllExceptionsFilter } from '@/shared/filters/nest-exception-filter'
 import { DomainEvents } from '@/core/events/domain-events'
 import { OnUserRegistered } from '@/modules/profile/application/subscribers/on-user-registered'
@@ -27,6 +26,13 @@ import { ProfilesRepository } from '@/modules/profile/domain/repositories/profil
 import { UserPlanGatewayPort } from '@/modules/profile/application/ports/user-plan-gateway.port'
 import { InMemoryProfilesRepository } from 'test/repositories/in-memory-profiles-repository'
 import { FakeUserPlanGateway } from 'test/ports/fake-user-plan-gateway'
+import { OnUserRegisteredSubscription } from '@/modules/subscription/application/subscribers/on-user-registered'
+import { SubscriptionsRepository } from '@/modules/subscription/domain/repositories/subscriptions-repository'
+import { PlansRepository } from '@/modules/subscription/domain/repositories/plans-repository'
+import { InMemorySubscriptionsRepository } from 'test/repositories/in-memory-subscriptions-repository'
+import { InMemoryPlansRepository } from 'test/repositories/in-memory-plans-repository'
+import { Plan } from '@/modules/subscription/domain/entities/plan'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 let app: INestApplication
 let testModule: TestingModule
@@ -50,13 +56,38 @@ describe('RegisterController', () => {
         { provide: HasherPort, useClass: FakeHasher },
         { provide: EncrypterPort, useClass: FakeEncrypter },
         { provide: AuthConfigPort, useClass: FakeAuthConfig },
-        { provide: PlansGatewayPort, useClass: FakePlansGateway },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
 
         // Profile BC — auto-profile via domain event
         { provide: ProfilesRepository, useClass: InMemoryProfilesRepository },
         { provide: UserPlanGatewayPort, useClass: FakeUserPlanGateway },
         OnUserRegistered,
+
+        // Subscription BC — auto-subscription via domain event
+        {
+          provide: SubscriptionsRepository,
+          useClass: InMemorySubscriptionsRepository,
+        },
+        {
+          provide: PlansRepository,
+          useFactory: () => {
+            const repo = new InMemoryPlansRepository()
+            repo.items.push(
+              Plan.create(
+                {
+                  name: 'Básico',
+                  slug: 'basico',
+                  priceCents: 0,
+                  maxProfiles: 1,
+                  maxStreams: 1,
+                },
+                new UniqueEntityID('plan-basico-id'),
+              ),
+            )
+            return repo
+          },
+        },
+        OnUserRegisteredSubscription,
       ],
     }).compile()
 

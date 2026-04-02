@@ -22,7 +22,9 @@ export class ResetPasswordController {
   @Post('/reset-password')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  async handle(@Body(new ZodValidationPipe(resetPasswordSchema)) body: ResetPasswordBody) {
+  async handle(
+    @Body(new ZodValidationPipe(resetPasswordSchema)) body: ResetPasswordBody,
+  ) {
     const result = await this.resetPasswordUseCase.execute({
       token: body.token,
       newPassword: body.password,

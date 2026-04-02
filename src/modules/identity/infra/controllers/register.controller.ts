@@ -35,7 +35,11 @@ export class RegisterController {
   @Post('/register')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.CREATED)
-  async handle(@Body(new ZodValidationPipe(registerSchema)) body: RegisterBody, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async handle(
+    @Body(new ZodValidationPipe(registerSchema)) body: RegisterBody,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const result = await this.registerUseCase.execute({
       name: body.name,
       email: body.email,

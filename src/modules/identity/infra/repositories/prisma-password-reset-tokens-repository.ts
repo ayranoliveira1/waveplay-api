@@ -5,14 +5,10 @@ import { PasswordResetToken } from '../../domain/entities/password-reset-token'
 import { PrismaPasswordResetTokenMapper } from '../mappers/prisma-password-reset-token-mapper'
 
 @Injectable()
-export class PrismaPasswordResetTokensRepository
-  implements PasswordResetTokensRepository
-{
+export class PrismaPasswordResetTokensRepository implements PasswordResetTokensRepository {
   constructor(private prisma: PrismaService) {}
 
-  async findByTokenHash(
-    tokenHash: string,
-  ): Promise<PasswordResetToken | null> {
+  async findByTokenHash(tokenHash: string): Promise<PasswordResetToken | null> {
     const token = await this.prisma.passwordResetToken.findUnique({
       where: { tokenHash },
     })

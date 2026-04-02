@@ -42,7 +42,6 @@ describe('AuthenticateUseCase', () => {
       name: 'João Silva',
       email: 'joao@email.com',
       passwordHash: '12345678-hashed',
-      planId: 'plan-basico-id',
     })
 
     await usersRepository.create(user)

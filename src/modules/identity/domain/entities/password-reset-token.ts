@@ -1,7 +1,7 @@
 import { Entity } from '@/core/entities/entity'
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import { Optional } from '@/core/types/optional'
-import { createHash, randomBytes } from 'node:crypto'
+import type { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import type { Optional } from '@/core/types/optional'
+import { createHash } from 'node:crypto'
 
 export interface PasswordResetTokenProps {
   userId: string
@@ -63,9 +63,7 @@ export class PasswordResetToken extends Entity<PasswordResetTokenProps> {
     userId: string
     expiresInMs: number
   }) {
-    const tokenHash = createHash('sha256')
-      .update(params.rawToken)
-      .digest('hex')
+    const tokenHash = createHash('sha256').update(params.rawToken).digest('hex')
 
     const passwordResetToken = PasswordResetToken.create({
       userId: params.userId,

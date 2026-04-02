@@ -52,7 +52,9 @@ describe('LogoutAllUseCase', () => {
     expect(result.isRight()).toBe(true)
 
     if (result.isRight()) {
-      expect(result.value.message).toBe('Todas as sessões encerradas com sucesso')
+      expect(result.value.message).toBe(
+        'Todas as sessões encerradas com sucesso',
+      )
     }
 
     // Todos os tokens do user-1 revogados

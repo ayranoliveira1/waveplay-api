@@ -33,7 +33,11 @@ export class AuthenticateController {
   @Post('/login')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  async handle(@Body(new ZodValidationPipe(authenticateSchema)) body: AuthenticateBody, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async handle(
+    @Body(new ZodValidationPipe(authenticateSchema)) body: AuthenticateBody,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const result = await this.authenticateUseCase.execute({
       email: body.email,
       password: body.password,

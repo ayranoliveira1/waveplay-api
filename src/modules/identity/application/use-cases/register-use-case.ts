@@ -8,7 +8,6 @@ import { UsersRepository } from '../../domain/repositories/users-repository'
 import { RefreshTokensRepository } from '../../domain/repositories/refresh-tokens-repository'
 import { HasherPort } from '../ports/hasher.port'
 import { EncrypterPort } from '../ports/encrypter.port'
-import { PlansGatewayPort } from '../ports/plans-gateway.port'
 import { AuthConfigPort } from '../ports/auth-config.port'
 import { EmailAlreadyExistsError } from '../../domain/errors/email-already-exists.error'
 import { WeakPasswordError } from '../../domain/errors/weak-password.error'
@@ -41,7 +40,6 @@ export class RegisterUseCase {
     private hasher: HasherPort,
     private encrypter: EncrypterPort,
     private refreshTokensRepository: RefreshTokensRepository,
-    private plansGateway: PlansGatewayPort,
     private authConfig: AuthConfigPort,
   ) {}
 
@@ -70,19 +68,10 @@ export class RegisterUseCase {
 
     const passwordHash = await this.hasher.hash(password)
 
-    const plan = await this.plansGateway.findBySlug('basico')
-
-    if (!plan) {
-      this.logger.warn(
-        'Default plan "basico" not found — user created without plan',
-      )
-    }
-
     const user = User.create({
       name,
       email,
       passwordHash,
-      planId: plan?.id ?? null,
     })
 
     await this.usersRepository.create(user)

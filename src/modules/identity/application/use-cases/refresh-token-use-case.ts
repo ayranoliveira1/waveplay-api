@@ -50,9 +50,7 @@ export class RefreshTokenUseCase {
     // Detecção de roubo: token já foi revogado mas alguém está tentando usá-lo
     if (storedToken.isRevoked()) {
       await this.refreshTokensRepository.revokeAllByFamily(storedToken.family)
-      this.logger.warn(
-        `Token theft detected for family: ${storedToken.family}`,
-      )
+      this.logger.warn(`Token theft detected for family: ${storedToken.family}`)
       return left(new TokenTheftDetectedError())
     }
 

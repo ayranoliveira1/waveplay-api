@@ -64,9 +64,7 @@ export class ForgotPasswordUseCase {
         )
       })
 
-    this.logger.log(
-      `Password reset requested for user: ${user.id.toValue()}`,
-    )
+    this.logger.log(`Password reset requested for user: ${user.id.toValue()}`)
 
     return right({
       message: 'Se o email existir, um link de recuperação foi enviado',

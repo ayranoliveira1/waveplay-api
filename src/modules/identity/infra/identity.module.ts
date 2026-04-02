@@ -40,12 +40,10 @@ import { HasherPort } from '../application/ports/hasher.port'
 import { EncrypterPort } from '../application/ports/encrypter.port'
 import { AuthConfigPort } from '../application/ports/auth-config.port'
 import { AccountLockoutPort } from '../application/ports/account-lockout.port'
-import { PlansGatewayPort } from '../application/ports/plans-gateway.port'
 import { Argon2Hasher } from './cryptography/argon2-hasher'
 import { JwtEncrypter } from './cryptography/jwt-encrypter'
 import { EnvAuthConfig } from './config/env-auth-config'
 import { RedisAccountLockout } from './lockout/redis-account-lockout'
-import { PrismaPlansGateway } from './gateways/prisma-plans-gateway'
 
 @Module({
   imports: [
@@ -94,7 +92,6 @@ import { PrismaPlansGateway } from './gateways/prisma-plans-gateway'
     { provide: EncrypterPort, useClass: JwtEncrypter },
     { provide: AuthConfigPort, useClass: EnvAuthConfig },
     { provide: AccountLockoutPort, useClass: RedisAccountLockout },
-    { provide: PlansGatewayPort, useClass: PrismaPlansGateway },
 
     // Strategy
     JwtStrategy,

@@ -1,6 +1,6 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { RefreshToken } from '../../domain/entities/refresh-token'
-import { RefreshToken as PrismaRefreshToken } from '@/shared/database/generated/prisma'
+import type { RefreshToken as PrismaRefreshToken } from '@/shared/database/generated/prisma'
 
 export class PrismaRefreshTokenMapper {
   static toDomain(raw: PrismaRefreshToken): RefreshToken {
