@@ -79,7 +79,9 @@ waveplay-api/
 │       │   │       ├── account-locked.error.ts
 │       │   │       ├── invalid-reset-token.error.ts
 │       │   │       ├── weak-password.error.ts
-│       │   │       └── password-mismatch.error.ts
+│       │   │       ├── password-mismatch.error.ts
+│       │   │       ├── invalid-refresh-token.error.ts
+│       │   │       └── token-theft-detected.error.ts
 │       │   ├── application/
 │       │   │   ├── ports/
 │       │   │   │   ├── hasher.port.ts       # Interface: hash(), compare()
