@@ -226,7 +226,9 @@ Revoga todos os tokens da family atual (sessão do dispositivo).
 ```json
 {
   "success": true,
-  "data": null,
+  "data": {
+    "message": "Sessão encerrada com sucesso"
+  },
   "error": null
 }
 ```
@@ -244,7 +246,9 @@ Revoga TODAS as families do usuário (logout de todos os dispositivos).
 ```json
 {
   "success": true,
-  "data": null,
+  "data": {
+    "message": "Todas as sessões encerradas com sucesso"
+  },
   "error": null
 }
 ```
