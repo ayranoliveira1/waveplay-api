@@ -68,7 +68,8 @@ waveplay-api/
 │       │   ├── domain/
 │       │   │   ├── entities/
 │       │   │   │   ├── user.ts
-│       │   │   │   └── refresh-token.ts
+│       │   │   │   ├── refresh-token.ts
+│       │   │   │   └── password-reset-token.ts
 │       │   │   ├── repositories/
 │       │   │   │   ├── users-repository.ts
 │       │   │   │   ├── refresh-tokens-repository.ts
