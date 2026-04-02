@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '@/shared/database/prisma.service'
-import {
-  PasswordResetTokenProps,
-  PasswordResetTokensRepository,
-} from '../../domain/repositories/password-reset-tokens-repository'
+import { PasswordResetTokensRepository } from '../../domain/repositories/password-reset-tokens-repository'
+import { PasswordResetToken } from '../../domain/entities/password-reset-token'
 import { PrismaPasswordResetTokenMapper } from '../mappers/prisma-password-reset-token-mapper'
 
 @Injectable()
@@ -14,7 +12,7 @@ export class PrismaPasswordResetTokensRepository
 
   async findByTokenHash(
     tokenHash: string,
-  ): Promise<PasswordResetTokenProps | null> {
+  ): Promise<PasswordResetToken | null> {
     const token = await this.prisma.passwordResetToken.findUnique({
       where: { tokenHash },
     })
@@ -26,7 +24,7 @@ export class PrismaPasswordResetTokensRepository
     return PrismaPasswordResetTokenMapper.toDomain(token)
   }
 
-  async create(token: PasswordResetTokenProps): Promise<void> {
+  async create(token: PasswordResetToken): Promise<void> {
     const data = PrismaPasswordResetTokenMapper.toPrisma(token)
 
     await this.prisma.passwordResetToken.create({ data })

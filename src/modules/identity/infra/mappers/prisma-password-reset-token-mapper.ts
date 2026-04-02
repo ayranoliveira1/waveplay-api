@@ -1,21 +1,24 @@
-import { PasswordResetTokenProps } from '../../domain/repositories/password-reset-tokens-repository'
+import { PasswordResetToken } from '../../domain/entities/password-reset-token'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { PasswordResetToken as PrismaPasswordResetToken } from '@/shared/database/generated/prisma'
 
 export class PrismaPasswordResetTokenMapper {
-  static toDomain(raw: PrismaPasswordResetToken): PasswordResetTokenProps {
-    return {
-      id: raw.id,
-      userId: raw.userId,
-      tokenHash: raw.tokenHash,
-      expiresAt: raw.expiresAt,
-      usedAt: raw.usedAt,
-      createdAt: raw.createdAt,
-    }
+  static toDomain(raw: PrismaPasswordResetToken): PasswordResetToken {
+    return PasswordResetToken.create(
+      {
+        userId: raw.userId,
+        tokenHash: raw.tokenHash,
+        expiresAt: raw.expiresAt,
+        usedAt: raw.usedAt,
+        createdAt: raw.createdAt,
+      },
+      new UniqueEntityID(raw.id),
+    )
   }
 
-  static toPrisma(token: PasswordResetTokenProps) {
+  static toPrisma(token: PasswordResetToken) {
     return {
-      id: token.id,
+      id: token.id.toValue(),
       userId: token.userId,
       tokenHash: token.tokenHash,
       expiresAt: token.expiresAt,
