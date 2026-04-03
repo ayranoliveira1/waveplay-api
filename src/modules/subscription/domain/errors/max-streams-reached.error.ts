@@ -6,7 +6,7 @@ export class MaxStreamsReachedError extends UseCaseError<never> {
       statusCode: 403,
       errors: [
         {
-          message: `Limite de telas simultâneas atingido. Seu plano permite ${maxStreams} tela(s)`,
+          message: `Você atingiu o limite de ${maxStreams} tela(s) simultânea(s) do seu plano. Pare uma reprodução em outro dispositivo ou faça upgrade.`,
         },
       ],
     })

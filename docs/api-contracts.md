@@ -501,7 +501,7 @@ Registra início de reprodução. Valida limite de telas do plano.
 
 | Status | Mensagem |
 |--------|----------|
-| 403 | "Limite de telas simultâneas atingido. Seu plano permite X tela(s)" |
+| 403 | "Você atingiu o limite de X tela(s) simultânea(s) do seu plano. Pare uma reprodução em outro dispositivo ou faça upgrade." |
 
 ---
 
