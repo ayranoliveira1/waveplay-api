@@ -582,6 +582,7 @@ Todas as rotas exigem `Authorization: Bearer {accessToken}`.
       {
         "id": 550,
         "title": "Clube da Luta",
+        "overview": "Um homem deprimido que sofre de insônia...",
         "posterPath": "/pB8BM7pdSp6B6Ih7QI4S2t0POsFj.jpg",
         "backdropPath": "/hZkgoQYus5dXo3H8T7Uef6DNknx.jpg",
         "rating": 8.4,
@@ -595,6 +596,8 @@ Todas as rotas exigem `Authorization: Bearer {accessToken}`.
   "error": null
 }
 ```
+
+Para séries, `title` é o nome normalizado (TMDB retorna `name` para TV). O campo `type` é `"movie"` ou `"series"`. O campo `releaseDate` é `release_date` para filmes ou `first_air_date` para séries.
 
 ---
 
@@ -613,11 +616,13 @@ Todas as rotas exigem `Authorization: Bearer {accessToken}`.
       "posterPath": "/pB8BM7pdSp6B6Ih7QI4S2t0POsFj.jpg",
       "backdropPath": "/hZkgoQYus5dXo3H8T7Uef6DNknx.jpg",
       "rating": 8.4,
+      "voteCount": 26000,
       "runtime": 139,
       "releaseDate": "1999-10-15",
       "genres": [{ "id": 18, "name": "Drama" }],
       "tagline": "Mischief. Mayhem. Soap.",
-      "status": "Released"
+      "status": "Released",
+      "originalLanguage": "en"
     }
   },
   "error": null
@@ -641,17 +646,20 @@ Todas as rotas exigem `Authorization: Bearer {accessToken}`.
       "posterPath": "/ggFHVNu6YYI5L9pCfOacjizRGt.jpg",
       "backdropPath": "/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg",
       "rating": 8.9,
+      "voteCount": 12000,
       "firstAirDate": "2008-01-20",
       "genres": [{ "id": 18, "name": "Drama" }],
       "tagline": "",
       "status": "Ended",
       "numberOfSeasons": 5,
       "numberOfEpisodes": 62,
+      "originalLanguage": "en",
       "seasons": [
         {
           "id": 3572,
           "seasonNumber": 1,
           "name": "Temporada 1",
+          "overview": "A primeira temporada de Breaking Bad...",
           "episodeCount": 7,
           "posterPath": "/...",
           "airDate": "2008-01-20"
@@ -707,10 +715,12 @@ Todas as rotas exigem `Authorization: Bearer {accessToken}`.
       {
         "id": 1396,
         "title": "Breaking Bad",
+        "overview": "Um professor de química...",
         "posterPath": "/ggFHVNu6YYI5L9pCfOacjizRGt.jpg",
         "backdropPath": "/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg",
         "rating": 8.9,
-        "type": "series"
+        "type": "series",
+        "releaseDate": "2008-01-20"
       }
     ],
     "page": 1,
@@ -769,6 +779,82 @@ Response igual ao `/catalog/trending`.
 ### GET /catalog/series/on-the-air
 
 Response igual ao `/catalog/trending`.
+
+---
+
+### GET /catalog/movies/:id/similar
+
+Filmes semelhantes. Usado no carrossel "Semelhantes" da tela de detalhe.
+
+**Response 200:**
+
+Response igual ao `/catalog/trending` (array de results com paginação).
+
+---
+
+### GET /catalog/series/:id/similar
+
+Séries semelhantes. Usado no carrossel "Semelhantes" da tela de detalhe.
+
+**Response 200:**
+
+Response igual ao `/catalog/trending` (array de results com paginação, type = "series").
+
+---
+
+### GET /catalog/genres/movies
+
+Lista de gêneros de filmes. Usado nos chips de filtro da tela de filmes.
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "genres": [
+      { "id": 28, "name": "Ação" },
+      { "id": 18, "name": "Drama" },
+      { "id": 35, "name": "Comédia" }
+    ]
+  },
+  "error": null
+}
+```
+
+---
+
+### GET /catalog/genres/series
+
+Lista de gêneros de séries. Usado nos chips de filtro da tela de séries.
+
+**Response 200:**
+
+Response igual ao `/catalog/genres/movies`.
+
+---
+
+### GET /catalog/movies/genre/:genreId
+
+Filmes filtrados por gênero. Usado quando o usuário seleciona um chip de gênero.
+
+**Query:** `?page=1`
+
+**Response 200:**
+
+Response igual ao `/catalog/trending` (array de results com paginação).
+
+---
+
+### GET /catalog/series/genre/:genreId
+
+Séries filtradas por gênero.
+
+**Query:** `?page=1`
+
+**Response 200:**
+
+Response igual ao `/catalog/trending` (array de results com paginação, type = "series").
 
 ---
 
