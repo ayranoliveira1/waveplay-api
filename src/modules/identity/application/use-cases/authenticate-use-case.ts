@@ -30,7 +30,8 @@ type AuthenticateUseCaseResponse = Either<
 >
 
 // Hash pré-computado para comparação quando email não existe (anti timing attack)
-const DUMMY_HASH = '$argon2id$v=19$m=65536,t=3,p=1$dW5rbm93bg$dW5rbm93bg'
+const DUMMY_HASH =
+  '$argon2id$v=19$m=65536,t=3,p=1$ovpepGBRktAz5t0vOnRe7w$C/QhQnB91cELg+YTYAhCCCHea/vYxSsq2tQoNpmQ9Ws'
 
 @Injectable()
 export class AuthenticateUseCase {

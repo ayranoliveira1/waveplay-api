@@ -53,7 +53,10 @@ import { RedisAccountLockout } from './lockout/redis-account-lockout'
       useFactory: (env: EnvService) =>
         ({
           secret: env.get('JWT_SECRET'),
-          signOptions: { expiresIn: env.get('JWT_ACCESS_EXPIRES_IN') },
+          signOptions: {
+            algorithm: 'HS256',
+            expiresIn: env.get('JWT_ACCESS_EXPIRES_IN'),
+          },
         }) as JwtModuleOptions,
     }),
   ],

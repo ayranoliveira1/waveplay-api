@@ -31,7 +31,7 @@ export class AuthenticateController {
 
   @Public()
   @Post('/login')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async handle(
     @Body(new ZodValidationPipe(authenticateSchema)) body: AuthenticateBody,
