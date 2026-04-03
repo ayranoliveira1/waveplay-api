@@ -169,7 +169,8 @@ describe('RegisterController', () => {
     // Aguarda handler async do domain event executar
     await new Promise((resolve) => setTimeout(resolve, 10))
 
-    const profilesRepository = testModule.get(ProfilesRepository)
+    const profilesRepository =
+      testModule.get<InMemoryProfilesRepository>(ProfilesRepository)
     expect(profilesRepository.items).toHaveLength(1)
     expect(profilesRepository.items[0].name).toBe('João Silva')
   })
