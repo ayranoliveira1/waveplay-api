@@ -8,6 +8,7 @@ import { EmailModule } from '@/shared/email/email.module'
 import { IdentityModule } from '@/modules/identity/infra/identity.module'
 import { ProfileModule } from '@/modules/profile/infra/profile.module'
 import { SubscriptionModule } from '@/modules/subscription/infra/subscription.module'
+import { CatalogModule } from '@/modules/catalog/infra/catalog.module'
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { SubscriptionModule } from '@/modules/subscription/infra/subscription.mo
     IdentityModule,
     ProfileModule,
     SubscriptionModule,
+    CatalogModule,
   ],
   providers: [
     {
