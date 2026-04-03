@@ -8,18 +8,22 @@ import { ActiveStreamsRepository } from '../../domain/repositories/active-stream
 import { SubscriptionsRepository } from '../../domain/repositories/subscriptions-repository'
 import { PlansRepository } from '../../domain/repositories/plans-repository'
 import { ProfileOwnershipGatewayPort } from '../ports/profile-ownership-gateway.port'
+import { StreamCachePort } from '../ports/stream-cache.port'
 import { MaxStreamsReachedError } from '../../domain/errors/max-streams-reached.error'
+import { MaxStreamsReachedWithListError } from '../../domain/errors/max-streams-reached-with-list.error'
 import { StreamNotFoundError } from '../../domain/errors/stream-not-found.error'
+import { STREAM_TIMEOUT_MS } from '../../domain/constants/stream-timeout'
 
 interface StartStreamUseCaseRequest {
   userId: string
   profileId: string
   tmdbId: number
   type: StreamContentType
+  title: string
 }
 
 type StartStreamUseCaseResponse = Either<
-  MaxStreamsReachedError | StreamNotFoundError,
+  MaxStreamsReachedWithListError | StreamNotFoundError,
   { streamId: string }
 >
 
@@ -30,12 +34,13 @@ export class StartStreamUseCase {
     private subscriptionsRepository: SubscriptionsRepository,
     private plansRepository: PlansRepository,
     private profileOwnershipGateway: ProfileOwnershipGatewayPort,
+    private streamCache: StreamCachePort,
   ) {}
 
   async execute(
     request: StartStreamUseCaseRequest,
   ): Promise<StartStreamUseCaseResponse> {
-    const { userId, profileId, tmdbId, type } = request
+    const { userId, profileId, tmdbId, type, title } = request
 
     const isOwner = await this.profileOwnershipGateway.validateOwnership(
       profileId,
@@ -69,10 +74,30 @@ export class StartStreamUseCase {
       await this.activeStreamsRepository.createOrUpdate(stream, maxStreams)
     } catch (error) {
       if (error instanceof MaxStreamsReachedError) {
-        return left(error)
+        const activeStreams = await this.streamCache.getActiveStreams(
+          userId,
+          STREAM_TIMEOUT_MS,
+        )
+        return left(
+          new MaxStreamsReachedWithListError(maxStreams, activeStreams),
+        )
       }
       throw error
     }
+
+    const profileName =
+      (await this.profileOwnershipGateway.getProfileName(profileId)) ?? 'Perfil'
+
+    await this.streamCache.addStream({
+      userId,
+      profileId,
+      profileName,
+      streamId: stream.id.toValue(),
+      tmdbId,
+      type,
+      title,
+      startedAt: stream.startedAt,
+    })
 
     return right({ streamId: stream.id.toValue() })
   }

@@ -5,10 +5,11 @@ import { InMemoryActiveStreamsRepository } from 'test/repositories/in-memory-act
 import { InMemorySubscriptionsRepository } from 'test/repositories/in-memory-subscriptions-repository'
 import { InMemoryPlansRepository } from 'test/repositories/in-memory-plans-repository'
 import { FakeProfileOwnershipGateway } from 'test/ports/fake-profile-ownership-gateway'
+import { FakeStreamCache } from 'test/cache/fake-stream-cache'
 import { Plan } from '../../domain/entities/plan'
 import { Subscription } from '../../domain/entities/subscription'
 import { ActiveStream } from '../../domain/entities/active-stream'
-import { MaxStreamsReachedError } from '../../domain/errors/max-streams-reached.error'
+import { MaxStreamsReachedWithListError } from '../../domain/errors/max-streams-reached-with-list.error'
 import { StreamNotFoundError } from '../../domain/errors/stream-not-found.error'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
@@ -16,6 +17,7 @@ let activeStreamsRepository: InMemoryActiveStreamsRepository
 let subscriptionsRepository: InMemorySubscriptionsRepository
 let plansRepository: InMemoryPlansRepository
 let profileOwnershipGateway: FakeProfileOwnershipGateway
+let streamCache: FakeStreamCache
 let sut: StartStreamUseCase
 
 describe('StartStreamUseCase', () => {
@@ -24,12 +26,14 @@ describe('StartStreamUseCase', () => {
     subscriptionsRepository = new InMemorySubscriptionsRepository()
     plansRepository = new InMemoryPlansRepository()
     profileOwnershipGateway = new FakeProfileOwnershipGateway()
+    streamCache = new FakeStreamCache()
 
     sut = new StartStreamUseCase(
       activeStreamsRepository,
       subscriptionsRepository,
       plansRepository,
       profileOwnershipGateway,
+      streamCache,
     )
 
     const plan = Plan.create(
@@ -59,6 +63,7 @@ describe('StartStreamUseCase', () => {
       profileId: 'profile-1',
       tmdbId: 550,
       type: 'movie',
+      title: 'Fight Club',
     })
 
     expect(result.isRight()).toBe(true)
@@ -68,7 +73,46 @@ describe('StartStreamUseCase', () => {
     expect(activeStreamsRepository.items).toHaveLength(1)
   })
 
-  it('should return error when stream limit is reached', async () => {
+  it('should add stream to cache after success', async () => {
+    const result = await sut.execute({
+      userId: 'user-1',
+      profileId: 'profile-1',
+      tmdbId: 550,
+      type: 'movie',
+      title: 'Fight Club',
+    })
+
+    expect(result.isRight()).toBe(true)
+    expect(streamCache.streams.size).toBe(1)
+
+    const cached = [...streamCache.streams.values()][0]
+    expect(cached.title).toBe('Fight Club')
+    expect(cached.profileName).toBe('João')
+  })
+
+  it('should return 409 with active streams list when limit reached', async () => {
+    await streamCache.addStream({
+      userId: 'user-1',
+      profileId: 'profile-1',
+      profileName: 'João',
+      streamId: 'stream-1',
+      tmdbId: 100,
+      type: 'movie',
+      title: 'The Matrix',
+      startedAt: new Date(),
+    })
+
+    await streamCache.addStream({
+      userId: 'user-1',
+      profileId: 'profile-2',
+      profileName: 'Maria',
+      streamId: 'stream-2',
+      tmdbId: 200,
+      type: 'series',
+      title: 'Breaking Bad',
+      startedAt: new Date(),
+    })
+
     activeStreamsRepository.items.push(
       ActiveStream.create({
         userId: 'user-1',
@@ -89,10 +133,19 @@ describe('StartStreamUseCase', () => {
       profileId: 'profile-3',
       tmdbId: 300,
       type: 'movie',
+      title: 'Inception',
     })
 
     expect(result.isLeft()).toBe(true)
-    expect(result.value).toBeInstanceOf(MaxStreamsReachedError)
+    expect(result.value).toBeInstanceOf(MaxStreamsReachedWithListError)
+
+    if (result.isLeft()) {
+      const error = result.value as MaxStreamsReachedWithListError
+      expect(error.maxStreams).toBe(2)
+      expect(error.activeStreams).toHaveLength(2)
+      expect(error.activeStreams[0].profileName).toBeDefined()
+      expect(error.activeStreams[0].title).toBeDefined()
+    }
   })
 
   it('should not count expired streams towards the limit', async () => {
@@ -120,6 +173,7 @@ describe('StartStreamUseCase', () => {
       profileId: 'profile-3',
       tmdbId: 300,
       type: 'movie',
+      title: 'Inception',
     })
 
     expect(result.isRight()).toBe(true)
@@ -140,6 +194,7 @@ describe('StartStreamUseCase', () => {
       profileId: 'profile-1',
       tmdbId: 200,
       type: 'series',
+      title: 'Breaking Bad',
     })
 
     expect(result.isRight()).toBe(true)
@@ -155,6 +210,7 @@ describe('StartStreamUseCase', () => {
       profileId: 'profile-other',
       tmdbId: 550,
       type: 'movie',
+      title: 'Fight Club',
     })
 
     expect(result.isLeft()).toBe(true)
@@ -169,19 +225,20 @@ describe('StartStreamUseCase', () => {
       profileId: 'profile-1',
       tmdbId: 550,
       type: 'movie',
+      title: 'Fight Club',
     })
 
     expect(result.isRight()).toBe(true)
 
-    // second stream should fail (maxStreams=1)
     const result2 = await sut.execute({
       userId: 'user-2',
       profileId: 'profile-2',
       tmdbId: 600,
       type: 'movie',
+      title: 'Inception',
     })
 
     expect(result2.isLeft()).toBe(true)
-    expect(result2.value).toBeInstanceOf(MaxStreamsReachedError)
+    expect(result2.value).toBeInstanceOf(MaxStreamsReachedWithListError)
   })
 })
