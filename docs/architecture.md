@@ -96,8 +96,7 @@ waveplay-api/
 │       │   │   │   ├── hasher.port.ts       # Interface: hash(), compare()
 │       │   │   │   ├── encrypter.port.ts    # Interface: sign(), verify()
 │       │   │   │   ├── auth-config.port.ts  # Interface: getAccessTokenExpiresIn(), getRefreshTokenExpiresInMs(), getFrontendUrl()
-│   │   │   ├── account-lockout.port.ts  # Interface: isLocked(), incrementFailures(), resetFailures()
-│   │   │   └── plans-gateway.port.ts    # Interface: findBySlug() — cross-BC query
+│   │   │   └── account-lockout.port.ts  # Interface: isLocked(), incrementFailures(), resetFailures()
 │       │   │   ├── emails/
 │       │   │   │   └── password-reset-email.ts  # Template HTML para email de reset de senha
 │       │   │   └── use-cases/
@@ -127,8 +126,6 @@ waveplay-api/
 │       │       │   └── jwt.strategy.ts      # Passport JWT: extrai sub + family do token
 │       │       ├── lockout/
 │       │       │   └── redis-account-lockout.ts  # AccountLockoutPort ← Redis
-│       │       ├── gateways/
-│       │       │   └── prisma-plans-gateway.ts   # PlansGatewayPort ← Prisma (cross-BC query)
 │       │       ├── controllers/
 │       │       │   ├── platform-utils.ts    # isMobile(), setRefreshTokenCookie()
 │       │       │   ├── register.controller.ts
