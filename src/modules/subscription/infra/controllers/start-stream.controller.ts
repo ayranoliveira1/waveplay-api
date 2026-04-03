@@ -53,7 +53,7 @@ export class StartStreamController {
           success: false,
           error: {
             statusCode: 409,
-            code: 'MAX_STREAMS_REACHED',
+            code: error.props.errors[0].code,
             message: error.props.errors[0].message,
             maxStreams: error.maxStreams,
             activeStreams: ActiveStreamPresenter.toHTTP(error.activeStreams),
