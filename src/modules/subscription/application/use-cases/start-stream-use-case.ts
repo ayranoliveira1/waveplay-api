@@ -63,6 +63,23 @@ export class StartStreamUseCase {
       }
     }
 
+    const activeCount = await this.streamCache.countActiveStreams(
+      userId,
+      STREAM_TIMEOUT_MS,
+    )
+
+    const existingStream =
+      await this.activeStreamsRepository.findByUserAndProfile(userId, profileId)
+    const effectiveCount = existingStream ? activeCount - 1 : activeCount
+
+    if (effectiveCount >= maxStreams) {
+      const activeStreams = await this.streamCache.getActiveStreams(
+        userId,
+        STREAM_TIMEOUT_MS,
+      )
+      return left(new MaxStreamsReachedWithListError(maxStreams, activeStreams))
+    }
+
     const stream = ActiveStream.create({
       userId,
       profileId,

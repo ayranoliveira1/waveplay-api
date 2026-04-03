@@ -148,6 +148,64 @@ describe('StartStreamUseCase', () => {
     }
   })
 
+  it('should reject via Redis count even when PG lastPing is stale', async () => {
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000)
+
+    // PG has stale lastPing (would consider these expired)
+    activeStreamsRepository.items.push(
+      ActiveStream.create({
+        userId: 'user-1',
+        profileId: 'profile-1',
+        tmdbId: 100,
+        type: 'movie',
+        lastPing: threeMinutesAgo,
+      }),
+      ActiveStream.create({
+        userId: 'user-1',
+        profileId: 'profile-2',
+        tmdbId: 200,
+        type: 'series',
+        lastPing: threeMinutesAgo,
+      }),
+    )
+
+    // Redis has fresh lastPing (streams are still active via ping)
+    await streamCache.addStream({
+      userId: 'user-1',
+      profileId: 'profile-1',
+      profileName: 'João',
+      streamId: activeStreamsRepository.items[0].id.toValue(),
+      tmdbId: 100,
+      type: 'movie',
+      title: 'The Matrix',
+      startedAt: threeMinutesAgo,
+    })
+
+    await streamCache.addStream({
+      userId: 'user-1',
+      profileId: 'profile-2',
+      profileName: 'Maria',
+      streamId: activeStreamsRepository.items[1].id.toValue(),
+      tmdbId: 200,
+      type: 'series',
+      title: 'Breaking Bad',
+      startedAt: threeMinutesAgo,
+    })
+
+    const result = await sut.execute({
+      userId: 'user-1',
+      profileId: 'profile-3',
+      tmdbId: 300,
+      type: 'movie',
+      title: 'Inception',
+    })
+
+    // Redis count = 2 >= maxStreams(2) → rejects correctly
+    // Without Redis check, PG would allow (stale lastPing < threshold)
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(MaxStreamsReachedWithListError)
+  })
+
   it('should not count expired streams towards the limit', async () => {
     const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000)
 

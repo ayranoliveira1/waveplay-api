@@ -54,6 +54,22 @@ export class FakeStreamCache implements StreamCachePort {
     return result
   }
 
+  async countActiveStreams(
+    userId: string,
+    thresholdMs: number,
+  ): Promise<number> {
+    const threshold = Date.now() - thresholdMs
+    let count = 0
+
+    for (const stream of this.streams.values()) {
+      if (stream.userId === userId && stream.lastPing >= threshold) {
+        count++
+      }
+    }
+
+    return count
+  }
+
   async getStreamOwner(streamId: string): Promise<string | null> {
     const stream = this.streams.get(streamId)
     return stream?.userId ?? null

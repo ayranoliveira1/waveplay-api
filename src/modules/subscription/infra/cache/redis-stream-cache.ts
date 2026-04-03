@@ -98,6 +98,15 @@ export class RedisStreamCache implements StreamCachePort {
     return activeStreams
   }
 
+  async countActiveStreams(
+    userId: string,
+    thresholdMs: number,
+  ): Promise<number> {
+    const threshold = Date.now() - thresholdMs
+    await this.redis.zremrangebyscore(`streams:${userId}`, '-inf', threshold)
+    return this.redis.zcard(`streams:${userId}`)
+  }
+
   async getStreamOwner(streamId: string): Promise<string | null> {
     const userId = await this.redis.hget(`stream:${streamId}`, 'userId')
     return userId ?? null
@@ -105,29 +114,39 @@ export class RedisStreamCache implements StreamCachePort {
 
   async removeExpired(thresholdMs: number): Promise<number> {
     const threshold = Date.now() - thresholdMs
-
-    const keys = await this.redis.keys('streams:*')
+    let cursor = '0'
     let totalRemoved = 0
 
-    for (const key of keys) {
-      const expiredStreamIds = await this.redis.zrangebyscore(
-        key,
-        '-inf',
-        threshold,
+    do {
+      const [nextCursor, keys] = await this.redis.scan(
+        cursor,
+        'MATCH',
+        'streams:*',
+        'COUNT',
+        100,
       )
+      cursor = nextCursor
 
-      if (expiredStreamIds.length === 0) continue
+      for (const key of keys) {
+        const expiredStreamIds = await this.redis.zrangebyscore(
+          key,
+          '-inf',
+          threshold,
+        )
 
-      const pipeline = this.redis.pipeline()
-      pipeline.zremrangebyscore(key, '-inf', threshold)
+        if (expiredStreamIds.length === 0) continue
 
-      for (const streamId of expiredStreamIds) {
-        pipeline.del(`stream:${streamId}`)
+        const pipeline = this.redis.pipeline()
+        pipeline.zremrangebyscore(key, '-inf', threshold)
+
+        for (const streamId of expiredStreamIds) {
+          pipeline.del(`stream:${streamId}`)
+        }
+
+        await pipeline.exec()
+        totalRemoved += expiredStreamIds.length
       }
-
-      await pipeline.exec()
-      totalRemoved += expiredStreamIds.length
-    }
+    } while (cursor !== '0')
 
     return totalRemoved
   }

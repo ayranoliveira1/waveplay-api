@@ -25,6 +25,10 @@ export abstract class StreamCachePort {
     userId: string,
     thresholdMs: number,
   ): Promise<ActiveStreamInfo[]>
+  abstract countActiveStreams(
+    userId: string,
+    thresholdMs: number,
+  ): Promise<number>
   abstract getStreamOwner(streamId: string): Promise<string | null>
   abstract removeExpired(thresholdMs: number): Promise<number>
 }
