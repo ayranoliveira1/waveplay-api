@@ -2,11 +2,13 @@ import { Entity } from '@/core/entities/entity'
 import type { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import type { Optional } from '@/core/types/optional'
 
+export type StreamContentType = 'movie' | 'series'
+
 export interface ActiveStreamProps {
   userId: string
   profileId: string
   tmdbId: number
-  type: string
+  type: StreamContentType
   startedAt: Date
   lastPing: Date
 }

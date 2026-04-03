@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common'
 import type { Either } from '@/core/either'
 import { left, right } from '@/core/either'
 import { ActiveStream } from '../../domain/entities/active-stream'
+import type { StreamContentType } from '../../domain/entities/active-stream'
 import { ActiveStreamsRepository } from '../../domain/repositories/active-streams-repository'
 import { SubscriptionsRepository } from '../../domain/repositories/subscriptions-repository'
 import { PlansRepository } from '../../domain/repositories/plans-repository'
@@ -14,7 +15,7 @@ interface StartStreamUseCaseRequest {
   userId: string
   profileId: string
   tmdbId: number
-  type: string
+  type: StreamContentType
 }
 
 type StartStreamUseCaseResponse = Either<

@@ -1,5 +1,6 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { ActiveStream } from '../../domain/entities/active-stream'
+import type { StreamContentType } from '../../domain/entities/active-stream'
 import type { ActiveStream as PrismaActiveStream } from '@/shared/database/generated/prisma'
 
 export class PrismaActiveStreamMapper {
@@ -9,7 +10,7 @@ export class PrismaActiveStreamMapper {
         userId: raw.userId,
         profileId: raw.profileId,
         tmdbId: raw.tmdbId,
-        type: raw.type,
+        type: raw.type as StreamContentType,
         startedAt: raw.startedAt,
         lastPing: raw.lastPing,
       },
