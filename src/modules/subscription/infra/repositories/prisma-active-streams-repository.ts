@@ -4,8 +4,7 @@ import { ActiveStream } from '../../domain/entities/active-stream'
 import { ActiveStreamsRepository } from '../../domain/repositories/active-streams-repository'
 import { MaxStreamsReachedError } from '../../domain/errors/max-streams-reached.error'
 import { PrismaActiveStreamMapper } from '../mappers/prisma-active-stream-mapper'
-
-const STREAM_TIMEOUT_MS = 2 * 60 * 1000
+import { STREAM_TIMEOUT_MS } from '../../domain/constants/stream-timeout'
 
 @Injectable()
 export class PrismaActiveStreamsRepository implements ActiveStreamsRepository {
@@ -38,12 +37,6 @@ export class PrismaActiveStreamsRepository implements ActiveStreamsRepository {
     return PrismaActiveStreamMapper.toDomain(stream)
   }
 
-  async countActiveByUserId(userId: string, threshold: Date): Promise<number> {
-    return this.prisma.activeStream.count({
-      where: { userId, lastPing: { gte: threshold } },
-    })
-  }
-
   async createOrUpdate(
     stream: ActiveStream,
     maxStreams: number,
@@ -55,10 +48,7 @@ export class PrismaActiveStreamsRepository implements ActiveStreamsRepository {
         where: {
           userId: stream.userId,
           lastPing: { gte: threshold },
-          NOT: {
-            userId: stream.userId,
-            profileId: stream.profileId,
-          },
+          NOT: { profileId: stream.profileId },
         },
       })
 

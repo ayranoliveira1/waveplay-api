@@ -3,8 +3,7 @@ import { Injectable } from '@nestjs/common'
 import type { Either } from '@/core/either'
 import { right } from '@/core/either'
 import { ActiveStreamsRepository } from '../../domain/repositories/active-streams-repository'
-
-const STREAM_TIMEOUT_MS = 2 * 60 * 1000
+import { STREAM_TIMEOUT_MS } from '../../domain/constants/stream-timeout'
 
 type CleanupExpiredStreamsUseCaseResponse = Either<
   never,

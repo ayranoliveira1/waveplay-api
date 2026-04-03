@@ -1,8 +1,7 @@
 import type { ActiveStream } from '@/modules/subscription/domain/entities/active-stream'
 import type { ActiveStreamsRepository } from '@/modules/subscription/domain/repositories/active-streams-repository'
 import { MaxStreamsReachedError } from '@/modules/subscription/domain/errors/max-streams-reached.error'
-
-const STREAM_TIMEOUT_MS = 2 * 60 * 1000
+import { STREAM_TIMEOUT_MS } from '@/modules/subscription/domain/constants/stream-timeout'
 
 export class InMemoryActiveStreamsRepository implements ActiveStreamsRepository {
   public items: ActiveStream[] = []
@@ -20,12 +19,6 @@ export class InMemoryActiveStreamsRepository implements ActiveStreamsRepository 
         (item) => item.userId === userId && item.profileId === profileId,
       ) ?? null
     )
-  }
-
-  async countActiveByUserId(userId: string, threshold: Date): Promise<number> {
-    return this.items.filter(
-      (item) => item.userId === userId && item.lastPing >= threshold,
-    ).length
   }
 
   async createOrUpdate(

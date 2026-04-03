@@ -6,7 +6,6 @@ export abstract class ActiveStreamsRepository {
     userId: string,
     profileId: string,
   ): Promise<ActiveStream | null>
-  abstract countActiveByUserId(userId: string, threshold: Date): Promise<number>
   abstract createOrUpdate(
     stream: ActiveStream,
     maxStreams: number,
