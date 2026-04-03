@@ -112,8 +112,8 @@ Web (padrão, sem header):
 ### Fluxo de reprodução
 
 ```
-1. App chama POST /streams/start { profileId, tmdbId, type }
-2. Backend conta streams ativas do user (Redis ZCARD com threshold de 2min)
+1. App chama POST /streams/start { profileId, tmdbId, type, title }
+2. Backend conta streams ativas do user (Redis: ZREMRANGEBYSCORE + ZCARD, com fallback PG $transaction)
 3. Se count >= plan.maxStreams → 409 com lista de streams ativas
 4. Se ok → PostgreSQL: cria/atualiza ActiveStream + Redis: ZADD → retorna streamId
 5. Player chama PUT /streams/:id/ping a cada 60s → Redis ZADD (zero banco)

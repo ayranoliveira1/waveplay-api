@@ -31,9 +31,10 @@ Redis já está no stack do projeto (cache TMDB, account lockout), portanto a in
 POST /streams/start
   → Valida ownership do perfil
   → Busca subscription → plan.maxStreams
-  → PostgreSQL: $transaction { count + upsert }
+  → Redis: ZREMRANGEBYSCORE + ZCARD (contagem real de streams ativas)
   → Se count >= maxStreams → 409 com lista de streams ativas
-  → Se ok → Redis: ZADD streams:{userId} {timestamp} {profileId}:{streamId}
+  → PostgreSQL: $transaction { count + upsert } (safety net atômico)
+  → Se ok → Redis: ZADD streams:{userId} {timestamp} {streamId}
   → Retorna 201 { streamId }
 ```
 
@@ -41,7 +42,7 @@ POST /streams/start
 ```
 PUT /streams/:id/ping
   → Valida ownership via Redis hash (stream:{id} → userId)
-  → Redis: ZADD streams:{userId} {timestamp} {profileId}:{streamId}
+  → Redis: ZADD streams:{userId} {timestamp} {streamId}
   → Retorna 200
   → Se stream não existe → 404 (player detecta desconexão)
 ```

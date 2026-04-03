@@ -481,7 +481,8 @@ Registra início de reprodução. Valida limite de telas do plano.
 {
   "profileId": "uuid",
   "tmdbId": 550,
-  "type": "movie"
+  "type": "movie",
+  "title": "Fight Club"
 }
 ```
 
