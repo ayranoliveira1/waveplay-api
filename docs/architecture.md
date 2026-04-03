@@ -244,8 +244,11 @@ waveplay-api/
 │       │   │   │   └── active-streams-repository.ts
 │       │   │   └── errors/
 │       │   │       ├── max-profiles-reached.error.ts
-│       │   │       └── max-streams-reached.error.ts
+│       │   │       ├── max-streams-reached.error.ts
+│       │   │       └── stream-not-found.error.ts
 │       │   ├── application/
+│       │   │   ├── ports/
+│       │   │   │   └── profile-ownership-gateway.port.ts  # Interface: validateOwnership() — cross-BC query
 │       │   │   ├── subscribers/
 │       │   │   │   └── on-user-registered.ts  # Cria subscription "basico" via domain event
 │       │   │   └── use-cases/
@@ -264,6 +267,8 @@ waveplay-api/
 │       │       │   ├── prisma-plans-repository.ts
 │       │       │   ├── prisma-subscriptions-repository.ts
 │       │       │   └── prisma-active-streams-repository.ts
+│       │       ├── gateways/
+│       │       │   └── prisma-profile-ownership-gateway.ts  # ProfileOwnershipGatewayPort ← Prisma (cross-BC query)
 │       │       ├── controllers/
 │       │       │   ├── list-plans.controller.ts
 │       │       │   ├── start-stream.controller.ts
