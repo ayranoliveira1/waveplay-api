@@ -8,15 +8,13 @@ import request from 'supertest'
 
 import { PingStreamController } from './ping-stream.controller'
 import { PingStreamUseCase } from '../../application/use-cases/ping-stream-use-case'
-import { ActiveStreamsRepository } from '../../domain/repositories/active-streams-repository'
-import { InMemoryActiveStreamsRepository } from 'test/repositories/in-memory-active-streams-repository'
+import { StreamCachePort } from '../../application/ports/stream-cache.port'
+import { FakeStreamCache } from 'test/cache/fake-stream-cache'
 import { FakeAuthGuard } from 'test/guards/fake-auth.guard'
 import { AllExceptionsFilter } from '@/shared/filters/nest-exception-filter'
-import { ActiveStream } from '../../domain/entities/active-stream'
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 let app: INestApplication
-let activeStreamsRepository: InMemoryActiveStreamsRepository
+let streamCache: FakeStreamCache
 
 describe('PingStreamController', () => {
   beforeEach(async () => {
@@ -29,10 +27,7 @@ describe('PingStreamController', () => {
       controllers: [PingStreamController],
       providers: [
         PingStreamUseCase,
-        {
-          provide: ActiveStreamsRepository,
-          useClass: InMemoryActiveStreamsRepository,
-        },
+        { provide: StreamCachePort, useClass: FakeStreamCache },
         { provide: APP_GUARD, useClass: FakeAuthGuard },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
       ],
@@ -42,23 +37,23 @@ describe('PingStreamController', () => {
     app.useGlobalFilters(new AllExceptionsFilter())
     await app.init()
 
-    activeStreamsRepository = module.get(ActiveStreamsRepository)
+    streamCache = module.get(StreamCachePort)
   })
 
   it('should return 200 on successful ping', async () => {
     const streamId = '550e8400-e29b-41d4-a716-446655440000'
 
-    activeStreamsRepository.items.push(
-      ActiveStream.create(
-        {
-          userId: FakeAuthGuard.userId,
-          profileId: 'profile-1',
-          tmdbId: 550,
-          type: 'movie',
-        },
-        new UniqueEntityID(streamId),
-      ),
-    )
+    streamCache.streams.set(streamId, {
+      userId: FakeAuthGuard.userId,
+      profileId: 'profile-1',
+      profileName: 'João',
+      streamId,
+      tmdbId: 550,
+      type: 'movie',
+      title: 'Fight Club',
+      startedAt: new Date(),
+      lastPing: Date.now(),
+    })
 
     const response = await request(app.getHttpServer()).put(
       `/streams/${streamId}/ping`,
@@ -82,17 +77,17 @@ describe('PingStreamController', () => {
   it('should return 404 when stream belongs to another user (IDOR)', async () => {
     const streamId = '550e8400-e29b-41d4-a716-446655440002'
 
-    activeStreamsRepository.items.push(
-      ActiveStream.create(
-        {
-          userId: 'other-user-id',
-          profileId: 'profile-1',
-          tmdbId: 550,
-          type: 'movie',
-        },
-        new UniqueEntityID(streamId),
-      ),
-    )
+    streamCache.streams.set(streamId, {
+      userId: 'other-user-id',
+      profileId: 'profile-1',
+      profileName: 'João',
+      streamId,
+      tmdbId: 550,
+      type: 'movie',
+      title: 'Fight Club',
+      startedAt: new Date(),
+      lastPing: Date.now(),
+    })
 
     const response = await request(app.getHttpServer()).put(
       `/streams/${streamId}/ping`,

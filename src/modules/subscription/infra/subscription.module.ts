@@ -25,6 +25,10 @@ import { PrismaActiveStreamsRepository } from './repositories/prisma-active-stre
 import { ProfileOwnershipGatewayPort } from '../application/ports/profile-ownership-gateway.port'
 import { PrismaProfileOwnershipGateway } from './gateways/prisma-profile-ownership-gateway'
 
+// Ports (stream cache)
+import { StreamCachePort } from '../application/ports/stream-cache.port'
+import { RedisStreamCache } from './cache/redis-stream-cache'
+
 // Subscribers
 import { OnUserRegisteredSubscription } from '../application/subscribers/on-user-registered'
 
@@ -59,6 +63,7 @@ import { OnUserRegisteredSubscription } from '../application/subscribers/on-user
       provide: ProfileOwnershipGatewayPort,
       useClass: PrismaProfileOwnershipGateway,
     },
+    { provide: StreamCachePort, useClass: RedisStreamCache },
 
     // Subscribers
     OnUserRegisteredSubscription,

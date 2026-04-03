@@ -9,7 +9,9 @@ import request from 'supertest'
 import { StopStreamController } from './stop-stream.controller'
 import { StopStreamUseCase } from '../../application/use-cases/stop-stream-use-case'
 import { ActiveStreamsRepository } from '../../domain/repositories/active-streams-repository'
+import { StreamCachePort } from '../../application/ports/stream-cache.port'
 import { InMemoryActiveStreamsRepository } from 'test/repositories/in-memory-active-streams-repository'
+import { FakeStreamCache } from 'test/cache/fake-stream-cache'
 import { FakeAuthGuard } from 'test/guards/fake-auth.guard'
 import { AllExceptionsFilter } from '@/shared/filters/nest-exception-filter'
 import { ActiveStream } from '../../domain/entities/active-stream'
@@ -33,6 +35,7 @@ describe('StopStreamController', () => {
           provide: ActiveStreamsRepository,
           useClass: InMemoryActiveStreamsRepository,
         },
+        { provide: StreamCachePort, useClass: FakeStreamCache },
         { provide: APP_GUARD, useClass: FakeAuthGuard },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
       ],

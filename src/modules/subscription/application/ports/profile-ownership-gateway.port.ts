@@ -3,4 +3,5 @@ export abstract class ProfileOwnershipGatewayPort {
     profileId: string,
     userId: string,
   ): Promise<boolean>
+  abstract getProfileName(profileId: string): Promise<string | null>
 }

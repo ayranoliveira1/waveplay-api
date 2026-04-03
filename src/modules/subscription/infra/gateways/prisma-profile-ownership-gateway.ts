@@ -14,4 +14,13 @@ export class PrismaProfileOwnershipGateway implements ProfileOwnershipGatewayPor
 
     return profile?.userId === userId
   }
+
+  async getProfileName(profileId: string): Promise<string | null> {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+      select: { name: true },
+    })
+
+    return profile?.name ?? null
+  }
 }
