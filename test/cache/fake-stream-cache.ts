@@ -2,7 +2,7 @@ import type {
   StreamCacheData,
   ActiveStreamInfo,
 } from '@/modules/subscription/application/ports/stream-cache.port'
-import { StreamCachePort } from '@/modules/subscription/application/ports/stream-cache.port'
+import type { StreamCachePort } from '@/modules/subscription/application/ports/stream-cache.port'
 
 interface StoredStream extends StreamCacheData {
   lastPing: number

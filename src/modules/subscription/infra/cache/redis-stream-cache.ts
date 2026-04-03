@@ -14,11 +14,7 @@ export class RedisStreamCache implements StreamCachePort {
   async addStream(data: StreamCacheData): Promise<void> {
     const pipeline = this.redis.pipeline()
 
-    pipeline.zadd(
-      `streams:${data.userId}`,
-      Date.now(),
-      data.streamId,
-    )
+    pipeline.zadd(`streams:${data.userId}`, Date.now(), data.streamId)
 
     pipeline.hset(`stream:${data.streamId}`, {
       userId: data.userId,
