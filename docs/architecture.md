@@ -188,19 +188,51 @@ waveplay-api/
 │       │   │       ├── get-trending-use-case.ts
 │       │   │       ├── get-movie-detail-use-case.ts
 │       │   │       ├── get-series-detail-use-case.ts
-│       │   │       └── search-catalog-use-case.ts
+│       │   │       ├── search-catalog-use-case.ts
+│       │   │       ├── get-season-episodes-use-case.ts
+│       │   │       ├── get-similar-movies-use-case.ts
+│       │   │       ├── get-similar-series-use-case.ts
+│       │   │       ├── get-movies-by-genre-use-case.ts
+│       │   │       ├── get-series-by-genre-use-case.ts
+│       │   │       ├── get-movie-genres-use-case.ts
+│       │   │       ├── get-series-genres-use-case.ts
+│       │   │       ├── get-popular-movies-use-case.ts
+│       │   │       ├── get-top-rated-movies-use-case.ts
+│       │   │       ├── get-now-playing-movies-use-case.ts
+│       │   │       ├── get-upcoming-movies-use-case.ts
+│       │   │       ├── get-popular-series-use-case.ts
+│       │   │       ├── get-top-rated-series-use-case.ts
+│       │   │       ├── get-airing-today-series-use-case.ts
+│       │   │       └── get-on-the-air-series-use-case.ts
 │       │   └── infra/
 │       │       ├── catalog.module.ts
 │       │       ├── tmdb-catalog-provider.ts
 │       │       ├── catalog-cache.service.ts
 │       │       ├── controllers/
 │       │       │   ├── trending.controller.ts
+│       │       │   ├── search.controller.ts
 │       │       │   ├── movie-detail.controller.ts
 │       │       │   ├── series-detail.controller.ts
-│       │       │   └── search.controller.ts
+│       │       │   ├── season-episodes.controller.ts
+│       │       │   ├── popular-movies.controller.ts
+│       │       │   ├── top-rated-movies.controller.ts
+│       │       │   ├── now-playing-movies.controller.ts
+│       │       │   ├── upcoming-movies.controller.ts
+│       │       │   ├── popular-series.controller.ts
+│       │       │   ├── top-rated-series.controller.ts
+│       │       │   ├── airing-today-series.controller.ts
+│       │       │   ├── on-the-air-series.controller.ts
+│       │       │   ├── similar-movies.controller.ts
+│       │       │   ├── similar-series.controller.ts
+│       │       │   ├── movie-genres.controller.ts
+│       │       │   ├── series-genres.controller.ts
+│       │       │   ├── movies-by-genre.controller.ts
+│       │       │   └── series-by-genre.controller.ts
 │       │       └── presenters/
 │       │           ├── movie-presenter.ts
-│       │           └── series-presenter.ts
+│       │           ├── series-presenter.ts
+│       │           ├── search-presenter.ts
+│       │           └── genre-presenter.ts
 │       │
 │       ├── library/                     # BC: Biblioteca do Usuário
 │       │   ├── domain/
