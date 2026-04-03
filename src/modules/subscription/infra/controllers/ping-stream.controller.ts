@@ -1,4 +1,11 @@
-import { Controller, Put, Param, HttpCode, HttpStatus } from '@nestjs/common'
+import {
+  Controller,
+  Put,
+  Param,
+  HttpCode,
+  HttpStatus,
+  ParseUUIDPipe,
+} from '@nestjs/common'
 
 import { PingStreamUseCase } from '../../application/use-cases/ping-stream-use-case'
 import { CustomHttpException } from '@/shared/http/custom-http.exception'
@@ -10,7 +17,10 @@ export class PingStreamController {
 
   @Put(':id/ping')
   @HttpCode(HttpStatus.OK)
-  async handle(@Param('id') id: string, @GetUser('userId') userId: string) {
+  async handle(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @GetUser('userId') userId: string,
+  ) {
     const result = await this.pingStreamUseCase.execute({
       userId,
       streamId: id,

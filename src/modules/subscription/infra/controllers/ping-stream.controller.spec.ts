@@ -46,6 +46,8 @@ describe('PingStreamController', () => {
   })
 
   it('should return 200 on successful ping', async () => {
+    const streamId = '550e8400-e29b-41d4-a716-446655440000'
+
     activeStreamsRepository.items.push(
       ActiveStream.create(
         {
@@ -54,12 +56,12 @@ describe('PingStreamController', () => {
           tmdbId: 550,
           type: 'movie',
         },
-        new UniqueEntityID('stream-1'),
+        new UniqueEntityID(streamId),
       ),
     )
 
     const response = await request(app.getHttpServer()).put(
-      '/streams/stream-1/ping',
+      `/streams/${streamId}/ping`,
     )
 
     expect(response.status).toBe(200)
@@ -70,7 +72,7 @@ describe('PingStreamController', () => {
 
   it('should return 404 when stream not found', async () => {
     const response = await request(app.getHttpServer()).put(
-      '/streams/nonexistent/ping',
+      '/streams/550e8400-e29b-41d4-a716-446655440001/ping',
     )
 
     expect(response.status).toBe(404)
@@ -78,6 +80,8 @@ describe('PingStreamController', () => {
   })
 
   it('should return 404 when stream belongs to another user (IDOR)', async () => {
+    const streamId = '550e8400-e29b-41d4-a716-446655440002'
+
     activeStreamsRepository.items.push(
       ActiveStream.create(
         {
@@ -86,12 +90,12 @@ describe('PingStreamController', () => {
           tmdbId: 550,
           type: 'movie',
         },
-        new UniqueEntityID('stream-1'),
+        new UniqueEntityID(streamId),
       ),
     )
 
     const response = await request(app.getHttpServer()).put(
-      '/streams/stream-1/ping',
+      `/streams/${streamId}/ping`,
     )
 
     expect(response.status).toBe(404)

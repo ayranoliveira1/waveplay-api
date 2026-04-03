@@ -46,6 +46,8 @@ describe('StopStreamController', () => {
   })
 
   it('should return 200 on successful delete', async () => {
+    const streamId = '550e8400-e29b-41d4-a716-446655440000'
+
     activeStreamsRepository.items.push(
       ActiveStream.create(
         {
@@ -54,12 +56,12 @@ describe('StopStreamController', () => {
           tmdbId: 550,
           type: 'movie',
         },
-        new UniqueEntityID('stream-1'),
+        new UniqueEntityID(streamId),
       ),
     )
 
     const response = await request(app.getHttpServer()).delete(
-      '/streams/stream-1',
+      `/streams/${streamId}`,
     )
 
     expect(response.status).toBe(200)
@@ -71,7 +73,7 @@ describe('StopStreamController', () => {
 
   it('should return 404 when stream not found', async () => {
     const response = await request(app.getHttpServer()).delete(
-      '/streams/nonexistent',
+      '/streams/550e8400-e29b-41d4-a716-446655440001',
     )
 
     expect(response.status).toBe(404)
@@ -79,6 +81,8 @@ describe('StopStreamController', () => {
   })
 
   it('should return 404 when stream belongs to another user (IDOR)', async () => {
+    const streamId = '550e8400-e29b-41d4-a716-446655440002'
+
     activeStreamsRepository.items.push(
       ActiveStream.create(
         {
@@ -87,12 +91,12 @@ describe('StopStreamController', () => {
           tmdbId: 550,
           type: 'movie',
         },
-        new UniqueEntityID('stream-1'),
+        new UniqueEntityID(streamId),
       ),
     )
 
     const response = await request(app.getHttpServer()).delete(
-      '/streams/stream-1',
+      `/streams/${streamId}`,
     )
 
     expect(response.status).toBe(404)
