@@ -183,7 +183,7 @@
 
 | # | Vulnerabilidade | Descricao | Prevencao no WavePlay | Severidade |
 |---|-----------------|-----------|----------------------|------------|
-| 12.1 | **Race Condition** (TOCTOU) | Check e acao nao sao atomicos: dois requests simultaneos burlam limite | Usar transacoes Prisma (`$transaction`). Para streams: upsert atomico com @@unique constraint. Para perfis: verificar count dentro da transacao | Alta |
+| 12.1 | **Race Condition** (TOCTOU) | Check e acao nao sao atomicos: dois requests simultaneos burlam limite | Usar transacoes Prisma (`$transaction`). Para streams: upsert atomico com @@unique constraint. Para perfis: verificar count dentro da transacao. Ping usa Redis ZADD (atomico). Start mantem $transaction no PostgreSQL para count + upsert | Alta |
 | 12.2 | **Bypass de limites de negocio** | Criar mais perfis/streams que o plano permite | Verificar limite DENTRO da transacao de criacao. Nunca verificar count separadamente e depois criar | Alta |
 | 12.3 | **Replay Attacks** | Reenviar request valido para duplicar acao | Refresh token rotation: cada token so funciona uma vez. Para operacoes criticas: idempotency keys (futuro) | Media |
 | 12.4 | **Parameter Tampering** | Alterar planId, preco, role no body da request | Nunca aceitar planId de upgrade via body (futuro). userId sempre do JWT. Zod schemas com campos exatos | Alta |
@@ -203,7 +203,7 @@
 | 13.3 | **Algorithmic Complexity** | Input que causa O(n^2) ou pior em algoritmos | Cuidado com sort/filter em listas grandes do usuario. Usar paginacao. Limitar resultados (LIMIT no SQL) | Media |
 | 13.4 | **Large Payload** | Body, headers ou query string enormes | Configurar body parser limit no NestJS (ex: 1MB). Helmet limita headers. Validar tamanho de strings no Zod (z.string().max()) | Alta |
 | 13.5 | **Slowloris** | Conexoes HTTP lentas esgotam slots do servidor | Configurar timeout no Express/NestJS. Em producao: reverse proxy (Nginx) com timeouts adequados | Media |
-| 13.6 | **Connection Pool Exhaustion** | Todas as conexoes do pool ocupadas | Prisma connection pool com tamanho adequado. Timeout em queries longas. Monitorar pool usage | Alta |
+| 13.6 | **Connection Pool Exhaustion** | Todas as conexoes do pool ocupadas | Prisma connection pool com tamanho adequado. Timeout em queries longas. Monitorar pool usage. Ping de streams usa Redis (elimina ~100 queries/s do pool do Prisma) | Alta |
 | 13.7 | **Infinite Loops via Input** | Input que causa loop infinito no servidor | Validar input antes de processar. Timeout em operacoes. Nao iterar sobre listas controladas pelo usuario sem limite | Media |
 | 13.8 | **Uncontrolled Resource Consumption** — OWASP API4 | API sem limites permite consumo excessivo | Rate limiting global + per-route. Paginacao obrigatoria em listagens. Limites de tamanho em todos os inputs | Alta |
 | 13.9 | **Decompression Bomb** | Arquivo comprimido que expande para tamanho enorme | Nao aceitamos upload de arquivos na v1. Se implementar: limitar tamanho descomprimido | Media |
@@ -215,7 +215,7 @@
 | # | Vulnerabilidade | Descricao | Prevencao no WavePlay | Severidade |
 |---|-----------------|-----------|----------------------|------------|
 | 14.1 | **Mass Assignment** | Campos extras no body (role, isAdmin) aceitos pelo servidor | Zod schemas com campos explicitos (nunca z.object().passthrough()). Usar z.object().strict() ou listar campos exatos. Nunca spread body em entity/update | Critica |
-| 14.2 | **Excessive Data Exposure** | API retorna mais dados que o necessario | Presenters definem exatamente quais campos sao retornados. Nunca retornar entity inteira. UserPresenter nunca retorna password hash | Alta |
+| 14.2 | **Excessive Data Exposure** | API retorna mais dados que o necessario | Presenters definem exatamente quais campos sao retornados. Nunca retornar entity inteira. UserPresenter nunca retorna password hash. Response 409 de streams expoe apenas: streamId, profileName, title, type, startedAt. Nunca expor userId, profileId raw, IP ou device info | Alta |
 | 14.3 | **Broken Object Property Level Auth** — OWASP API3 | Usuario lê ou modifica propriedades que nao deveria | DTOs separados para create e update. Update DTO so aceita campos editaveis. Presenter filtra campos visiveis | Alta |
 
 ---

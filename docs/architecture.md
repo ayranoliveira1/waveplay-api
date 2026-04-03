@@ -238,6 +238,8 @@ waveplay-api/
 │       │   │   │   ├── plan.ts
 │       │   │   │   ├── subscription.ts
 │       │   │   │   └── active-stream.ts
+│       │   │   ├── constants/
+│       │   │   │   └── stream-timeout.ts          # STREAM_TIMEOUT_MS = 2min (constante compartilhada)
 │       │   │   ├── repositories/
 │       │   │   │   ├── plans-repository.ts
 │       │   │   │   ├── subscriptions-repository.ts
@@ -254,7 +256,7 @@ waveplay-api/
 │       │   │   └── use-cases/
 │       │   │       ├── list-plans-use-case.ts
 │       │   │       ├── start-stream-use-case.ts
-│       │   │       ├── ping-stream-use-case.ts
+│       │   │       ├── ping-stream-use-case.ts   # Ping a cada 60s — Redis (zero banco)
 │       │   │       ├── stop-stream-use-case.ts
 │       │   │       └── cleanup-expired-streams-use-case.ts
 │       │   └── infra/
@@ -271,7 +273,7 @@ waveplay-api/
 │       │       │   └── prisma-profile-ownership-gateway.ts  # ProfileOwnershipGatewayPort ← Prisma (cross-BC query)
 │       │       ├── controllers/
 │       │       │   ├── list-plans.controller.ts
-│       │       │   ├── start-stream.controller.ts
+│       │       │   ├── start-stream.controller.ts    # 409 com lista de streams ativas quando limite atingido
 │       │       │   ├── ping-stream.controller.ts
 │       │       │   └── stop-stream.controller.ts
 │       │       └── presenters/

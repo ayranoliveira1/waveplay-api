@@ -103,28 +103,45 @@ Web (padrão, sem header):
 | Regra | Descrição |
 |-------|-----------|
 | Limite por plano | `COUNT(active_streams WHERE lastPing > 2min atrás) < user.plan.maxStreams` |
-| Heartbeat obrigatório | Player envia ping a cada 30 segundos |
+| Heartbeat obrigatório | Player envia ping a cada 60 segundos |
 | Timeout de 2 minutos | Stream sem ping há 2 minutos é considerada inativa |
 | Uma stream por perfil | Cada perfil só pode ter 1 reprodução ativa (`@@unique([userId, profileId])`) |
 | Limpeza automática | Cron job remove streams com lastPing > 2 minutos |
+| Storage | Ping no Redis (sorted set por userId). Start/stop no PostgreSQL (atomicidade) |
 
 ### Fluxo de reprodução
 
 ```
 1. App chama POST /streams/start { profileId, tmdbId, type }
-2. Backend conta streams ativas do user (lastPing > 2min atrás)
-3. Se count >= plan.maxStreams → 403 "Limite de telas atingido"
-4. Se ok → cria/atualiza ActiveStream → retorna streamId
-5. Player chama PUT /streams/:id/ping a cada 30s
-6. Ao sair do player → DELETE /streams/:id
+2. Backend conta streams ativas do user (Redis ZCARD com threshold de 2min)
+3. Se count >= plan.maxStreams → 409 com lista de streams ativas
+4. Se ok → PostgreSQL: cria/atualiza ActiveStream + Redis: ZADD → retorna streamId
+5. Player chama PUT /streams/:id/ping a cada 60s → Redis ZADD (zero banco)
+6. Ao sair do player → DELETE /streams/:id (PostgreSQL + Redis)
 7. Se app crashar → stream expira sozinha após 2min sem ping
 ```
 
 ### Quando o limite é atingido
 
 ```
-App mostra: "Você atingiu o limite de X telas simultâneas do seu plano.
-             Pare uma reprodução em outro dispositivo ou faça upgrade."
+API retorna 409 com lista de streams ativas:
+  - streamId, profileName, title, type, startedAt
+
+App mostra: "Você atingiu o limite de X telas simultâneas do seu plano."
+            + Lista de dispositivos ativos
+            + Opção de encerrar qualquer um (DELETE /streams/:id)
+            + Após encerrar, app tenta POST /streams/start novamente
+```
+
+### Detecção de desconexão (player externo)
+
+```
+1. Player A está assistindo (ping OK a cada 60s)
+2. Player C tenta iniciar → recebe 409 com lista [A, B]
+3. Usuário escolhe encerrar Player A → DELETE /streams/{streamId-A}
+4. Player C tenta novamente → 201 (agora tem vaga)
+5. Player A faz próximo ping (até 60s depois) → recebe 404
+6. App do Player A pausa o vídeo e mostra: "Sessão encerrada por outro dispositivo"
 ```
 
 ---

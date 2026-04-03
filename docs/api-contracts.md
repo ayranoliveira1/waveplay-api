@@ -497,17 +497,43 @@ Registra início de reprodução. Valida limite de telas do plano.
 }
 ```
 
-**Erros:**
+**Response 409 (limite de telas atingido):**
+
+```json
+{
+  "success": false,
+  "error": {
+    "statusCode": 409,
+    "code": "MAX_STREAMS_REACHED",
+    "message": "Você atingiu o limite de 2 tela(s) simultânea(s) do seu plano.",
+    "maxStreams": 2,
+    "activeStreams": [
+      {
+        "streamId": "uuid",
+        "profileName": "João",
+        "title": "The Last of Us",
+        "type": "series",
+        "startedAt": "2026-04-03T20:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+O frontend deve exibir a lista de streams ativas e permitir ao usuário encerrar qualquer uma via `DELETE /streams/:id`, então tentar `POST /streams/start` novamente.
+
+**Outros erros:**
 
 | Status | Mensagem |
 |--------|----------|
-| 403 | "Você atingiu o limite de X tela(s) simultânea(s) do seu plano. Pare uma reprodução em outro dispositivo ou faça upgrade." |
+| 400 | Body inválido (profileId não-uuid, tmdbId negativo, type inválido) |
+| 404 | Perfil não pertence ao usuário |
 
 ---
 
 ### PUT /streams/:id/ping
 
-Heartbeat enviado pelo player a cada 30 segundos.
+Heartbeat enviado pelo player a cada 60 segundos. Armazenado no Redis (zero queries no banco).
 
 **Response 200:**
 

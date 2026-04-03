@@ -59,7 +59,7 @@
 
 | Tech | Versão | Uso |
 |------|--------|-----|
-| Redis | 7 | Cache principal (catálogo TMDB, sessões) |
+| Redis | 7 | Cache principal (catálogo TMDB, sessões), heartbeat de streams ativas (sorted set por userId), account lockout |
 | ioredis | ^5.10.0 | Client Redis para Node.js |
 | @nestjs/cache-manager | ^3.x | Abstração de cache do NestJS |
 | cache-manager-ioredis-yet | ^2.x | Adapter Redis para cache-manager |
