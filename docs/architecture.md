@@ -463,6 +463,12 @@ Repository.create(user) (Identity BC)
 | GET | /catalog/series/airing-today | catalog | Auth | Séries no ar hoje |
 | GET | /catalog/series/on-the-air | catalog | Auth | Séries em exibição |
 | GET | /catalog/search?q= | catalog | Auth | Busca |
+| GET | /catalog/movies/:id/similar | catalog | Auth | Filmes semelhantes |
+| GET | /catalog/series/:id/similar | catalog | Auth | Séries semelhantes |
+| GET | /catalog/genres/movies | catalog | Auth | Lista gêneros de filmes |
+| GET | /catalog/genres/series | catalog | Auth | Lista gêneros de séries |
+| GET | /catalog/movies/genre/:genreId | catalog | Auth | Filmes por gênero |
+| GET | /catalog/series/genre/:genreId | catalog | Auth | Séries por gênero |
 | GET | /favorites/:profileId | library | Auth | Listar favoritos |
 | POST | /favorites/:profileId | library | Auth | Toggle favorito |
 | GET | /watchlist/:profileId | library | Auth | Listar watchlist |
