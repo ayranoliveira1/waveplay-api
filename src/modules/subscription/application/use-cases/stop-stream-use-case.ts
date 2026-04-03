@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common'
 import type { Either } from '@/core/either'
 import { left, right } from '@/core/either'
 import { ActiveStreamsRepository } from '../../domain/repositories/active-streams-repository'
+import { StreamCachePort } from '../ports/stream-cache.port'
 import { StreamNotFoundError } from '../../domain/errors/stream-not-found.error'
 
 interface StopStreamUseCaseRequest {
@@ -14,7 +15,10 @@ type StopStreamUseCaseResponse = Either<StreamNotFoundError, null>
 
 @Injectable()
 export class StopStreamUseCase {
-  constructor(private activeStreamsRepository: ActiveStreamsRepository) {}
+  constructor(
+    private activeStreamsRepository: ActiveStreamsRepository,
+    private streamCache: StreamCachePort,
+  ) {}
 
   async execute(
     request: StopStreamUseCaseRequest,
@@ -28,6 +32,7 @@ export class StopStreamUseCase {
     }
 
     await this.activeStreamsRepository.delete(streamId)
+    await this.streamCache.removeStream(userId, streamId)
 
     return right(null)
   }
