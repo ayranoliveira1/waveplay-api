@@ -1,35 +1,32 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 
 import { PingStreamUseCase } from './ping-stream-use-case'
-import { InMemoryActiveStreamsRepository } from 'test/repositories/in-memory-active-streams-repository'
-import { ActiveStream } from '../../domain/entities/active-stream'
+import { FakeStreamCache } from 'test/cache/fake-stream-cache'
 import { StreamNotFoundError } from '../../domain/errors/stream-not-found.error'
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
-let activeStreamsRepository: InMemoryActiveStreamsRepository
+let streamCache: FakeStreamCache
 let sut: PingStreamUseCase
 
 describe('PingStreamUseCase', () => {
   beforeEach(() => {
-    activeStreamsRepository = new InMemoryActiveStreamsRepository()
-    sut = new PingStreamUseCase(activeStreamsRepository)
+    streamCache = new FakeStreamCache()
+    sut = new PingStreamUseCase(streamCache)
   })
 
-  it('should update lastPing on valid stream', async () => {
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+  it('should update lastPing on valid stream via cache', async () => {
+    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000
 
-    activeStreamsRepository.items.push(
-      ActiveStream.create(
-        {
-          userId: 'user-1',
-          profileId: 'profile-1',
-          tmdbId: 550,
-          type: 'movie',
-          lastPing: fiveMinutesAgo,
-        },
-        new UniqueEntityID('stream-1'),
-      ),
-    )
+    streamCache.streams.set('stream-1', {
+      userId: 'user-1',
+      profileId: 'profile-1',
+      profileName: 'João',
+      streamId: 'stream-1',
+      tmdbId: 550,
+      type: 'movie',
+      title: 'Fight Club',
+      startedAt: new Date(),
+      lastPing: fiveMinutesAgo,
+    })
 
     const result = await sut.execute({
       userId: 'user-1',
@@ -37,12 +34,12 @@ describe('PingStreamUseCase', () => {
     })
 
     expect(result.isRight()).toBe(true)
-    expect(activeStreamsRepository.items[0].lastPing.getTime()).toBeGreaterThan(
-      fiveMinutesAgo.getTime(),
-    )
+
+    const cached = streamCache.streams.get('stream-1')
+    expect(cached!.lastPing).toBeGreaterThan(fiveMinutesAgo)
   })
 
-  it('should return error when stream not found', async () => {
+  it('should return error when stream not found in cache', async () => {
     const result = await sut.execute({
       userId: 'user-1',
       streamId: 'non-existent',
@@ -53,17 +50,17 @@ describe('PingStreamUseCase', () => {
   })
 
   it('should return error when stream belongs to another user', async () => {
-    activeStreamsRepository.items.push(
-      ActiveStream.create(
-        {
-          userId: 'user-1',
-          profileId: 'profile-1',
-          tmdbId: 550,
-          type: 'movie',
-        },
-        new UniqueEntityID('stream-1'),
-      ),
-    )
+    streamCache.streams.set('stream-1', {
+      userId: 'user-1',
+      profileId: 'profile-1',
+      profileName: 'João',
+      streamId: 'stream-1',
+      tmdbId: 550,
+      type: 'movie',
+      title: 'Fight Club',
+      startedAt: new Date(),
+      lastPing: Date.now(),
+    })
 
     const result = await sut.execute({
       userId: 'user-2',
