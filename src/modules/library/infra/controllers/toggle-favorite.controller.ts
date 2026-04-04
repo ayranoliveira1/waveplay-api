@@ -15,14 +15,16 @@ import { GetUser } from '@/modules/identity/infra/decorators/get-user.decorator'
 
 const profileIdSchema = z.string().uuid()
 
-const toggleFavoriteSchema = z.object({
-  tmdbId: z.number().int().min(0),
-  type: z.enum(['movie', 'series']),
-  title: z.string().min(1),
-  posterPath: z.string().nullable().optional(),
-  backdropPath: z.string().nullable().optional(),
-  rating: z.number().min(0).max(10),
-})
+const toggleFavoriteSchema = z
+  .object({
+    tmdbId: z.number().int().min(0),
+    type: z.enum(['movie', 'series']),
+    title: z.string().min(1),
+    posterPath: z.string().nullable().optional(),
+    backdropPath: z.string().nullable().optional(),
+    rating: z.number().min(0).max(10),
+  })
+  .strict()
 
 type ToggleFavoriteBody = z.infer<typeof toggleFavoriteSchema>
 
