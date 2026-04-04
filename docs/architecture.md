@@ -322,10 +322,14 @@ waveplay-api/
 │           │   ├── entities/
 │           │   │   ├── progress.ts
 │           │   │   └── history-item.ts
-│           │   └── repositories/
-│           │       ├── progress-repository.ts
-│           │       └── history-repository.ts
+│           │   ├── repositories/
+│           │   │   ├── progress-repository.ts
+│           │   │   └── history-repository.ts
+│           │   └── errors/
+│           │       └── profile-not-found.error.ts
 │           ├── application/
+│           │   ├── ports/
+│           │   │   └── profile-ownership-gateway.port.ts  # Interface: validateOwnership() — cross-BC query
 │           │   └── use-cases/
 │           │       ├── save-progress-use-case.ts
 │           │       ├── get-continue-watching-use-case.ts
@@ -340,9 +344,12 @@ waveplay-api/
 │               ├── repositories/
 │               │   ├── prisma-progress-repository.ts
 │               │   └── prisma-history-repository.ts
+│               ├── gateways/
+│               │   └── prisma-profile-ownership-gateway.ts  # ProfileOwnershipGatewayPort ← Prisma
 │               ├── controllers/
 │               │   ├── save-progress.controller.ts
 │               │   ├── continue-watching.controller.ts
+│               │   ├── add-to-history.controller.ts
 │               │   ├── list-history.controller.ts
 │               │   └── clear-history.controller.ts
 │               └── presenters/
