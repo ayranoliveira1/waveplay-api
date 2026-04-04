@@ -9,6 +9,7 @@ import { IdentityModule } from '@/modules/identity/infra/identity.module'
 import { ProfileModule } from '@/modules/profile/infra/profile.module'
 import { SubscriptionModule } from '@/modules/subscription/infra/subscription.module'
 import { CatalogModule } from '@/modules/catalog/infra/catalog.module'
+import { LibraryModule } from '@/modules/library/infra/library.module'
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CatalogModule } from '@/modules/catalog/infra/catalog.module'
     ProfileModule,
     SubscriptionModule,
     CatalogModule,
+    LibraryModule,
   ],
   providers: [
     {
