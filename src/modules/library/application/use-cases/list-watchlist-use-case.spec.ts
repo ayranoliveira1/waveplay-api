@@ -13,14 +13,29 @@ let sut: ListWatchlistUseCase
 describe('ListWatchlistUseCase', () => {
   beforeEach(() => {
     watchlistRepository = new InMemoryWatchlistRepository()
-    ownershipGateway = { result: true, validateOwnership: async () => ownershipGateway.result }
+    ownershipGateway = {
+      result: true,
+      validateOwnership: async () => ownershipGateway.result,
+    }
     sut = new ListWatchlistUseCase(watchlistRepository, ownershipGateway)
   })
 
   it('should return paginated watchlist items', async () => {
     watchlistRepository.items.push(
-      WatchlistItem.create({ profileId: 'profile-1', tmdbId: 550, type: 'movie', title: 'Clube da Luta', rating: 8.4 }),
-      WatchlistItem.create({ profileId: 'profile-1', tmdbId: 1396, type: 'series', title: 'Breaking Bad', rating: 8.9 }),
+      WatchlistItem.create({
+        profileId: 'profile-1',
+        tmdbId: 550,
+        type: 'movie',
+        title: 'Clube da Luta',
+        rating: 8.4,
+      }),
+      WatchlistItem.create({
+        profileId: 'profile-1',
+        tmdbId: 1396,
+        type: 'series',
+        title: 'Breaking Bad',
+        rating: 8.9,
+      }),
     )
 
     const result = await sut.execute({

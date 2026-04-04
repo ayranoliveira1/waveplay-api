@@ -13,14 +13,29 @@ let sut: ListFavoritesUseCase
 describe('ListFavoritesUseCase', () => {
   beforeEach(() => {
     favoritesRepository = new InMemoryFavoritesRepository()
-    ownershipGateway = { result: true, validateOwnership: async () => ownershipGateway.result }
+    ownershipGateway = {
+      result: true,
+      validateOwnership: async () => ownershipGateway.result,
+    }
     sut = new ListFavoritesUseCase(favoritesRepository, ownershipGateway)
   })
 
   it('should return paginated favorites', async () => {
     favoritesRepository.items.push(
-      Favorite.create({ profileId: 'profile-1', tmdbId: 550, type: 'movie', title: 'Clube da Luta', rating: 8.4 }),
-      Favorite.create({ profileId: 'profile-1', tmdbId: 1396, type: 'series', title: 'Breaking Bad', rating: 8.9 }),
+      Favorite.create({
+        profileId: 'profile-1',
+        tmdbId: 550,
+        type: 'movie',
+        title: 'Clube da Luta',
+        rating: 8.4,
+      }),
+      Favorite.create({
+        profileId: 'profile-1',
+        tmdbId: 1396,
+        type: 'series',
+        title: 'Breaking Bad',
+        rating: 8.9,
+      }),
     )
 
     const result = await sut.execute({

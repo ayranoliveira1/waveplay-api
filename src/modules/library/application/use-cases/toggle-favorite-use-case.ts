@@ -33,7 +33,16 @@ export class ToggleFavoriteUseCase {
   async execute(
     request: ToggleFavoriteUseCaseRequest,
   ): Promise<ToggleFavoriteUseCaseResponse> {
-    const { userId, profileId, tmdbId, type, title, posterPath, backdropPath, rating } = request
+    const {
+      userId,
+      profileId,
+      tmdbId,
+      type,
+      title,
+      posterPath,
+      backdropPath,
+      rating,
+    } = request
 
     const isOwner = await this.profileOwnershipGateway.validateOwnership(
       profileId,

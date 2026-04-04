@@ -14,7 +14,10 @@ let sut: ToggleFavoriteUseCase
 describe('ToggleFavoriteUseCase', () => {
   beforeEach(() => {
     favoritesRepository = new InMemoryFavoritesRepository()
-    ownershipGateway = { result: true, validateOwnership: async () => ownershipGateway.result }
+    ownershipGateway = {
+      result: true,
+      validateOwnership: async () => ownershipGateway.result,
+    }
     sut = new ToggleFavoriteUseCase(favoritesRepository, ownershipGateway)
   })
 
@@ -38,7 +41,13 @@ describe('ToggleFavoriteUseCase', () => {
   it('should remove a favorite when it already exists (toggle)', async () => {
     favoritesRepository.items.push(
       Favorite.create(
-        { profileId: 'profile-1', tmdbId: 550, type: 'movie', title: 'Clube da Luta', rating: 8.4 },
+        {
+          profileId: 'profile-1',
+          tmdbId: 550,
+          type: 'movie',
+          title: 'Clube da Luta',
+          rating: 8.4,
+        },
         new UniqueEntityID('fav-1'),
       ),
     )

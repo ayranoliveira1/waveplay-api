@@ -33,7 +33,16 @@ export class ToggleWatchlistUseCase {
   async execute(
     request: ToggleWatchlistUseCaseRequest,
   ): Promise<ToggleWatchlistUseCaseResponse> {
-    const { userId, profileId, tmdbId, type, title, posterPath, backdropPath, rating } = request
+    const {
+      userId,
+      profileId,
+      tmdbId,
+      type,
+      title,
+      posterPath,
+      backdropPath,
+      rating,
+    } = request
 
     const isOwner = await this.profileOwnershipGateway.validateOwnership(
       profileId,

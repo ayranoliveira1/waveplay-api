@@ -14,7 +14,10 @@ let sut: ToggleWatchlistUseCase
 describe('ToggleWatchlistUseCase', () => {
   beforeEach(() => {
     watchlistRepository = new InMemoryWatchlistRepository()
-    ownershipGateway = { result: true, validateOwnership: async () => ownershipGateway.result }
+    ownershipGateway = {
+      result: true,
+      validateOwnership: async () => ownershipGateway.result,
+    }
     sut = new ToggleWatchlistUseCase(watchlistRepository, ownershipGateway)
   })
 
@@ -38,7 +41,13 @@ describe('ToggleWatchlistUseCase', () => {
   it('should remove from watchlist when it already exists (toggle)', async () => {
     watchlistRepository.items.push(
       WatchlistItem.create(
-        { profileId: 'profile-1', tmdbId: 550, type: 'movie', title: 'Clube da Luta', rating: 8.4 },
+        {
+          profileId: 'profile-1',
+          tmdbId: 550,
+          type: 'movie',
+          title: 'Clube da Luta',
+          rating: 8.4,
+        },
         new UniqueEntityID('wl-1'),
       ),
     )

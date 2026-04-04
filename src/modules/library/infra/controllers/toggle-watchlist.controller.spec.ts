@@ -18,7 +18,10 @@ import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 let app: INestApplication
 let watchlistRepository: InMemoryWatchlistRepository
-let ownershipGateway: { result: boolean; validateOwnership: () => Promise<boolean> }
+let ownershipGateway: {
+  result: boolean
+  validateOwnership: () => Promise<boolean>
+}
 
 const PROFILE_ID = '550e8400-e29b-41d4-a716-446655440000'
 
