@@ -239,10 +239,14 @@ waveplay-api/
 │       │   │   ├── entities/
 │       │   │   │   ├── favorite.ts
 │       │   │   │   └── watchlist-item.ts
-│       │   │   └── repositories/
-│       │   │       ├── favorites-repository.ts
-│       │   │       └── watchlist-repository.ts
+│       │   │   ├── repositories/
+│       │   │   │   ├── favorites-repository.ts
+│       │   │   │   └── watchlist-repository.ts
+│       │   │   └── errors/
+│       │   │       └── profile-not-found.error.ts
 │       │   ├── application/
+│       │   │   ├── ports/
+│       │   │   │   └── profile-ownership-gateway.port.ts  # Interface: validateOwnership() — cross-BC query
 │       │   │   └── use-cases/
 │       │   │       ├── toggle-favorite-use-case.ts
 │       │   │       ├── list-favorites-use-case.ts
@@ -256,6 +260,8 @@ waveplay-api/
 │       │       ├── repositories/
 │       │       │   ├── prisma-favorites-repository.ts
 │       │       │   └── prisma-watchlist-repository.ts
+│       │       ├── gateways/
+│       │       │   └── prisma-profile-ownership-gateway.ts  # ProfileOwnershipGatewayPort ← Prisma
 │       │       ├── controllers/
 │       │       │   ├── toggle-favorite.controller.ts
 │       │       │   ├── list-favorites.controller.ts
