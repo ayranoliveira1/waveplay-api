@@ -39,6 +39,30 @@ export class PrismaFavoritesRepository implements FavoritesRepository {
     return row ? PrismaFavoriteMapper.toDomain(row) : null
   }
 
+  async toggle(favorite: Favorite): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.favorite.findUnique({
+        where: {
+          profileId_tmdbId_type: {
+            profileId: favorite.profileId,
+            tmdbId: favorite.tmdbId,
+            type: favorite.type,
+          },
+        },
+      })
+
+      if (existing) {
+        await tx.favorite.delete({ where: { id: existing.id } })
+        return false
+      }
+
+      await tx.favorite.create({
+        data: PrismaFavoriteMapper.toPrisma(favorite),
+      })
+      return true
+    })
+  }
+
   async create(favorite: Favorite): Promise<void> {
     await this.prisma.favorite.create({
       data: PrismaFavoriteMapper.toPrisma(favorite),

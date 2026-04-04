@@ -53,17 +53,6 @@ export class ToggleWatchlistUseCase {
       return left(new ProfileNotFoundError())
     }
 
-    const existing = await this.watchlistRepository.findByProfileAndTmdb(
-      profileId,
-      tmdbId,
-      type,
-    )
-
-    if (existing) {
-      await this.watchlistRepository.delete(existing.id.toValue())
-      return right({ added: false })
-    }
-
     const item = WatchlistItem.create({
       profileId,
       tmdbId,
@@ -74,8 +63,8 @@ export class ToggleWatchlistUseCase {
       rating,
     })
 
-    await this.watchlistRepository.create(item)
+    const added = await this.watchlistRepository.toggle(item)
 
-    return right({ added: true })
+    return right({ added })
   }
 }

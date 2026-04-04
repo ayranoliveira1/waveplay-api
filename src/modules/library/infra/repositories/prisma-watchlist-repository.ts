@@ -39,6 +39,30 @@ export class PrismaWatchlistRepository implements WatchlistRepository {
     return row ? PrismaWatchlistMapper.toDomain(row) : null
   }
 
+  async toggle(item: WatchlistItem): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.watchlistItem.findUnique({
+        where: {
+          profileId_tmdbId_type: {
+            profileId: item.profileId,
+            tmdbId: item.tmdbId,
+            type: item.type,
+          },
+        },
+      })
+
+      if (existing) {
+        await tx.watchlistItem.delete({ where: { id: existing.id } })
+        return false
+      }
+
+      await tx.watchlistItem.create({
+        data: PrismaWatchlistMapper.toPrisma(item),
+      })
+      return true
+    })
+  }
+
   async create(item: WatchlistItem): Promise<void> {
     await this.prisma.watchlistItem.create({
       data: PrismaWatchlistMapper.toPrisma(item),

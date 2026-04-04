@@ -53,17 +53,6 @@ export class ToggleFavoriteUseCase {
       return left(new ProfileNotFoundError())
     }
 
-    const existing = await this.favoritesRepository.findByProfileAndTmdb(
-      profileId,
-      tmdbId,
-      type,
-    )
-
-    if (existing) {
-      await this.favoritesRepository.delete(existing.id.toValue())
-      return right({ added: false })
-    }
-
     const favorite = Favorite.create({
       profileId,
       tmdbId,
@@ -74,8 +63,8 @@ export class ToggleFavoriteUseCase {
       rating,
     })
 
-    await this.favoritesRepository.create(favorite)
+    const added = await this.favoritesRepository.toggle(favorite)
 
-    return right({ added: true })
+    return right({ added })
   }
 }

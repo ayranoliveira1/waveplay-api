@@ -35,6 +35,23 @@ export class InMemoryFavoritesRepository implements FavoritesRepository {
     )
   }
 
+  async toggle(favorite: Favorite): Promise<boolean> {
+    const index = this.items.findIndex(
+      (item) =>
+        item.profileId === favorite.profileId &&
+        item.tmdbId === favorite.tmdbId &&
+        item.type === favorite.type,
+    )
+
+    if (index >= 0) {
+      this.items.splice(index, 1)
+      return false
+    }
+
+    this.items.push(favorite)
+    return true
+  }
+
   async create(favorite: Favorite): Promise<void> {
     this.items.push(favorite)
   }

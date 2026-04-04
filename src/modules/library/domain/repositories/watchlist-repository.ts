@@ -12,6 +12,7 @@ export abstract class WatchlistRepository {
     tmdbId: number,
     type: string,
   ): Promise<WatchlistItem | null>
+  abstract toggle(item: WatchlistItem): Promise<boolean>
   abstract create(item: WatchlistItem): Promise<void>
   abstract delete(id: string): Promise<void>
 }

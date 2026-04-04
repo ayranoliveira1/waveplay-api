@@ -35,6 +35,23 @@ export class InMemoryWatchlistRepository implements WatchlistRepository {
     )
   }
 
+  async toggle(item: WatchlistItem): Promise<boolean> {
+    const index = this.items.findIndex(
+      (i) =>
+        i.profileId === item.profileId &&
+        i.tmdbId === item.tmdbId &&
+        i.type === item.type,
+    )
+
+    if (index >= 0) {
+      this.items.splice(index, 1)
+      return false
+    }
+
+    this.items.push(item)
+    return true
+  }
+
   async create(item: WatchlistItem): Promise<void> {
     this.items.push(item)
   }

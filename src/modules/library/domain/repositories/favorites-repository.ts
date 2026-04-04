@@ -12,6 +12,7 @@ export abstract class FavoritesRepository {
     tmdbId: number,
     type: string,
   ): Promise<Favorite | null>
+  abstract toggle(favorite: Favorite): Promise<boolean>
   abstract create(favorite: Favorite): Promise<void>
   abstract delete(id: string): Promise<void>
 }
