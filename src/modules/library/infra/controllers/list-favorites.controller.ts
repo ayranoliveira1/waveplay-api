@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Query, HttpCode, HttpStatus } from '@nestjs/common'
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common'
 import { z } from 'zod'
 
 import { ListFavoritesUseCase } from '../../application/use-cases/list-favorites-use-case'
@@ -41,7 +48,7 @@ export class ListFavoritesController {
     return {
       success: true,
       data: {
-        results: result.value.favorites.map(MediaListPresenter.toHTTP),
+        favorites: result.value.favorites.map(MediaListPresenter.toHTTP),
         page: result.value.page,
         totalPages: result.value.totalPages,
       },

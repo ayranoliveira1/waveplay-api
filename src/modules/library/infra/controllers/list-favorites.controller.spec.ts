@@ -17,7 +17,10 @@ import { Favorite } from '../../domain/entities/favorite'
 
 let app: INestApplication
 let favoritesRepository: InMemoryFavoritesRepository
-let ownershipGateway: { result: boolean; validateOwnership: () => Promise<boolean> }
+let ownershipGateway: {
+  result: boolean
+  validateOwnership: () => Promise<boolean>
+}
 
 const PROFILE_ID = '550e8400-e29b-41d4-a716-446655440000'
 
@@ -53,8 +56,20 @@ describe('ListFavoritesController', () => {
 
   it('should return 200 with paginated favorites', async () => {
     favoritesRepository.items.push(
-      Favorite.create({ profileId: PROFILE_ID, tmdbId: 550, type: 'movie', title: 'Clube da Luta', rating: 8.4 }),
-      Favorite.create({ profileId: PROFILE_ID, tmdbId: 1396, type: 'series', title: 'Breaking Bad', rating: 8.9 }),
+      Favorite.create({
+        profileId: PROFILE_ID,
+        tmdbId: 550,
+        type: 'movie',
+        title: 'Clube da Luta',
+        rating: 8.4,
+      }),
+      Favorite.create({
+        profileId: PROFILE_ID,
+        tmdbId: 1396,
+        type: 'series',
+        title: 'Breaking Bad',
+        rating: 8.9,
+      }),
     )
 
     const response = await request(app.getHttpServer()).get(
@@ -63,9 +78,9 @@ describe('ListFavoritesController', () => {
 
     expect(response.status).toBe(200)
     expect(response.body.success).toBe(true)
-    expect(response.body.data.results).toHaveLength(2)
-    expect(response.body.data.results[0].tmdbId).toBeDefined()
-    expect(response.body.data.results[0].title).toBeDefined()
+    expect(response.body.data.favorites).toHaveLength(2)
+    expect(response.body.data.favorites[0].tmdbId).toBeDefined()
+    expect(response.body.data.favorites[0].title).toBeDefined()
     expect(response.body.data.page).toBe(1)
     expect(response.body.data.totalPages).toBe(1)
   })

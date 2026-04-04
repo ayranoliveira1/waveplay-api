@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Query, HttpCode, HttpStatus } from '@nestjs/common'
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common'
 import { z } from 'zod'
 
 import { ListWatchlistUseCase } from '../../application/use-cases/list-watchlist-use-case'
@@ -41,7 +48,7 @@ export class ListWatchlistController {
     return {
       success: true,
       data: {
-        results: result.value.items.map(MediaListPresenter.toHTTP),
+        items: result.value.items.map(MediaListPresenter.toHTTP),
         page: result.value.page,
         totalPages: result.value.totalPages,
       },

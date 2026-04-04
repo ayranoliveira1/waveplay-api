@@ -17,7 +17,10 @@ import { WatchlistItem } from '../../domain/entities/watchlist-item'
 
 let app: INestApplication
 let watchlistRepository: InMemoryWatchlistRepository
-let ownershipGateway: { result: boolean; validateOwnership: () => Promise<boolean> }
+let ownershipGateway: {
+  result: boolean
+  validateOwnership: () => Promise<boolean>
+}
 
 const PROFILE_ID = '550e8400-e29b-41d4-a716-446655440000'
 
@@ -53,8 +56,20 @@ describe('ListWatchlistController', () => {
 
   it('should return 200 with paginated watchlist items', async () => {
     watchlistRepository.items.push(
-      WatchlistItem.create({ profileId: PROFILE_ID, tmdbId: 550, type: 'movie', title: 'Clube da Luta', rating: 8.4 }),
-      WatchlistItem.create({ profileId: PROFILE_ID, tmdbId: 1396, type: 'series', title: 'Breaking Bad', rating: 8.9 }),
+      WatchlistItem.create({
+        profileId: PROFILE_ID,
+        tmdbId: 550,
+        type: 'movie',
+        title: 'Clube da Luta',
+        rating: 8.4,
+      }),
+      WatchlistItem.create({
+        profileId: PROFILE_ID,
+        tmdbId: 1396,
+        type: 'series',
+        title: 'Breaking Bad',
+        rating: 8.9,
+      }),
     )
 
     const response = await request(app.getHttpServer()).get(
@@ -63,9 +78,9 @@ describe('ListWatchlistController', () => {
 
     expect(response.status).toBe(200)
     expect(response.body.success).toBe(true)
-    expect(response.body.data.results).toHaveLength(2)
-    expect(response.body.data.results[0].tmdbId).toBeDefined()
-    expect(response.body.data.results[0].title).toBeDefined()
+    expect(response.body.data.items).toHaveLength(2)
+    expect(response.body.data.items[0].tmdbId).toBeDefined()
+    expect(response.body.data.items[0].title).toBeDefined()
     expect(response.body.data.page).toBe(1)
     expect(response.body.data.totalPages).toBe(1)
   })
