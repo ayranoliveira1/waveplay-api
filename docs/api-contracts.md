@@ -881,7 +881,9 @@ Todas as rotas exigem `Authorization: Bearer {accessToken}`.
         "rating": 8.4,
         "createdAt": "2026-04-01T00:00:00.000Z"
       }
-    ]
+    ],
+    "page": 1,
+    "totalPages": 1
   },
   "error": null
 }
@@ -930,7 +932,7 @@ Toggle — adiciona ou remove.
 
 ### GET /watchlist/:profileId
 
-Response igual ao `GET /favorites/:profileId`.
+Response igual ao `GET /favorites/:profileId`, mas a chave do array é `items` em vez de `favorites`.
 
 ---
 
