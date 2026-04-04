@@ -13,6 +13,7 @@ export default defineConfig({
     testTimeout: 20_000,
     fileParallelism: false,
   },
+  oxc: false,
   plugins: [
     swc.vite({
       module: { type: 'es6' },
