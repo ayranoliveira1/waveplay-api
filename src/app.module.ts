@@ -10,6 +10,7 @@ import { ProfileModule } from '@/modules/profile/infra/profile.module'
 import { SubscriptionModule } from '@/modules/subscription/infra/subscription.module'
 import { CatalogModule } from '@/modules/catalog/infra/catalog.module'
 import { LibraryModule } from '@/modules/library/infra/library.module'
+import { PlaybackModule } from '@/modules/playback/infra/playback.module'
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { LibraryModule } from '@/modules/library/infra/library.module'
     SubscriptionModule,
     CatalogModule,
     LibraryModule,
+    PlaybackModule,
   ],
   providers: [
     {
