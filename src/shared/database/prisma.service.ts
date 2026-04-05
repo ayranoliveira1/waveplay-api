@@ -9,8 +9,20 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
-    const pool = new Pool({ connectionString: process.env['DATABASE_URL'] })
-    const adapter = new PrismaPg(pool)
+    const databaseUrl = process.env['DATABASE_URL'] ?? ''
+    const url = new URL(databaseUrl)
+    const schema = url.searchParams.get('schema')
+
+    if (schema) {
+      url.searchParams.delete('schema')
+    }
+
+    const pool = new Pool({
+      connectionString: url.toString(),
+      ...(schema ? { options: `-c search_path="${schema}"` } : {}),
+    })
+
+    const adapter = new PrismaPg(pool, { schema: schema ?? undefined })
     super({ adapter })
   }
 
