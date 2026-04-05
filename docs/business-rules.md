@@ -181,8 +181,9 @@ App mostra: "Você atingiu o limite de X telas simultâneas do seu plano."
 |-------|-----------|
 | Vinculado ao perfil | Cada perfil tem seu próprio progresso |
 | Upsert | Se já existe progresso para o conteúdo, atualiza. Se não, cria |
-| Debounce no app | App envia progresso a cada 5 segundos (não a cada frame) |
-| Flush ao sair | App salva progresso imediatamente ao sair do player |
+| Debounce em memória | App salva progresso em memória a cada 5 segundos (não a cada frame) |
+| Sync periódico | App envia progresso para API a cada 5 minutos (backup contra crash) |
+| Flush ao sair | App salva progresso imediatamente na API ao sair do player |
 | Identificação por conteúdo | Filme: `tmdbId + type`. Série: `tmdbId + type + season + episode` |
 | Continue watching | Conteúdo com progresso > 0% e < 90% aparece em "Continue Assistindo" |
 | Conteúdo assistido | Progresso >= 90% da duração é considerado "assistido" |
