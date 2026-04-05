@@ -8,6 +8,7 @@ import {
   registerUser,
   authHeader,
   fullCleanup,
+  upgradePlan,
 } from './helpers/e2e-helpers'
 import { REDIS_CLIENT } from '@/shared/redis/redis.module'
 import type Redis from 'ioredis'
@@ -764,5 +765,72 @@ describe('POST /auth/reset-password', () => {
 
     expect(loginResponse.status).toBe(200)
     expect(loginResponse.body.data.accessToken).toBeDefined()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// GET /account
+// ---------------------------------------------------------------------------
+
+describe('GET /account', () => {
+  it('should return 200 with user data and basico subscription after registration', async () => {
+    const { accessToken } = await registerUser(app)
+
+    const response = await request(app.getHttpServer())
+      .get('/account')
+      .set(authHeader(accessToken!))
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(response.body.error).toBeNull()
+
+    const { user } = response.body.data
+    expect(user.id).toBeDefined()
+    expect(user.name).toBeDefined()
+    expect(user.email).toBeDefined()
+    expect(user.createdAt).toBeDefined()
+
+    expect(user.subscription).not.toBeNull()
+    expect(user.subscription.status).toBe('active')
+    expect(user.subscription.startedAt).toBeDefined()
+    expect(user.subscription.plan).toBeDefined()
+    expect(user.subscription.plan.slug).toBe('basico')
+    expect(user.subscription.plan.maxProfiles).toBe(1)
+    expect(user.subscription.plan.maxStreams).toBe(1)
+  })
+
+  it('should return subscription with upgraded plan after upgradePlan', async () => {
+    const { accessToken, userId } = await registerUser(app)
+
+    await upgradePlan(app, userId!, 'premium')
+
+    const response = await request(app.getHttpServer())
+      .get('/account')
+      .set(authHeader(accessToken!))
+
+    expect(response.status).toBe(200)
+
+    const { user } = response.body.data
+    expect(user.subscription).not.toBeNull()
+    expect(user.subscription.plan.slug).toBe('premium')
+    expect(user.subscription.plan.maxProfiles).toBe(5)
+    expect(user.subscription.plan.maxStreams).toBe(4)
+  })
+
+  it('should not expose passwordHash in the response', async () => {
+    const { accessToken } = await registerUser(app)
+
+    const response = await request(app.getHttpServer())
+      .get('/account')
+      .set(authHeader(accessToken!))
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.user.passwordHash).toBeUndefined()
+  })
+
+  it('should return 401 when called without an access token', async () => {
+    const response = await request(app.getHttpServer()).get('/account')
+
+    expect(response.status).toBe(401)
   })
 })
