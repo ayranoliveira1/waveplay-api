@@ -301,6 +301,53 @@ Valida token de reset e atualiza a senha. Revoga TODAS as families do usuário.
 
 ---
 
+### GET /account
+
+Retorna dados da conta do usuário autenticado + assinatura ativa.
+
+**Headers:** `Authorization: Bearer {accessToken}`
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "uuid",
+      "name": "João Silva",
+      "email": "joao@email.com",
+      "createdAt": "2026-04-01T00:00:00.000Z",
+      "subscription": {
+        "id": "uuid",
+        "status": "active",
+        "startedAt": "2026-04-01T00:00:00.000Z",
+        "endsAt": null,
+        "plan": {
+          "id": "uuid",
+          "name": "Básico",
+          "slug": "basico",
+          "maxProfiles": 1,
+          "maxStreams": 1
+        }
+      }
+    }
+  },
+  "error": null
+}
+```
+
+> Se o usuário não tem assinatura ativa, `subscription` será `null`.
+
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 401 | Não autenticado |
+| 404 | "Usuário não encontrado" |
+
+---
+
 ## 2. Profiles (Perfis)
 
 Todas as rotas exigem `Authorization: Bearer {accessToken}`.

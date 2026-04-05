@@ -17,6 +17,7 @@ import { LogoutUseCase } from '../application/use-cases/logout-use-case'
 import { LogoutAllUseCase } from '../application/use-cases/logout-all-use-case'
 import { ForgotPasswordUseCase } from '../application/use-cases/forgot-password-use-case'
 import { ResetPasswordUseCase } from '../application/use-cases/reset-password-use-case'
+import { GetAccountUseCase } from '../application/use-cases/get-account-use-case'
 
 // Controllers
 import { RegisterController } from './controllers/register.controller'
@@ -26,6 +27,7 @@ import { LogoutController } from './controllers/logout.controller'
 import { LogoutAllController } from './controllers/logout-all.controller'
 import { ForgotPasswordController } from './controllers/forgot-password.controller'
 import { ResetPasswordController } from './controllers/reset-password.controller'
+import { GetAccountController } from './controllers/get-account.controller'
 
 // Repositories (abstract → impl)
 import { UsersRepository } from '../domain/repositories/users-repository'
@@ -44,6 +46,8 @@ import { Argon2Hasher } from './cryptography/argon2-hasher'
 import { JwtEncrypter } from './cryptography/jwt-encrypter'
 import { EnvAuthConfig } from './config/env-auth-config'
 import { RedisAccountLockout } from './lockout/redis-account-lockout'
+import { AccountGatewayPort } from '../application/ports/account-gateway.port'
+import { PrismaAccountGateway } from './gateways/prisma-account-gateway'
 
 @Module({
   imports: [
@@ -68,6 +72,7 @@ import { RedisAccountLockout } from './lockout/redis-account-lockout'
     LogoutAllController,
     ForgotPasswordController,
     ResetPasswordController,
+    GetAccountController,
   ],
   providers: [
     // Use cases
@@ -78,6 +83,7 @@ import { RedisAccountLockout } from './lockout/redis-account-lockout'
     LogoutAllUseCase,
     ForgotPasswordUseCase,
     ResetPasswordUseCase,
+    GetAccountUseCase,
 
     // Repositories
     { provide: UsersRepository, useClass: PrismaUsersRepository },
@@ -95,6 +101,7 @@ import { RedisAccountLockout } from './lockout/redis-account-lockout'
     { provide: EncrypterPort, useClass: JwtEncrypter },
     { provide: AuthConfigPort, useClass: EnvAuthConfig },
     { provide: AccountLockoutPort, useClass: RedisAccountLockout },
+    { provide: AccountGatewayPort, useClass: PrismaAccountGateway },
 
     // Strategy
     JwtStrategy,
