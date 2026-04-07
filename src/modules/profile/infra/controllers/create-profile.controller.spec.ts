@@ -88,6 +88,15 @@ describe('CreateProfileController', () => {
     expect(response.body.success).toBe(false)
   })
 
+  it('should return 400 when avatarUrl is not a valid URL', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/profiles')
+      .send({ name: 'Perfil', avatarUrl: 'not-a-url' })
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
   it('should create profile with optional fields', async () => {
     const response = await request(app.getHttpServer()).post('/profiles').send({
       name: 'Perfil Kids',

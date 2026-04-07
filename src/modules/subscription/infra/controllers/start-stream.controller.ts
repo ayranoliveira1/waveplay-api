@@ -20,7 +20,7 @@ const startStreamSchema = z.object({
   profileId: z.string().uuid(),
   tmdbId: z.number().int().min(0),
   type: z.enum(['movie', 'series']),
-  title: z.string().min(1),
+  title: z.string().min(1).max(500),
 })
 
 type StartStreamBody = z.infer<typeof startStreamSchema>

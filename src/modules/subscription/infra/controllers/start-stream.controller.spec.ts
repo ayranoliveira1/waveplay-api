@@ -110,6 +110,20 @@ describe('StartStreamController', () => {
     expect(response.body.error).toBeNull()
   })
 
+  it('should return 400 when title exceeds 500 characters', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/streams/start')
+      .send({
+        profileId: '550e8400-e29b-41d4-a716-446655440000',
+        tmdbId: 550,
+        type: 'movie',
+        title: 'x'.repeat(501),
+      })
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
   it('should return 400 when body is invalid', async () => {
     const response = await request(app.getHttpServer())
       .post('/streams/start')

@@ -11,21 +11,28 @@ export class PrismaProgressRepository implements ProgressRepository {
   async upsert(progress: Progress): Promise<void> {
     const data = PrismaProgressMapper.toPrisma(progress)
 
-    await this.prisma.progress.upsert({
-      where: {
-        profileId_tmdbId_type_season_episode: {
+    await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.progress.findFirst({
+        where: {
           profileId: data.profileId,
           tmdbId: data.tmdbId,
           type: data.type,
-          season: data.season ?? null,
-          episode: data.episode ?? null,
+          season: data.season,
+          episode: data.episode,
         },
-      },
-      update: {
-        progressSeconds: data.progressSeconds,
-        durationSeconds: data.durationSeconds,
-      },
-      create: data,
+      })
+
+      if (existing) {
+        await tx.progress.update({
+          where: { id: existing.id },
+          data: {
+            progressSeconds: data.progressSeconds,
+            durationSeconds: data.durationSeconds,
+          },
+        })
+      } else {
+        await tx.progress.create({ data })
+      }
     })
   }
 

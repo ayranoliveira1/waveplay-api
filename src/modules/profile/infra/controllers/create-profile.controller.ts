@@ -9,7 +9,7 @@ import { ProfilePresenter } from '../presenters/profile-presenter'
 
 const createProfileSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(255),
-  avatarUrl: z.string().max(2048).optional(),
+  avatarUrl: z.string().url().max(2048).optional(),
   isKid: z.boolean().optional(),
 })
 
