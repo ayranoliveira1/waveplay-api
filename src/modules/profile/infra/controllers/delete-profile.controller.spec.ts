@@ -42,20 +42,29 @@ describe('DeleteProfileController', () => {
     profilesRepository = module.get(ProfilesRepository)
   })
 
+  it('should return 400 when id is not a valid UUID', async () => {
+    const response = await request(app.getHttpServer()).delete(
+      '/profiles/not-a-uuid',
+    )
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
   it('should return 200 with data: null on successful delete', async () => {
     profilesRepository.items.push(
       Profile.create(
         { userId: FakeAuthGuard.userId, name: 'Perfil 1' },
-        new UniqueEntityID('profile-1'),
+        new UniqueEntityID('550e8400-e29b-41d4-a716-446655440000'),
       ),
       Profile.create(
         { userId: FakeAuthGuard.userId, name: 'Perfil 2' },
-        new UniqueEntityID('profile-2'),
+        new UniqueEntityID('550e8400-e29b-41d4-a716-446655440001'),
       ),
     )
 
     const response = await request(app.getHttpServer()).delete(
-      '/profiles/profile-1',
+      '/profiles/550e8400-e29b-41d4-a716-446655440000',
     )
 
     expect(response.status).toBe(200)
@@ -67,7 +76,7 @@ describe('DeleteProfileController', () => {
 
   it('should return 404 when profile not found', async () => {
     const response = await request(app.getHttpServer()).delete(
-      '/profiles/nonexistent-id',
+      '/profiles/550e8400-e29b-41d4-a716-446655440099',
     )
 
     expect(response.status).toBe(404)
@@ -78,16 +87,16 @@ describe('DeleteProfileController', () => {
     profilesRepository.items.push(
       Profile.create(
         { userId: 'other-user-id', name: 'Perfil do Outro' },
-        new UniqueEntityID('other-profile'),
+        new UniqueEntityID('660e8400-e29b-41d4-a716-446655440000'),
       ),
       Profile.create(
         { userId: 'other-user-id', name: 'Perfil 2 do Outro' },
-        new UniqueEntityID('other-profile-2'),
+        new UniqueEntityID('660e8400-e29b-41d4-a716-446655440001'),
       ),
     )
 
     const response = await request(app.getHttpServer()).delete(
-      '/profiles/other-profile',
+      '/profiles/660e8400-e29b-41d4-a716-446655440000',
     )
 
     expect(response.status).toBe(404)
@@ -99,12 +108,12 @@ describe('DeleteProfileController', () => {
     profilesRepository.items.push(
       Profile.create(
         { userId: FakeAuthGuard.userId, name: 'Único Perfil' },
-        new UniqueEntityID('profile-1'),
+        new UniqueEntityID('550e8400-e29b-41d4-a716-446655440000'),
       ),
     )
 
     const response = await request(app.getHttpServer()).delete(
-      '/profiles/profile-1',
+      '/profiles/550e8400-e29b-41d4-a716-446655440000',
     )
 
     expect(response.status).toBe(403)

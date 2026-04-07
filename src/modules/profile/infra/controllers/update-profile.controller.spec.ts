@@ -42,16 +42,25 @@ describe('UpdateProfileController', () => {
     profilesRepository = module.get(ProfilesRepository)
   })
 
+  it('should return 400 when id is not a valid UUID', async () => {
+    const response = await request(app.getHttpServer())
+      .patch('/profiles/not-a-uuid')
+      .send({ name: 'Test' })
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
   it('should return 200 with updated profile', async () => {
     profilesRepository.items.push(
       Profile.create(
         { userId: FakeAuthGuard.userId, name: 'Original' },
-        new UniqueEntityID('profile-1'),
+        new UniqueEntityID('550e8400-e29b-41d4-a716-446655440000'),
       ),
     )
 
     const response = await request(app.getHttpServer())
-      .patch('/profiles/profile-1')
+      .patch('/profiles/550e8400-e29b-41d4-a716-446655440000')
       .send({ name: 'Atualizado' })
 
     expect(response.status).toBe(200)
@@ -69,12 +78,12 @@ describe('UpdateProfileController', () => {
           isKid: false,
           avatarUrl: 'https://example.com/old.png',
         },
-        new UniqueEntityID('profile-1'),
+        new UniqueEntityID('550e8400-e29b-41d4-a716-446655440000'),
       ),
     )
 
     const response = await request(app.getHttpServer())
-      .patch('/profiles/profile-1')
+      .patch('/profiles/550e8400-e29b-41d4-a716-446655440000')
       .send({ isKid: true })
 
     expect(response.status).toBe(200)
@@ -87,7 +96,7 @@ describe('UpdateProfileController', () => {
 
   it('should return 404 when profile not found', async () => {
     const response = await request(app.getHttpServer())
-      .patch('/profiles/nonexistent-id')
+      .patch('/profiles/550e8400-e29b-41d4-a716-446655440099')
       .send({ name: 'Test' })
 
     expect(response.status).toBe(404)
@@ -98,12 +107,12 @@ describe('UpdateProfileController', () => {
     profilesRepository.items.push(
       Profile.create(
         { userId: 'other-user-id', name: 'Perfil do Outro' },
-        new UniqueEntityID('other-profile'),
+        new UniqueEntityID('660e8400-e29b-41d4-a716-446655440000'),
       ),
     )
 
     const response = await request(app.getHttpServer())
-      .patch('/profiles/other-profile')
+      .patch('/profiles/660e8400-e29b-41d4-a716-446655440000')
       .send({ name: 'Hackeado' })
 
     expect(response.status).toBe(404)

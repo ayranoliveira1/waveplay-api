@@ -5,6 +5,7 @@ import {
   Param,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common'
 import { z } from 'zod'
 
@@ -30,7 +31,7 @@ export class UpdateProfileController {
   @HttpCode(HttpStatus.OK)
   async handle(
     @Body(new ZodValidationPipe(updateProfileSchema)) body: UpdateProfileBody,
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @GetUser('userId') userId: string,
   ) {
     const result = await this.updateProfileUseCase.execute({
