@@ -45,15 +45,14 @@ export class AllExceptionsFilter implements NestExceptionFilter {
     } else if (isAxiosError(exception)) {
       status = exception.response?.status || 500
       const data = exception.response?.data
-      if (data?.errors) {
-        errorMessages = Array.isArray(data.errors) ? data.errors : [data.errors]
-      } else if (data?.message) {
-        errorMessages = [data.message]
-      } else if (data) {
-        errorMessages = [data]
-      } else {
-        errorMessages = [exception.message]
-      }
+      const detail =
+        data?.message ||
+        (typeof data === 'string' ? data : null) ||
+        exception.message
+      this.logger.error(
+        `External API error: ${exception.config?.url} — ${detail}`,
+        exception.stack,
+      )
     } else if (exception?.status && exception?.message) {
       const statusValue = exception.status
 
