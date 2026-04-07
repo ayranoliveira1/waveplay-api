@@ -43,7 +43,7 @@ export class PrismaUsersRepository implements UsersRepository {
     } catch (error: any) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
-        error === ('P2002' as unknown)
+        error.code === 'P2002'
       ) {
         throw new EmailAlreadyExistsError()
       }
