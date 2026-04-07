@@ -71,6 +71,14 @@ describe('TrendingController', () => {
     expect(response.body.data.totalPages).toBe(1)
   })
 
+  it('should return 400 when page exceeds 500', async () => {
+    const response = await request(app.getHttpServer()).get(
+      '/catalog/trending?page=501',
+    )
+
+    expect(response.status).toBe(400)
+  })
+
   it('should return 200 with empty array when no trending', async () => {
     provider.multiResults = []
 

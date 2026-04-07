@@ -11,7 +11,7 @@ const pageSchema = z
   .optional()
   .default('1')
   .transform(Number)
-  .pipe(z.number().int().min(1))
+  .pipe(z.number().int().min(1).max(500))
 
 @Controller('/catalog')
 export class SearchController {
