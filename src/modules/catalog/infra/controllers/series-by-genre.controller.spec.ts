@@ -46,6 +46,15 @@ describe('SeriesByGenreController', () => {
     await app.init()
   })
 
+  it('should return 400 when genre id exceeds max allowed value', async () => {
+    const response = await request(app.getHttpServer()).get(
+      '/catalog/series/genre/100000?page=1',
+    )
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
   it('should return 200 with series by genre', async () => {
     const response = await request(app.getHttpServer()).get(
       '/catalog/series/genre/18?page=1',

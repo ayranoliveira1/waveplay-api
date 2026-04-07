@@ -61,6 +61,24 @@ describe('SeasonEpisodesController', () => {
     expect(response.body.data.episodes[0].episodeNumber).toBe(1)
   })
 
+  it('should return 400 when series id exceeds max allowed value', async () => {
+    const response = await request(app.getHttpServer()).get(
+      '/catalog/series/100000000/seasons/1',
+    )
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
+  it('should return 400 when season exceeds max allowed value', async () => {
+    const response = await request(app.getHttpServer()).get(
+      '/catalog/series/1396/seasons/101',
+    )
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
   it('should return 404 when season not found', async () => {
     provider.episodes = []
 

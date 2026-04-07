@@ -63,6 +63,15 @@ describe('SeriesDetailController', () => {
     expect(response.body.data.series.seasons[0].seasonNumber).toBe(1)
   })
 
+  it('should return 400 when id exceeds max allowed value', async () => {
+    const response = await request(app.getHttpServer()).get(
+      '/catalog/series/100000000',
+    )
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
   it('should return 404 when series not found', async () => {
     provider.seriesList = []
 

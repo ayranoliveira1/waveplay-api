@@ -18,7 +18,7 @@ import { ActiveStreamPresenter } from '../presenters/active-stream-presenter'
 
 const startStreamSchema = z.object({
   profileId: z.string().uuid(),
-  tmdbId: z.number().int().min(0),
+  tmdbId: z.number().int().min(0).max(99999999),
   type: z.enum(['movie', 'series']),
   title: z.string().min(1).max(500),
 })

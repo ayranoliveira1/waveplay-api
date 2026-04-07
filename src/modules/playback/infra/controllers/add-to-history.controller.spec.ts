@@ -53,6 +53,19 @@ describe('AddToHistoryController', () => {
     historyRepository = module.get(HistoryRepository)
   })
 
+  it('should return 400 when tmdbId exceeds max allowed value', async () => {
+    const response = await request(app.getHttpServer())
+      .post(`/history/${PROFILE_ID}`)
+      .send({
+        tmdbId: 100000000,
+        type: 'movie',
+        title: 'Test',
+      })
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
   it('should return 201 when adding to history', async () => {
     const response = await request(app.getHttpServer())
       .post(`/history/${PROFILE_ID}`)

@@ -17,7 +17,7 @@ const profileIdSchema = z.string().uuid()
 
 const addToHistorySchema = z
   .object({
-    tmdbId: z.number().int().min(1),
+    tmdbId: z.number().int().min(1).max(99999999),
     type: z.enum(['movie', 'series']),
     title: z.string().min(1),
     posterPath: z.string().nullable().optional(),

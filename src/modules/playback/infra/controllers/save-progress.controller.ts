@@ -17,7 +17,7 @@ const profileIdSchema = z.string().uuid()
 
 const saveProgressSchema = z
   .object({
-    tmdbId: z.number().int().min(1),
+    tmdbId: z.number().int().min(1).max(99999999),
     type: z.enum(['movie', 'series']),
     season: z.number().int().min(1).optional(),
     episode: z.number().int().min(1).optional(),

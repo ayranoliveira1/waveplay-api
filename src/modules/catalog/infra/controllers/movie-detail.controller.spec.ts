@@ -63,6 +63,15 @@ describe('MovieDetailController', () => {
     expect(response.body.data.movie.originalLanguage).toBe('en')
   })
 
+  it('should return 400 when id exceeds max allowed value', async () => {
+    const response = await request(app.getHttpServer()).get(
+      '/catalog/movies/100000000',
+    )
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
   it('should return 404 when movie not found', async () => {
     provider.movies = []
 

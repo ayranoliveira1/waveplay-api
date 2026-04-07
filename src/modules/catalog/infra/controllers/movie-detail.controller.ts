@@ -6,7 +6,7 @@ import { ZodValidationPipe } from '@/shared/pipes/zod-validation.pipe'
 import { CustomHttpException } from '@/shared/http/custom-http.exception'
 import { MoviePresenter } from '../presenters/movie-presenter'
 
-const idSchema = z.string().transform(Number).pipe(z.number().int().min(1))
+const idSchema = z.string().transform(Number).pipe(z.number().int().min(1).max(99999999))
 
 @Controller('/catalog/movies')
 export class MovieDetailController {
