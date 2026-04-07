@@ -124,6 +124,65 @@ describe('AuthenticateUseCase', () => {
     expect(result.isRight()).toBe(true)
   })
 
+  it('should pass ipAddress to lockout on failed login', async () => {
+    await sut.execute({
+      email: 'joao@email.com',
+      password: 'senha-errada',
+      ipAddress: '192.168.1.1',
+    })
+
+    expect(accountLockout.getIpFailures('192.168.1.1')).toBe(1)
+  })
+
+  it('should block IP after 15 failed attempts across different emails', async () => {
+    const ip = '10.0.0.1'
+
+    // 15 tentativas do mesmo IP com emails diferentes
+    for (let i = 0; i < 15; i++) {
+      await sut.execute({
+        email: `user${i}@email.com`,
+        password: 'senha-errada',
+        ipAddress: ip,
+      })
+    }
+
+    expect(accountLockout.isIpLocked(ip)).toBe(true)
+
+    // 16ª tentativa — mesmo com email válido e senha correta, IP está bloqueado
+    const result = await sut.execute({
+      email: 'joao@email.com',
+      password: '12345678',
+      ipAddress: ip,
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(AccountLockedError)
+  })
+
+  it('should track lockout count for exponential backoff', async () => {
+    // Primeiro lockout
+    for (let i = 0; i < 5; i++) {
+      await sut.execute({
+        email: 'joao@email.com',
+        password: 'senha-errada',
+      })
+    }
+
+    expect(accountLockout.getLockoutCount('joao@email.com')).toBe(1)
+
+    // Reset e segundo lockout
+    await accountLockout.resetFailures('joao@email.com')
+
+    for (let i = 0; i < 5; i++) {
+      await sut.execute({
+        email: 'joao@email.com',
+        password: 'senha-errada',
+      })
+    }
+
+    expect(accountLockout.getLockoutCount('joao@email.com')).toBe(2)
+  })
+
   it('should reset failure counter after successful login', async () => {
     // 3 tentativas erradas (abaixo do limite)
     for (let i = 0; i < 3; i++) {

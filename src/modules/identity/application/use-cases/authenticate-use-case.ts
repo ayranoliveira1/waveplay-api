@@ -51,7 +51,7 @@ export class AuthenticateUseCase {
   ): Promise<AuthenticateUseCaseResponse> {
     const { email, password, ipAddress, userAgent } = request
 
-    const isLocked = await this.accountLockout.isLocked(email)
+    const isLocked = await this.accountLockout.isLocked(email, ipAddress)
 
     if (isLocked) {
       this.logger.warn(`Account locked: ${email}`)
@@ -66,7 +66,7 @@ export class AuthenticateUseCase {
     )
 
     if (!user || !passwordMatch) {
-      await this.accountLockout.incrementFailures(email)
+      await this.accountLockout.incrementFailures(email, ipAddress)
       this.logger.warn(`Failed login attempt: ${email}`)
       return left(new InvalidCredentialsError())
     }
