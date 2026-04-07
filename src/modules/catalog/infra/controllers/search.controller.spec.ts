@@ -68,6 +68,15 @@ describe('SearchController', () => {
     expect(response.body.data.results[0].type).toBe('series')
   })
 
+  it('should return 400 when query exceeds 200 characters', async () => {
+    const response = await request(app.getHttpServer()).get(
+      `/catalog/search?q=${'a'.repeat(201)}&page=1`,
+    )
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
   it('should return 400 when query is empty', async () => {
     const response = await request(app.getHttpServer()).get(
       '/catalog/search?q=',

@@ -5,7 +5,7 @@ import { SearchCatalogUseCase } from '../../application/use-cases/search-catalog
 import { ZodValidationPipe } from '@/shared/pipes/zod-validation.pipe'
 import { SearchPresenter } from '../presenters/search-presenter'
 
-const querySchema = z.string().min(1)
+const querySchema = z.string().min(1).max(200)
 const pageSchema = z
   .string()
   .optional()
