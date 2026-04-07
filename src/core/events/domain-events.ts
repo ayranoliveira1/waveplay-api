@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common'
 import type { AggregateRoot } from '../entities/aggregate-root'
 import type { UniqueEntityID } from '../entities/unique-entity-id'
 import type { DomainEvent } from './domain-event'
@@ -73,8 +74,24 @@ export class DomainEvents {
     if (isEventRegistered) {
       const handlers = this.handlersMap[eventClassName]
 
+      const errors: Error[] = []
       for (const handler of handlers) {
-        handler(event)
+        try {
+          handler(event)
+        } catch (error) {
+          errors.push(error as Error)
+        }
+      }
+
+      if (errors.length > 0) {
+        const logger = new Logger('DomainEvents')
+        errors.forEach((err) =>
+          logger.error(
+            `Handler failed for ${eventClassName}: ${err.message}`,
+            err.stack,
+          ),
+        )
+        throw errors[0]
       }
     }
   }
