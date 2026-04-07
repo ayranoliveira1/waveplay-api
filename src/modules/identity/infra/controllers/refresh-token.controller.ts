@@ -9,12 +9,20 @@ import {
 } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 import type { Request, Response } from 'express'
+import { z } from 'zod'
 
 import { RefreshTokenUseCase } from '../../application/use-cases/refresh-token-use-case'
 import { InvalidRefreshTokenError } from '../../domain/errors/invalid-refresh-token.error'
 import { CustomHttpException } from '@/shared/http/custom-http.exception'
+import { ZodValidationPipe } from '@/shared/pipes/zod-validation.pipe'
 import { Public } from '../decorators/public.decorator'
 import { isMobile, setRefreshTokenCookie } from './platform-utils'
+
+const refreshTokenSchema = z
+  .object({
+    refreshToken: z.string().optional(),
+  })
+  .default({})
 
 @Controller('/auth')
 export class RefreshTokenController {
@@ -25,7 +33,7 @@ export class RefreshTokenController {
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async handle(
-    @Body() body: { refreshToken?: string },
+    @Body(new ZodValidationPipe(refreshTokenSchema)) body: { refreshToken?: string },
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {

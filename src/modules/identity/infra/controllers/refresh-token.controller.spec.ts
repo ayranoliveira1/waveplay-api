@@ -52,6 +52,16 @@ describe('RefreshTokenController', () => {
     authConfig = module.get(AuthConfigPort)
   })
 
+  it('should return 400 when refreshToken is not a string', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .set('X-Platform', 'mobile')
+      .send({ refreshToken: 123 })
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
   it('should read refresh token from body on mobile', async () => {
     const rawToken = randomUUID()
     const { refreshToken } = RefreshToken.createFromRawToken({
