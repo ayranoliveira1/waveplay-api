@@ -35,7 +35,7 @@ export class ResetPasswordUseCase {
   ): Promise<ResetPasswordUseCaseResponse> {
     const { token, newPassword } = request
 
-    const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
+    const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,128}$/
 
     if (!PASSWORD_REGEX.test(newPassword)) {
       return left(new WeakPasswordError())

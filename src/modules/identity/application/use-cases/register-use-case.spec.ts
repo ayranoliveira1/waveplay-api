@@ -142,6 +142,32 @@ describe('RegisterUseCase', () => {
     expect(result.value).toBeInstanceOf(WeakPasswordError)
   })
 
+  it('should return error when password exceeds 128 characters', async () => {
+    const longPassword = 'Aa1' + 'x'.repeat(126) // 129 chars, has upper+lower+digit
+    const result = await sut.execute({
+      name: 'João Silva',
+      email: 'joao@email.com',
+      password: longPassword,
+      confirmPassword: longPassword,
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(WeakPasswordError)
+    expect(usersRepository.items).toHaveLength(0)
+  })
+
+  it('should accept password with exactly 128 characters', async () => {
+    const maxPassword = 'Aa1' + 'x'.repeat(125) // 128 chars
+    const result = await sut.execute({
+      name: 'João Silva',
+      email: 'joao@email.com',
+      password: maxPassword,
+      confirmPassword: maxPassword,
+    })
+
+    expect(result.isRight()).toBe(true)
+  })
+
   it('should return error when confirmPassword does not match password', async () => {
     const result = await sut.execute({
       name: 'João Silva',

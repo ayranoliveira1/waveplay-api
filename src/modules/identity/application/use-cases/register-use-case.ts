@@ -53,7 +53,7 @@ export class RegisterUseCase {
       return left(new PasswordMismatchError())
     }
 
-    const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
+    const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,128}$/
 
     if (!PASSWORD_REGEX.test(password)) {
       return left(new WeakPasswordError())
