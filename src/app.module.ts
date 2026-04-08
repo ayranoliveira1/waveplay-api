@@ -11,6 +11,7 @@ import { SubscriptionModule } from '@/modules/subscription/infra/subscription.mo
 import { CatalogModule } from '@/modules/catalog/infra/catalog.module'
 import { LibraryModule } from '@/modules/library/infra/library.module'
 import { PlaybackModule } from '@/modules/playback/infra/playback.module'
+import { AdminModule } from '@/modules/admin/infra/admin.module'
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { PlaybackModule } from '@/modules/playback/infra/playback.module'
     CatalogModule,
     LibraryModule,
     PlaybackModule,
+    AdminModule,
   ],
   providers: [
     {
