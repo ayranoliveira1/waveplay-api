@@ -144,6 +144,41 @@ App mostra: "Você atingiu o limite de X telas simultâneas do seu plano."
 6. App do Player A pausa o vídeo e mostra: "Sessão encerrada por outro dispositivo"
 ```
 
+### Stream Sessions (Histórico)
+
+| Regra | Descrição |
+|-------|-----------|
+| Registro ao finalizar | `StreamSession` é criada ao finalizar uma stream (stop manual ou cleanup de expiradas) |
+| Append-only | StreamSessions são apenas inseridas, nunca atualizadas ou deletadas |
+| Dados registrados | userId, profileId, tmdbId, type, startedAt, endedAt, durationSeconds |
+| Duração calculada | `durationSeconds = endedAt - startedAt` (calculado no momento da criação) |
+| Stop manual | `DELETE /streams/:id` → cria StreamSession antes de deletar a ActiveStream |
+| Cleanup automático | Cron job busca streams expiradas → cria StreamSession para cada uma → deleta |
+| Uso em analytics | StreamSessions alimentam gráficos de uso: streams por hora, duração média, total de sessões |
+
+```
+Ciclo de vida:
+
+ActiveStream (efêmera)              StreamSession (permanente)
+┌──────────────────────┐            ┌──────────────────────┐
+│ POST /streams/start  │            │                      │
+│ → cria ActiveStream  │            │                      │
+│ + Redis ZADD         │            │                      │
+│                      │            │                      │
+│ PUT /streams/:id/ping│            │                      │
+│ → Redis ZADD         │            │                      │
+│                      │            │                      │
+│ DELETE /streams/:id  │───────────→│ cria StreamSession   │
+│ → deleta ActiveStream│            │ (append-only log)    │
+│ + Redis ZREM         │            │                      │
+└──────────────────────┘            └──────────────────────┘
+
+Ou, se expirada:
+
+│ Cron cleanup         │───────────→│ cria StreamSession   │
+│ → deleta expiradas   │            │ para cada expirada   │
+```
+
 ---
 
 ## 5. Favoritos
@@ -289,13 +324,38 @@ App mostra: "Você atingiu o limite de X telas simultâneas do seu plano."
 
 ### Analytics (GET /admin/analytics)
 
+O endpoint de analytics retorna dois blocos: **overview** (snapshot do estado atual) e **period** (dados filtrados por intervalo de datas).
+
+#### Overview (snapshot — estado atual do sistema)
+
 | Métrica | Descrição |
 |---------|-----------|
 | `totalUsers` | Total de usuários registrados |
 | `totalActiveSubscriptions` | Subscriptions com `status: 'active'` |
-| `subscriptionsByPlan` | Contagem agrupada por plano |
-| `activeStreams` | Streams ativas no momento |
-| `recentRegistrations` | Usuários registrados nos últimos 7 dias |
+| `subscriptionsByPlan` | Contagem agrupada por plano (apenas subscriptions ativas) |
+| `activeStreams` | Streams ativas no momento (via Redis, tempo real) |
+| `estimatedMonthlyRevenue` | Soma de `priceCents` de todas as subscriptions ativas |
+| `profileDistribution` | Distribuição de perfis por usuário (ex: 80 users com 1 perfil, 30 com 2) |
+| `profilesByType` | Contagem de perfis por tipo: `kids` vs `normal` |
+
+#### Period (filtrado por data — startDate/endDate)
+
+| Métrica | Descrição |
+|---------|-----------|
+| `registrationsByDay` | Registros de usuários agrupados por dia no período |
+| `cumulativeUsers` | Total acumulado de usuários até cada dia do período |
+| `activeUsers` | Usuários distintos com histórico de visualização no período |
+| `topContent` | Top 10 conteúdos mais assistidos no período (via HistoryItem) |
+| `streamsByHour` | Sessões de stream agrupadas por hora do dia (via StreamSession) |
+| `totalStreamSessions` | Total de sessões finalizadas no período (via StreamSession) |
+| `avgStreamDuration` | Duração média das sessões em segundos (via StreamSession) |
+
+| Regra | Descrição |
+|---------|-----------|
+| Query params opcionais | `startDate` e `endDate` como query params (default: últimos 30 dias) |
+| Formato de data | ISO 8601 (YYYY-MM-DD), validado com Zod |
+| Overview não depende de datas | Sempre retorna o snapshot atual, independente dos params |
+| Period depende de StreamSession | Gráficos de streams por hora, duração média e total dependem da tabela StreamSession |
 
 ### Gestão de Usuários
 
