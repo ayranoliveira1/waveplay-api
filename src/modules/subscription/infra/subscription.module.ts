@@ -17,9 +17,11 @@ import { StopStreamController } from './controllers/stop-stream.controller'
 import { SubscriptionsRepository } from '../domain/repositories/subscriptions-repository'
 import { PlansRepository } from '../domain/repositories/plans-repository'
 import { ActiveStreamsRepository } from '../domain/repositories/active-streams-repository'
+import { StreamSessionsRepository } from '../domain/repositories/stream-sessions-repository'
 import { PrismaSubscriptionsRepository } from './repositories/prisma-subscriptions-repository'
 import { PrismaPlansRepository } from './repositories/prisma-plans-repository'
 import { PrismaActiveStreamsRepository } from './repositories/prisma-active-streams-repository'
+import { PrismaStreamSessionsRepository } from './repositories/prisma-stream-sessions-repository'
 
 // Ports (cross-BC gateway)
 import { ProfileOwnershipGatewayPort } from '../application/ports/profile-ownership-gateway.port'
@@ -54,6 +56,10 @@ import { RedisStreamCache } from './cache/redis-stream-cache'
       provide: ActiveStreamsRepository,
       useClass: PrismaActiveStreamsRepository,
     },
+    {
+      provide: StreamSessionsRepository,
+      useClass: PrismaStreamSessionsRepository,
+    },
 
     // Ports
     {
@@ -62,6 +68,11 @@ import { RedisStreamCache } from './cache/redis-stream-cache'
     },
     { provide: StreamCachePort, useClass: RedisStreamCache },
   ],
-  exports: [SubscriptionsRepository, PlansRepository],
+  exports: [
+    SubscriptionsRepository,
+    PlansRepository,
+    StreamSessionsRepository,
+    StreamCachePort,
+  ],
 })
 export class SubscriptionModule {}

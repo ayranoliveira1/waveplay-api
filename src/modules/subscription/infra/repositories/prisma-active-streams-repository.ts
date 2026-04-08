@@ -87,6 +87,14 @@ export class PrismaActiveStreamsRepository implements ActiveStreamsRepository {
     })
   }
 
+  async findExpired(threshold: Date): Promise<ActiveStream[]> {
+    const streams = await this.prisma.activeStream.findMany({
+      where: { lastPing: { lt: threshold } },
+    })
+
+    return streams.map(PrismaActiveStreamMapper.toDomain)
+  }
+
   async deleteExpired(threshold: Date): Promise<number> {
     const result = await this.prisma.activeStream.deleteMany({
       where: { lastPing: { lt: threshold } },
