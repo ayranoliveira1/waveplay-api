@@ -25,6 +25,7 @@ model User {
   refreshTokens       RefreshToken[]
   passwordResetTokens PasswordResetToken[]
   activeStreams        ActiveStream[]
+  streamSessions      StreamSession[]
 
   @@map("users")
 }
@@ -124,7 +125,8 @@ model Profile {
   watchlist     WatchlistItem[]
   progress      Progress[]
   history       HistoryItem[]
-  activeStreams ActiveStream[]
+  activeStreams   ActiveStream[]
+  streamSessions StreamSession[]
 
   @@index([userId])
   @@map("profiles")
@@ -201,4 +203,23 @@ model HistoryItem {
   @@index([profileId])
   @@index([profileId, watchedAt])
   @@map("history_items")
+}
+
+model StreamSession {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  profileId       String   @map("profile_id")
+  tmdbId          Int      @map("tmdb_id")
+  type            String
+  startedAt       DateTime @map("started_at")
+  endedAt         DateTime @map("ended_at")
+  durationSeconds Int      @map("duration_seconds")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([startedAt])
+  @@index([endedAt])
+  @@map("stream_sessions")
 }
