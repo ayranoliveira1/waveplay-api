@@ -1186,6 +1186,54 @@ Dashboard com métricas do sistema.
 }
 ```
 
+### POST /admin/users
+
+Criar usuário com plano específico. Cria automaticamente subscription e primeiro perfil.
+
+**Request body:**
+```json
+{
+  "name": "João Silva",
+  "email": "joao@email.com",
+  "password": "Abc12345",
+  "planId": "uuid-do-plano"
+}
+```
+
+- `name` — nome do usuário (string, min 1)
+- `email` — email válido (string, email)
+- `password` — senha (string, min 8, uppercase + lowercase + digit)
+- `planId` — ID do plano para a subscription (string, uuid)
+
+**Response 201:**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "uuid",
+      "name": "João Silva",
+      "email": "joao@email.com",
+      "role": "user",
+      "createdAt": "2024-01-10T..."
+    }
+  },
+  "error": null
+}
+```
+
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 400 | Senha fraca |
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+| 404 | Plano não encontrado |
+| 409 | Email já cadastrado |
+
+---
+
 ### GET /admin/users?page=1&limit=20&search=john
 
 Lista paginada de usuários com filtro por nome/email.

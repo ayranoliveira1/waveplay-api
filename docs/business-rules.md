@@ -301,6 +301,9 @@ App mostra: "Você atingiu o limite de X telas simultâneas do seu plano."
 
 | Regra | Descrição |
 |-------|-----------|
+| Criar usuário | Admin pode criar usuário com plano específico — cria user + subscription + primeiro perfil |
+| Email único | Não permite criar usuário com email já existente (409) |
+| Senha obrigatória | Admin define a senha inicial do usuário |
 | Listar usuários | Paginado com filtro por nome/email |
 | Detalhes do usuário | Retorna dados + subscription ativa + perfis |
 | Alterar subscription | Admin pode trocar o plano de qualquer usuário |

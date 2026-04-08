@@ -553,6 +553,7 @@ A infraestrutura de domain events existe em `core/events/` (`DomainEvent`, `Doma
 | GET | /admin/analytics | admin | Admin | Dashboard com métricas |
 | GET | /admin/users | admin | Admin | Lista usuários (paginado, filtro) |
 | GET | /admin/users/:id | admin | Admin | Detalhes do usuário |
+| POST | /admin/users | admin | Admin | Criar usuário com plano específico |
 | PATCH | /admin/users/:id/subscription | admin | Admin | Alterar plano do usuário |
 | POST | /admin/plans | admin | Admin | Criar plano |
 | PATCH | /admin/plans/:id | admin | Admin | Editar plano |
