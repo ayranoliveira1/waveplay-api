@@ -2,10 +2,16 @@ import { AggregateRoot } from '@/core/entities/aggregate-root'
 import type { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import type { Optional } from '@/core/types/optional'
 
+export enum UserRole {
+  USER = 'user',
+  ADMIN = 'admin',
+}
+
 export interface UserProps {
   name: string
   email: string
   passwordHash: string
+  role: UserRole
   createdAt: Date
   updatedAt: Date
 }
@@ -38,6 +44,10 @@ export class User extends AggregateRoot<UserProps> {
     this.touch()
   }
 
+  get role() {
+    return this.props.role
+  }
+
   get createdAt() {
     return this.props.createdAt
   }
@@ -51,12 +61,13 @@ export class User extends AggregateRoot<UserProps> {
   }
 
   static create(
-    props: Optional<UserProps, 'createdAt' | 'updatedAt'>,
+    props: Optional<UserProps, 'createdAt' | 'updatedAt' | 'role'>,
     id?: UniqueEntityID,
   ) {
     const user = new User(
       {
         ...props,
+        role: props.role ?? UserRole.USER,
         createdAt: props.createdAt ?? new Date(),
         updatedAt: props.updatedAt ?? new Date(),
       },

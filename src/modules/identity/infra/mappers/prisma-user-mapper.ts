@@ -1,4 +1,5 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import type { UserRole } from '../../domain/entities/user'
 import { User } from '../../domain/entities/user'
 import type { User as PrismaUser } from '@/shared/database/generated/prisma'
 
@@ -9,6 +10,7 @@ export class PrismaUserMapper {
         name: raw.name,
         email: raw.email,
         passwordHash: raw.passwordHash,
+        role: raw.role as UserRole,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
       },
@@ -22,6 +24,7 @@ export class PrismaUserMapper {
       name: user.name,
       email: user.email,
       passwordHash: user.passwordHash,
+      role: user.role,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     }
