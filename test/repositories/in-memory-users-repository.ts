@@ -1,4 +1,3 @@
-import { DomainEvents } from '@/core/events/domain-events'
 import type { UsersRepository } from '@/modules/identity/domain/repositories/users-repository'
 import type { User } from '@/modules/identity/domain/entities/user'
 import { EmailAlreadyExistsError } from '@/modules/identity/domain/errors/email-already-exists.error'
@@ -22,8 +21,6 @@ export class InMemoryUsersRepository implements UsersRepository {
     }
 
     this.items.push(user)
-
-    DomainEvents.dispatchEventsForAggregate(user.id)
   }
 
   async save(user: User): Promise<void> {

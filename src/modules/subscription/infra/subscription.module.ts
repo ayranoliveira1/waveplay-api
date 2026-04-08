@@ -29,9 +29,6 @@ import { PrismaProfileOwnershipGateway } from './gateways/prisma-profile-ownersh
 import { StreamCachePort } from '../application/ports/stream-cache.port'
 import { RedisStreamCache } from './cache/redis-stream-cache'
 
-// Subscribers
-import { OnUserRegisteredSubscription } from '../application/subscribers/on-user-registered'
-
 @Module({
   controllers: [
     ListPlansController,
@@ -64,9 +61,6 @@ import { OnUserRegisteredSubscription } from '../application/subscribers/on-user
       useClass: PrismaProfileOwnershipGateway,
     },
     { provide: StreamCachePort, useClass: RedisStreamCache },
-
-    // Subscribers
-    OnUserRegisteredSubscription,
   ],
   exports: [SubscriptionsRepository, PlansRepository],
 })

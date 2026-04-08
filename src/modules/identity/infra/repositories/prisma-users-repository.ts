@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { Prisma } from '@/shared/database/generated/prisma'
 import { PrismaService } from '@/shared/database/prisma.service'
-import { DomainEvents } from '@/core/events/domain-events'
 import { UsersRepository } from '../../domain/repositories/users-repository'
 import { User } from '../../domain/entities/user'
 import { EmailAlreadyExistsError } from '../../domain/errors/email-already-exists.error'
@@ -50,8 +49,6 @@ export class PrismaUsersRepository implements UsersRepository {
 
       throw error as Error
     }
-
-    DomainEvents.dispatchEventsForAggregate(user.id)
   }
 
   async save(user: User): Promise<void> {

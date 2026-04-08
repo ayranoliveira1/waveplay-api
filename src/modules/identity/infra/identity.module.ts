@@ -49,6 +49,10 @@ import { RedisAccountLockout } from './lockout/redis-account-lockout'
 import { AccountGatewayPort } from '../application/ports/account-gateway.port'
 import { PrismaAccountGateway } from './gateways/prisma-account-gateway'
 
+// Cross-BC modules (for RegisterUseCase)
+import { ProfileModule } from '@/modules/profile/infra/profile.module'
+import { SubscriptionModule } from '@/modules/subscription/infra/subscription.module'
+
 @Module({
   imports: [
     PassportModule,
@@ -63,6 +67,8 @@ import { PrismaAccountGateway } from './gateways/prisma-account-gateway'
           },
         }) as JwtModuleOptions,
     }),
+    ProfileModule,
+    SubscriptionModule,
   ],
   controllers: [
     RegisterController,

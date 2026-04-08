@@ -20,9 +20,6 @@ import { PrismaProfilesRepository } from './repositories/prisma-profiles-reposit
 import { UserPlanGatewayPort } from '../application/ports/user-plan-gateway.port'
 import { PrismaUserPlanGateway } from './gateways/prisma-user-plan-gateway'
 
-// Subscribers
-import { OnUserRegistered } from '../application/subscribers/on-user-registered'
-
 @Module({
   controllers: [
     CreateProfileController,
@@ -42,9 +39,7 @@ import { OnUserRegistered } from '../application/subscribers/on-user-registered'
 
     // Ports
     { provide: UserPlanGatewayPort, useClass: PrismaUserPlanGateway },
-
-    // Subscribers
-    OnUserRegistered,
   ],
+  exports: [ProfilesRepository],
 })
 export class ProfileModule {}

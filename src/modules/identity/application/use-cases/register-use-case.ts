@@ -12,6 +12,11 @@ import { AuthConfigPort } from '../ports/auth-config.port'
 import { EmailAlreadyExistsError } from '../../domain/errors/email-already-exists.error'
 import { WeakPasswordError } from '../../domain/errors/weak-password.error'
 import { PasswordMismatchError } from '../../domain/errors/password-mismatch.error'
+import { ProfilesRepository } from '@/modules/profile/domain/repositories/profiles-repository'
+import { SubscriptionsRepository } from '@/modules/subscription/domain/repositories/subscriptions-repository'
+import { PlansRepository } from '@/modules/subscription/domain/repositories/plans-repository'
+import { Profile } from '@/modules/profile/domain/entities/profile'
+import { Subscription } from '@/modules/subscription/domain/entities/subscription'
 
 interface RegisterUseCaseRequest {
   name: string
@@ -41,6 +46,9 @@ export class RegisterUseCase {
     private encrypter: EncrypterPort,
     private refreshTokensRepository: RefreshTokensRepository,
     private authConfig: AuthConfigPort,
+    private profilesRepository: ProfilesRepository,
+    private subscriptionsRepository: SubscriptionsRepository,
+    private plansRepository: PlansRepository,
   ) {}
 
   async execute(
@@ -75,6 +83,23 @@ export class RegisterUseCase {
     })
 
     await this.usersRepository.create(user)
+
+    const plan = await this.plansRepository.findBySlug('basico')
+
+    if (plan) {
+      const subscription = Subscription.create({
+        userId: user.id.toValue(),
+        planId: plan.id.toValue(),
+      })
+      await this.subscriptionsRepository.create(subscription)
+    }
+
+    const maxProfiles = plan?.maxProfiles ?? 1
+    const profile = Profile.create({
+      userId: user.id.toValue(),
+      name: user.name,
+    })
+    await this.profilesRepository.create(profile, maxProfiles)
 
     const rawToken = randomUUID()
     const { refreshToken } = RefreshToken.createFromRawToken({

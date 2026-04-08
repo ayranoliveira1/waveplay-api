@@ -1,7 +1,6 @@
 import { AggregateRoot } from '@/core/entities/aggregate-root'
 import type { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import type { Optional } from '@/core/types/optional'
-import { UserRegisteredEvent } from '../events/user-registered-event'
 
 export interface UserProps {
   name: string
@@ -55,8 +54,6 @@ export class User extends AggregateRoot<UserProps> {
     props: Optional<UserProps, 'createdAt' | 'updatedAt'>,
     id?: UniqueEntityID,
   ) {
-    const isNewUser = !id
-
     const user = new User(
       {
         ...props,
@@ -65,10 +62,6 @@ export class User extends AggregateRoot<UserProps> {
       },
       id,
     )
-
-    if (isNewUser) {
-      user.addDomainEvent(new UserRegisteredEvent(user))
-    }
 
     return user
   }
