@@ -271,13 +271,15 @@ waveplay-api/
 │       │   │   ├── entities/
 │       │   │   │   ├── plan.ts
 │       │   │   │   ├── subscription.ts
-│       │   │   │   └── active-stream.ts
+│       │   │   │   ├── active-stream.ts
+│       │   │   │   └── stream-session.ts     # Histórico de streams finalizadas (append-only)
 │       │   │   ├── constants/
 │       │   │   │   └── stream-timeout.ts          # STREAM_TIMEOUT_MS = 2min (constante compartilhada)
 │       │   │   ├── repositories/
 │       │   │   │   ├── plans-repository.ts
 │       │   │   │   ├── subscriptions-repository.ts
-│       │   │   │   └── active-streams-repository.ts
+│       │   │   │   ├── active-streams-repository.ts
+│       │   │   │   └── stream-sessions-repository.ts
 │       │   │   └── errors/
 │       │   │       ├── max-profiles-reached.error.ts
 │       │   │       ├── max-streams-reached.error.ts
@@ -296,11 +298,13 @@ waveplay-api/
 │       │       ├── mappers/
 │       │       │   ├── prisma-plan-mapper.ts
 │       │       │   ├── prisma-subscription-mapper.ts
-│       │       │   └── prisma-active-stream-mapper.ts
+│       │       │   ├── prisma-active-stream-mapper.ts
+│       │       │   └── prisma-stream-session-mapper.ts
 │       │       ├── repositories/
 │       │       │   ├── prisma-plans-repository.ts
 │       │       │   ├── prisma-subscriptions-repository.ts
-│       │       │   └── prisma-active-streams-repository.ts
+│       │       │   ├── prisma-active-streams-repository.ts
+│       │       │   └── prisma-stream-sessions-repository.ts
 │       │       ├── gateways/
 │       │       │   └── prisma-profile-ownership-gateway.ts  # ProfileOwnershipGatewayPort ← Prisma (cross-BC query)
 │       │       ├── controllers/
@@ -500,6 +504,27 @@ A criação é síncrona e explícita — sem domain events. Os repositórios de
 ### Infraestrutura de Domain Events (core/)
 
 A infraestrutura de domain events existe em `core/events/` (`DomainEvent`, `DomainEvents`, `EventHandler`) e em `core/entities/aggregate-root.ts`, mas **não é utilizada atualmente**. Mantida para uso futuro caso necessário.
+
+---
+
+## Stream Sessions (Histórico)
+
+Streams ativas (`ActiveStream`) são efêmeras — existem em Postgres + Redis enquanto o usuário assiste, e são removidas ao parar ou expirar (timeout 2min sem ping).
+
+Para analytics, o sistema mantém um log histórico via `StreamSession` (append-only):
+
+```
+StartStream → cria ActiveStream (Postgres + Redis)
+StopStream  → cria StreamSession (histórico) → deleta ActiveStream
+Cleanup     → cria StreamSession para cada expirada → deleta ActiveStreams
+```
+
+| Tabela | Propósito | Ciclo de vida |
+|--------|-----------|---------------|
+| `ActiveStream` | Streams em andamento (tempo real) | Criada no play, deletada ao parar/expirar |
+| `StreamSession` | Histórico de sessões finalizadas | Criada ao finalizar, nunca deletada |
+
+`StreamSession` armazena: `userId`, `profileId`, `tmdbId`, `type`, `startedAt`, `endedAt`, `durationSeconds`.
 
 ---
 
