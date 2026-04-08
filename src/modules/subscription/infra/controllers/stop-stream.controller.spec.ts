@@ -10,7 +10,9 @@ import { StopStreamController } from './stop-stream.controller'
 import { StopStreamUseCase } from '../../application/use-cases/stop-stream-use-case'
 import { ActiveStreamsRepository } from '../../domain/repositories/active-streams-repository'
 import { StreamCachePort } from '../../application/ports/stream-cache.port'
+import { StreamSessionsRepository } from '../../domain/repositories/stream-sessions-repository'
 import { InMemoryActiveStreamsRepository } from 'test/repositories/in-memory-active-streams-repository'
+import { InMemoryStreamSessionsRepository } from 'test/repositories/in-memory-stream-sessions-repository'
 import { FakeStreamCache } from 'test/cache/fake-stream-cache'
 import { FakeAuthGuard } from 'test/guards/fake-auth.guard'
 import { AllExceptionsFilter } from '@/shared/filters/nest-exception-filter'
@@ -34,6 +36,10 @@ describe('StopStreamController', () => {
         {
           provide: ActiveStreamsRepository,
           useClass: InMemoryActiveStreamsRepository,
+        },
+        {
+          provide: StreamSessionsRepository,
+          useClass: InMemoryStreamSessionsRepository,
         },
         { provide: StreamCachePort, useClass: FakeStreamCache },
         { provide: APP_GUARD, useClass: FakeAuthGuard },
