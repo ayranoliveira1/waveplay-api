@@ -6,8 +6,14 @@ import { ZodValidationPipe } from '@/shared/pipes/zod-validation.pipe'
 import { CustomHttpException } from '@/shared/http/custom-http.exception'
 import { SeriesPresenter } from '../presenters/series-presenter'
 
-const idSchema = z.string().transform(Number).pipe(z.number().int().min(1).max(99999999))
-const seasonSchema = z.string().transform(Number).pipe(z.number().int().min(0).max(100))
+const idSchema = z
+  .string()
+  .transform(Number)
+  .pipe(z.number().int().min(1).max(99999999))
+const seasonSchema = z
+  .string()
+  .transform(Number)
+  .pipe(z.number().int().min(0).max(100))
 
 @Controller('/catalog/series')
 export class SeasonEpisodesController {

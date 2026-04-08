@@ -1,4 +1,3 @@
-import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { ThrottlerStorage } from '@nestjs/throttler'
 import { AppModule } from '@/app.module'

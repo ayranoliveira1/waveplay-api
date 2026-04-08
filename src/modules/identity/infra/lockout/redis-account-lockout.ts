@@ -59,12 +59,7 @@ export class RedisAccountLockout implements AccountLockoutPort {
       MAX_LOCKOUT_SECONDS,
     )
 
-    await this.redis.set(
-      `lockout:${email}:locked`,
-      '1',
-      'EX',
-      lockoutTTL,
-    )
+    await this.redis.set(`lockout:${email}:locked`, '1', 'EX', lockoutTTL)
 
     this.logger.warn(
       `Account locked: ${email} (attempt #${lockoutCount}, TTL: ${lockoutTTL}s)`,

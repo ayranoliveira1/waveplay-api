@@ -33,7 +33,8 @@ export class RefreshTokenController {
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async handle(
-    @Body(new ZodValidationPipe(refreshTokenSchema)) body: { refreshToken?: string },
+    @Body(new ZodValidationPipe(refreshTokenSchema))
+    body: { refreshToken?: string },
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {

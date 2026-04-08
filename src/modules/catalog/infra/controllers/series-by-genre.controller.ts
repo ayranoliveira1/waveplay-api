@@ -11,7 +11,10 @@ import { z } from 'zod'
 import { GetSeriesByGenreUseCase } from '../../application/use-cases/get-series-by-genre-use-case'
 import { ZodValidationPipe } from '@/shared/pipes/zod-validation.pipe'
 
-const genreIdSchema = z.string().transform(Number).pipe(z.number().int().min(1).max(99999))
+const genreIdSchema = z
+  .string()
+  .transform(Number)
+  .pipe(z.number().int().min(1).max(99999))
 
 const pageSchema = z
   .string()
