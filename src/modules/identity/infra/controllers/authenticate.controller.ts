@@ -15,7 +15,6 @@ import { AuthenticateUseCase } from '../../application/use-cases/authenticate-us
 import { ZodValidationPipe } from '@/shared/pipes/zod-validation.pipe'
 import { CustomHttpException } from '@/shared/http/custom-http.exception'
 import { Public } from '../decorators/public.decorator'
-import { UserPresenter } from '../presenters/user-presenter'
 import { isMobile, setRefreshTokenCookie } from './platform-utils'
 
 const authenticateSchema = z.object({
@@ -49,16 +48,12 @@ export class AuthenticateController {
       throw new CustomHttpException(result.value)
     }
 
-    const { user, accessToken, refreshToken } = result.value
+    const { accessToken, refreshToken } = result.value
 
     if (isMobile(req)) {
       return {
         success: true,
-        data: {
-          user: UserPresenter.toHTTP(user),
-          accessToken,
-          refreshToken,
-        },
+        data: { accessToken, refreshToken },
         error: null,
       }
     }
@@ -67,10 +62,7 @@ export class AuthenticateController {
 
     return {
       success: true,
-      data: {
-        user: UserPresenter.toHTTP(user),
-        accessToken,
-      },
+      data: { accessToken },
       error: null,
     }
   }

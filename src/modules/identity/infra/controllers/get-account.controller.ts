@@ -2,7 +2,7 @@ import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common'
 
 import { GetAccountUseCase } from '../../application/use-cases/get-account-use-case'
 import { GetUser } from '../decorators/get-user.decorator'
-import { UserPresenter } from '../presenters/user-presenter'
+import { AccountPresenter } from '../presenters/account-presenter'
 import { CustomHttpException } from '@/shared/http/custom-http.exception'
 
 @Controller('/account')
@@ -23,18 +23,7 @@ export class GetAccountController {
     return {
       success: true,
       data: {
-        user: {
-          ...UserPresenter.toHTTP(user),
-          subscription: subscription
-            ? {
-                id: subscription.id,
-                status: subscription.status,
-                startedAt: subscription.startedAt,
-                endsAt: subscription.endsAt,
-                plan: subscription.plan,
-              }
-            : null,
-        },
+        user: AccountPresenter.toHTTP(user, subscription),
       },
       error: null,
     }

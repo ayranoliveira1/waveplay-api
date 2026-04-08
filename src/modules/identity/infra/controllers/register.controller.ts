@@ -15,7 +15,6 @@ import { RegisterUseCase } from '../../application/use-cases/register-use-case'
 import { ZodValidationPipe } from '@/shared/pipes/zod-validation.pipe'
 import { CustomHttpException } from '@/shared/http/custom-http.exception'
 import { Public } from '../decorators/public.decorator'
-import { UserPresenter } from '../presenters/user-presenter'
 import { isMobile, setRefreshTokenCookie } from './platform-utils'
 
 const registerSchema = z.object({
@@ -53,16 +52,12 @@ export class RegisterController {
       throw new CustomHttpException(result.value)
     }
 
-    const { user, accessToken, refreshToken } = result.value
+    const { accessToken, refreshToken } = result.value
 
     if (isMobile(req)) {
       return {
         success: true,
-        data: {
-          user: UserPresenter.toHTTP(user),
-          accessToken,
-          refreshToken,
-        },
+        data: { accessToken, refreshToken },
         error: null,
       }
     }
@@ -71,10 +66,7 @@ export class RegisterController {
 
     return {
       success: true,
-      data: {
-        user: UserPresenter.toHTTP(user),
-        accessToken,
-      },
+      data: { accessToken },
       error: null,
     }
   }
