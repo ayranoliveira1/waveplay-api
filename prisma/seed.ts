@@ -1,5 +1,6 @@
 import 'dotenv/config'
-import { PrismaClient } from '../src/shared/database/generated/prisma'
+import { hash } from 'argon2'
+import { PrismaClient, Role } from '../src/shared/database/generated/prisma'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
 
@@ -50,6 +51,27 @@ async function main() {
   }
 
   console.log('Seed completed: 3 plans created/updated')
+
+  // Admin user
+  const adminPasswordHash = await hash('Admin@123', {
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 1,
+    type: 2, // argon2id
+  })
+
+  await prisma.user.upsert({
+    where: { email: 'admin@waveplay.com' },
+    update: {},
+    create: {
+      name: 'Admin',
+      email: 'admin@waveplay.com',
+      passwordHash: adminPasswordHash,
+      role: Role.admin,
+    },
+  })
+
+  console.log('Seed completed: admin user created')
 }
 
 main()
