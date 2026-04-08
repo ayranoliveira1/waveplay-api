@@ -1165,22 +1165,56 @@ Limpa todo o histórico do perfil.
 
 ### GET /admin/analytics
 
-Dashboard com métricas do sistema.
+Dashboard com métricas do sistema. Retorna dois blocos: **overview** (snapshot atual) e **period** (filtrado por intervalo de datas).
+
+**Query params (opcionais):**
+- `startDate` — data início do período (ISO 8601: `YYYY-MM-DD`, default: 30 dias atrás)
+- `endDate` — data fim do período (ISO 8601: `YYYY-MM-DD`, default: hoje)
+
+**Exemplo:** `GET /admin/analytics?startDate=2024-01-01&endDate=2024-01-31`
 
 **Response 200:**
 ```json
 {
   "success": true,
   "data": {
-    "totalUsers": 150,
-    "totalActiveSubscriptions": 148,
-    "subscriptionsByPlan": [
-      { "planName": "Básico", "planSlug": "basico", "count": 80 },
-      { "planName": "Padrão", "planSlug": "padrao", "count": 45 },
-      { "planName": "Premium", "planSlug": "premium", "count": 23 }
-    ],
-    "activeStreams": 12,
-    "recentRegistrations": 27
+    "overview": {
+      "totalUsers": 150,
+      "totalActiveSubscriptions": 148,
+      "subscriptionsByPlan": [
+        { "planName": "Básico", "planSlug": "basico", "count": 80 },
+        { "planName": "Padrão", "planSlug": "padrao", "count": 45 },
+        { "planName": "Premium", "planSlug": "premium", "count": 23 }
+      ],
+      "activeStreams": 12,
+      "estimatedMonthlyRevenue": 296100,
+      "profileDistribution": [
+        { "count": 1, "users": 80 },
+        { "count": 2, "users": 45 },
+        { "count": 3, "users": 25 }
+      ],
+      "profilesByType": { "kids": 30, "normal": 170 }
+    },
+    "period": {
+      "registrationsByDay": [
+        { "date": "2024-01-01", "count": 5 },
+        { "date": "2024-01-02", "count": 8 }
+      ],
+      "cumulativeUsers": [
+        { "date": "2024-01-01", "total": 100 },
+        { "date": "2024-01-02", "total": 108 }
+      ],
+      "activeUsers": 92,
+      "topContent": [
+        { "tmdbId": 123, "title": "Breaking Bad", "type": "series", "views": 45 }
+      ],
+      "streamsByHour": [
+        { "hour": 0, "count": 5 },
+        { "hour": 20, "count": 45 }
+      ],
+      "totalStreamSessions": 1250,
+      "avgStreamDuration": 2700
+    }
   },
   "error": null
 }
