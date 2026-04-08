@@ -49,12 +49,6 @@ Cria conta + primeiro perfil automático + subscription (plano Básico) automati
 {
   "success": true,
   "data": {
-    "user": {
-      "id": "uuid",
-      "name": "João Silva",
-      "email": "joao@email.com",
-      "createdAt": "2026-04-01T00:00:00.000Z"
-    },
     "accessToken": "eyJhbGciOiJIUzI1NiIs...",
     "refreshToken": "a1b2c3d4-e5f6-..."
   },
@@ -68,7 +62,6 @@ Cria conta + primeiro perfil automático + subscription (plano Básico) automati
 {
   "success": true,
   "data": {
-    "user": { ... },
     "accessToken": "eyJhbGciOiJIUzI1NiIs..."
   },
   "error": null
@@ -107,12 +100,6 @@ Set-Cookie: refreshToken=a1b2c3d4-e5f6-...; HttpOnly; Secure; SameSite=Strict; P
 {
   "success": true,
   "data": {
-    "user": {
-      "id": "uuid",
-      "name": "João Silva",
-      "email": "joao@email.com",
-      "createdAt": "2026-04-01T00:00:00.000Z"
-    },
     "accessToken": "eyJhbGciOiJIUzI1NiIs...",
     "refreshToken": "a1b2c3d4-e5f6-..."
   },
@@ -126,7 +113,6 @@ Set-Cookie: refreshToken=a1b2c3d4-e5f6-...; HttpOnly; Secure; SameSite=Strict; P
 {
   "success": true,
   "data": {
-    "user": { ... },
     "accessToken": "eyJhbGciOiJIUzI1NiIs..."
   },
   "error": null
@@ -317,6 +303,7 @@ Retorna dados da conta do usuário autenticado + assinatura ativa.
       "id": "uuid",
       "name": "João Silva",
       "email": "joao@email.com",
+      "role": "user",
       "createdAt": "2026-04-01T00:00:00.000Z",
       "subscription": {
         "id": "uuid",
