@@ -61,8 +61,6 @@ describe('POST /auth/register', () => {
   it('should auto-create a default profile after registration', async () => {
     const { accessToken } = await registerUser(app)
 
-    await new Promise((r) => setTimeout(r, 50))
-
     const profilesResponse = await request(app.getHttpServer())
       .get('/profiles')
       .set(authHeader(accessToken!))
@@ -78,14 +76,13 @@ describe('POST /auth/register', () => {
 
     expect(accessToken).toBeDefined()
 
-    // A subscription é criada via domain event. Verificamos indiretamente que
-    // o login funciona normalmente (conta ativa) e que o acesso autenticado
-    // retorna dados sem erros de assinatura.
-    const profilesResponse = await request(app.getHttpServer())
-      .get('/profiles')
+    const accountResponse = await request(app.getHttpServer())
+      .get('/account')
       .set(authHeader(accessToken!))
 
-    expect(profilesResponse.status).toBe(200)
+    expect(accountResponse.status).toBe(200)
+    expect(accountResponse.body.data.user.subscription).not.toBeNull()
+    expect(accountResponse.body.data.user.subscription.plan.slug).toBe('basico')
   })
 
   it('should return 409 when registering with a duplicate email', async () => {

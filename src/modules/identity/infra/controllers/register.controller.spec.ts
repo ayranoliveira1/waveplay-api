@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import type { TestingModule } from '@nestjs/testing'
 import { Test } from '@nestjs/testing'
 import type { INestApplication } from '@nestjs/common'
@@ -20,13 +20,8 @@ import { HasherPort } from '../../application/ports/hasher.port'
 import { EncrypterPort } from '../../application/ports/encrypter.port'
 import { AuthConfigPort } from '../../application/ports/auth-config.port'
 import { AllExceptionsFilter } from '@/shared/filters/nest-exception-filter'
-import { DomainEvents } from '@/core/events/domain-events'
-import { OnUserRegistered } from '@/modules/profile/application/subscribers/on-user-registered'
 import { ProfilesRepository } from '@/modules/profile/domain/repositories/profiles-repository'
-import { UserPlanGatewayPort } from '@/modules/profile/application/ports/user-plan-gateway.port'
 import { InMemoryProfilesRepository } from 'test/repositories/in-memory-profiles-repository'
-import { FakeUserPlanGateway } from 'test/ports/fake-user-plan-gateway'
-import { OnUserRegisteredSubscription } from '@/modules/subscription/application/subscribers/on-user-registered'
 import { SubscriptionsRepository } from '@/modules/subscription/domain/repositories/subscriptions-repository'
 import { PlansRepository } from '@/modules/subscription/domain/repositories/plans-repository'
 import { InMemorySubscriptionsRepository } from 'test/repositories/in-memory-subscriptions-repository'
@@ -58,12 +53,8 @@ describe('RegisterController', () => {
         { provide: AuthConfigPort, useClass: FakeAuthConfig },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
 
-        // Profile BC — auto-profile via domain event
+        // Profile + Subscription (direct dependencies of RegisterUseCase)
         { provide: ProfilesRepository, useClass: InMemoryProfilesRepository },
-        { provide: UserPlanGatewayPort, useClass: FakeUserPlanGateway },
-        OnUserRegistered,
-
-        // Subscription BC — auto-subscription via domain event
         {
           provide: SubscriptionsRepository,
           useClass: InMemorySubscriptionsRepository,
@@ -87,7 +78,6 @@ describe('RegisterController', () => {
             return repo
           },
         },
-        OnUserRegisteredSubscription,
       ],
     }).compile()
 
@@ -95,11 +85,6 @@ describe('RegisterController', () => {
     app.use(cookieParser())
     app.useGlobalFilters(new AllExceptionsFilter())
     await app.init()
-  })
-
-  afterEach(() => {
-    DomainEvents.clearHandlers()
-    DomainEvents.clearMarkedAggregates()
   })
 
   it('should return tokens in body for mobile platform', async () => {
@@ -153,7 +138,7 @@ describe('RegisterController', () => {
     expect(refreshCookie).toContain('Path=/auth')
   })
 
-  it('should create first profile automatically via domain event', async () => {
+  it('should create first profile automatically after registration', async () => {
     const response = await request(app.getHttpServer())
       .post('/auth/register')
       .set('X-Platform', 'mobile')
@@ -165,9 +150,6 @@ describe('RegisterController', () => {
       })
 
     expect(response.status).toBe(201)
-
-    // Aguarda handler async do domain event executar
-    await new Promise((resolve) => setTimeout(resolve, 10))
 
     const profilesRepository =
       testModule.get<InMemoryProfilesRepository>(ProfilesRepository)
