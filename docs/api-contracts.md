@@ -1157,6 +1157,228 @@ Limpa todo o histórico do perfil.
 
 ---
 
+---
+
+## Admin BC — Administração
+
+> Todas as rotas exigem `Authorization: Bearer {accessToken}` com `role: admin` no JWT. Retorna **403** se o usuário não for admin.
+
+### GET /admin/analytics
+
+Dashboard com métricas do sistema.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalUsers": 150,
+    "totalActiveSubscriptions": 148,
+    "subscriptionsByPlan": [
+      { "planName": "Básico", "planSlug": "basico", "count": 80 },
+      { "planName": "Padrão", "planSlug": "padrao", "count": 45 },
+      { "planName": "Premium", "planSlug": "premium", "count": 23 }
+    ],
+    "activeStreams": 12,
+    "recentRegistrations": 27
+  },
+  "error": null
+}
+```
+
+### GET /admin/users?page=1&limit=20&search=john
+
+Lista paginada de usuários com filtro por nome/email.
+
+**Query params:**
+- `page` — página (default: 1)
+- `limit` — itens por página (default: 20, max: 100)
+- `search` — filtro por nome ou email (opcional)
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "uuid",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "role": "user",
+        "subscription": {
+          "id": "uuid",
+          "status": "active",
+          "planName": "Padrão",
+          "planSlug": "padrao",
+          "endsAt": null
+        },
+        "profilesCount": 2,
+        "createdAt": "2024-01-10T..."
+      }
+    ],
+    "page": 1,
+    "totalPages": 8,
+    "totalItems": 150
+  },
+  "error": null
+}
+```
+
+### GET /admin/users/:id
+
+Detalhes completos de um usuário.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "uuid",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "role": "user",
+      "createdAt": "2024-01-10T...",
+      "subscription": {
+        "id": "uuid",
+        "status": "active",
+        "startedAt": "2024-01-10T...",
+        "endsAt": null,
+        "plan": {
+          "id": "uuid",
+          "name": "Padrão",
+          "slug": "padrao",
+          "maxProfiles": 3,
+          "maxStreams": 2
+        }
+      },
+      "profiles": [
+        { "id": "uuid", "name": "John", "isKid": false },
+        { "id": "uuid", "name": "Kids", "isKid": true }
+      ]
+    }
+  },
+  "error": null
+}
+```
+
+### PATCH /admin/users/:id/subscription
+
+Alterar subscription de um usuário (trocar plano, definir expiração).
+
+**Request body:**
+```json
+{
+  "planId": "uuid-do-novo-plano",
+  "endsAt": null
+}
+```
+
+- `planId` — ID do novo plano (obrigatório)
+- `endsAt` — data de expiração ou `null` para indefinido (opcional)
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "subscription": {
+      "id": "uuid",
+      "status": "active",
+      "planId": "uuid",
+      "planName": "Premium",
+      "endsAt": null
+    },
+    "warning": null
+  },
+  "error": null
+}
+```
+
+**Response 200 com warning (downgrade):**
+```json
+{
+  "success": true,
+  "data": {
+    "subscription": { "..." : "..." },
+    "warning": "Usuário tem 3 perfis mas o novo plano permite apenas 1"
+  },
+  "error": null
+}
+```
+
+### POST /admin/plans
+
+Criar novo plano.
+
+**Request body:**
+```json
+{
+  "name": "Ultra",
+  "slug": "ultra",
+  "priceCents": 5990,
+  "maxProfiles": 8,
+  "maxStreams": 6,
+  "description": "Plano ultra com 8 perfis e 6 telas"
+}
+```
+
+**Response 201:**
+```json
+{
+  "success": true,
+  "data": {
+    "plan": {
+      "id": "uuid",
+      "name": "Ultra",
+      "slug": "ultra",
+      "priceCents": 5990,
+      "maxProfiles": 8,
+      "maxStreams": 6,
+      "description": "Plano ultra com 8 perfis e 6 telas",
+      "active": true
+    }
+  },
+  "error": null
+}
+```
+
+### PATCH /admin/plans/:id
+
+Editar plano existente.
+
+**Request body (parcial):**
+```json
+{
+  "name": "Ultra Plus",
+  "priceCents": 6990
+}
+```
+
+**Response 200:** Mesmo formato do POST.
+
+### PATCH /admin/plans/:id/toggle
+
+Ativar/desativar plano.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "plan": {
+      "id": "uuid",
+      "name": "Ultra",
+      "active": false
+    }
+  },
+  "error": null
+}
+```
+
+---
+
 ## Headers obrigatórios
 
 | Header | Valor | Quando |

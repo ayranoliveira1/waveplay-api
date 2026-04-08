@@ -355,6 +355,45 @@ waveplay-api/
 │               └── presenters/
 │                   ├── progress-presenter.ts
 │                   └── history-presenter.ts
+│
+├── admin/                        # BC: Administração
+│   ├── domain/
+│   │   └── errors/
+│   │       ├── user-not-found.error.ts
+│   │       └── plan-not-found.error.ts
+│   ├── application/
+│   │   ├── ports/
+│   │   │   ├── admin-analytics-gateway.port.ts
+│   │   │   └── admin-user-gateway.port.ts
+│   │   └── use-cases/
+│   │       ├── get-dashboard-analytics-use-case.ts
+│   │       ├── list-users-use-case.ts
+│   │       ├── get-user-detail-use-case.ts
+│   │       ├── update-user-subscription-use-case.ts
+│   │       ├── create-plan-use-case.ts
+│   │       ├── update-plan-use-case.ts
+│   │       └── toggle-plan-active-use-case.ts
+│   └── infra/
+│       ├── admin.module.ts
+│       ├── guards/
+│       │   └── admin.guard.ts
+│       ├── decorators/
+│       │   └── admin.decorator.ts
+│       ├── gateways/
+│       │   ├── prisma-admin-analytics-gateway.ts
+│       │   └── prisma-admin-user-gateway.ts
+│       ├── controllers/
+│       │   ├── dashboard-analytics.controller.ts
+│       │   ├── list-users.controller.ts
+│       │   ├── get-user-detail.controller.ts
+│       │   ├── update-user-subscription.controller.ts
+│       │   ├── create-plan.controller.ts
+│       │   ├── update-plan.controller.ts
+│       │   └── toggle-plan-active.controller.ts
+│       └── presenters/
+│           ├── analytics-presenter.ts
+│           ├── admin-user-presenter.ts
+│           └── admin-plan-presenter.ts
 ```
 
 ---
@@ -365,15 +404,24 @@ waveplay-api/
 ┌─────────────┐     ┌─────────────┐     ┌───────────────┐
 │  Identity    │────▶│  Profile     │◀────│ Subscription  │
 │  (auth/user) │     │  (perfis)    │     │ (planos/telas)│
-└──────┬───────┘     └──────┬───────┘     └───────────────┘
-       │                    │ profileId
-       │       ┌────────────┼────────────┐
-       │       ▼            ▼            ▼
-       │ ┌────────────┐ ┌──────────┐ ┌──────────┐
-       └▶│  Library    │ │ Playback │ │ Catalog  │
-         │  (fav/watch │ │(progresso│ │(proxy    │
-         │   /list)    │ │/history) │ │ TMDB)    │
-         └────────────┘ └──────────┘ └──────────┘
+└──────┬───────┘     └──────┬───────┘     └───────┬───────┘
+       │                    │ profileId           │
+       │       ┌────────────┼────────────┐        │
+       │       ▼            ▼            ▼        │
+       │ ┌────────────┐ ┌──────────┐ ┌──────────┐│
+       └▶│  Library    │ │ Playback │ │ Catalog  ││
+         │  (fav/watch │ │(progresso│ │(proxy    ││
+         │   /list)    │ │/history) │ │ TMDB)    ││
+         └────────────┘ └──────────┘ └──────────┘│
+                                                  │
+       ┌──────────────────────────────────────────┘
+       │
+       ▼
+ ┌──────────────┐
+ │    Admin      │  Lê dados de todos os BCs via gateways
+ │ (analytics/   │  Protegido por AdminGuard (role=admin)
+ │  gestão)      │
+ └──────────────┘
 ```
 
 ### Comunicação entre Bounded Contexts
@@ -523,6 +571,29 @@ Repository.create(user) (Identity BC)
 | GET | /history/:profileId | playback | Auth | Listar histórico |
 | POST | /history/:profileId | playback | Auth | Adicionar ao histórico |
 | DELETE | /history/:profileId | playback | Auth | Limpar histórico |
+| GET | /admin/analytics | admin | Admin | Dashboard com métricas |
+| GET | /admin/users | admin | Admin | Lista usuários (paginado, filtro) |
+| GET | /admin/users/:id | admin | Admin | Detalhes do usuário |
+| PATCH | /admin/users/:id/subscription | admin | Admin | Alterar plano do usuário |
+| POST | /admin/plans | admin | Admin | Criar plano |
+| PATCH | /admin/plans/:id | admin | Admin | Editar plano |
+| PATCH | /admin/plans/:id/toggle | admin | Admin | Ativar/desativar plano |
+
+---
+
+## RBAC (Role-Based Access Control)
+
+O campo `role` no model `User` define o nível de acesso:
+
+| Role | Descrição | Acesso |
+|------|-----------|--------|
+| `user` | Usuário padrão (default) | Todas as rotas Auth |
+| `admin` | Administrador | Todas as rotas Auth + rotas `/admin/*` |
+
+- O `role` é incluído no payload JWT: `{ sub, family, role }`
+- `AdminGuard` valida `role === 'admin'` — retorna 403 se não for admin
+- O decorator `@Admin()` aplica `AdminGuard` nos controllers do Admin BC
+- O `user-presenter.ts` público **NÃO** expõe o campo `role` (segurança)
 
 ---
 

@@ -272,3 +272,46 @@ App mostra: "Você atingiu o limite de X telas simultâneas do seu plano."
 | Theft detection | Family afetada, IP do request suspeito |
 | Token revogado | Motivo (logout, refresh, theft), family |
 | Password reset solicitado | Email, IP |
+
+---
+
+## 12. Administração (Admin BC)
+
+### RBAC
+
+| Regra | Descrição |
+|-------|-----------|
+| Campo `role` no User | `"user"` (default) ou `"admin"` |
+| JWT inclui role | Payload: `{ sub, family, role }` |
+| AdminGuard | Valida `role === 'admin'`, retorna 403 se não for |
+| Role não exposta publicamente | `user-presenter.ts` público não inclui `role` |
+| Admin padrão via seed | Criado no seed com email configurável via `.env` |
+
+### Analytics (GET /admin/analytics)
+
+| Métrica | Descrição |
+|---------|-----------|
+| `totalUsers` | Total de usuários registrados |
+| `totalActiveSubscriptions` | Subscriptions com `status: 'active'` |
+| `subscriptionsByPlan` | Contagem agrupada por plano |
+| `activeStreams` | Streams ativas no momento |
+| `recentRegistrations` | Usuários registrados nos últimos 7 dias |
+
+### Gestão de Usuários
+
+| Regra | Descrição |
+|-------|-----------|
+| Listar usuários | Paginado com filtro por nome/email |
+| Detalhes do usuário | Retorna dados + subscription ativa + perfis |
+| Alterar subscription | Admin pode trocar o plano de qualquer usuário |
+| Downgrade não bloqueia perfis | Se user tem mais perfis que o novo plano permite, não deleta — apenas avisa |
+| `endsAt` pode ser null | Significa subscription indefinida (sem data de expiração) |
+
+### Gestão de Planos
+
+| Regra | Descrição |
+|-------|-----------|
+| Criar plano | Nome, slug (único), preço, maxProfiles, maxStreams, descrição |
+| Editar plano | Alterar nome, preço, limites, descrição |
+| Ativar/desativar plano | `plan.active` toggle — planos inativos não aparecem para novos usuários |
+| Deletar plano | **Não permitido** — integridade referencial com subscriptions existentes |
