@@ -2,18 +2,25 @@ import { describe, it, expect, beforeEach } from 'vitest'
 
 import { CleanupExpiredStreamsUseCase } from './cleanup-expired-streams-use-case'
 import { InMemoryActiveStreamsRepository } from 'test/repositories/in-memory-active-streams-repository'
+import { InMemoryStreamSessionsRepository } from 'test/repositories/in-memory-stream-sessions-repository'
 import { FakeStreamCache } from 'test/cache/fake-stream-cache'
 import { ActiveStream } from '../../domain/entities/active-stream'
 
 let activeStreamsRepository: InMemoryActiveStreamsRepository
+let streamSessionsRepository: InMemoryStreamSessionsRepository
 let streamCache: FakeStreamCache
 let sut: CleanupExpiredStreamsUseCase
 
 describe('CleanupExpiredStreamsUseCase', () => {
   beforeEach(() => {
     activeStreamsRepository = new InMemoryActiveStreamsRepository()
+    streamSessionsRepository = new InMemoryStreamSessionsRepository()
     streamCache = new FakeStreamCache()
-    sut = new CleanupExpiredStreamsUseCase(activeStreamsRepository, streamCache)
+    sut = new CleanupExpiredStreamsUseCase(
+      activeStreamsRepository,
+      streamSessionsRepository,
+      streamCache,
+    )
   })
 
   it('should delete expired streams from repository and cache', async () => {
@@ -112,5 +119,50 @@ describe('CleanupExpiredStreamsUseCase', () => {
     expect(result.isRight()).toBe(true)
     expect(result.value.deletedCount).toBe(0)
     expect(activeStreamsRepository.items).toHaveLength(1)
+  })
+
+  it('should create StreamSessions for each expired stream', async () => {
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000)
+
+    activeStreamsRepository.items.push(
+      ActiveStream.create({
+        userId: 'user-1',
+        profileId: 'profile-1',
+        tmdbId: 100,
+        type: 'movie',
+        startedAt: new Date(Date.now() - 10 * 60 * 1000),
+        lastPing: threeMinutesAgo,
+      }),
+      ActiveStream.create({
+        userId: 'user-2',
+        profileId: 'profile-2',
+        tmdbId: 200,
+        type: 'series',
+        startedAt: new Date(Date.now() - 5 * 60 * 1000),
+        lastPing: threeMinutesAgo,
+      }),
+    )
+
+    await sut.execute()
+
+    expect(streamSessionsRepository.items).toHaveLength(2)
+    expect(streamSessionsRepository.items[0].userId).toBe('user-1')
+    expect(streamSessionsRepository.items[0].durationSeconds).toBeGreaterThan(0)
+    expect(streamSessionsRepository.items[1].userId).toBe('user-2')
+  })
+
+  it('should not create StreamSessions when no streams are expired', async () => {
+    activeStreamsRepository.items.push(
+      ActiveStream.create({
+        userId: 'user-1',
+        profileId: 'profile-1',
+        tmdbId: 100,
+        type: 'movie',
+      }),
+    )
+
+    await sut.execute()
+
+    expect(streamSessionsRepository.items).toHaveLength(0)
   })
 })
