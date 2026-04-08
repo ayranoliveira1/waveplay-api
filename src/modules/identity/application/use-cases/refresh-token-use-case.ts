@@ -4,6 +4,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { Either, left, right } from '@/core/either'
 import { RefreshToken } from '../../domain/entities/refresh-token'
 import { RefreshTokensRepository } from '../../domain/repositories/refresh-tokens-repository'
+import { UsersRepository } from '../../domain/repositories/users-repository'
 import { EncrypterPort } from '../ports/encrypter.port'
 import { AuthConfigPort } from '../ports/auth-config.port'
 import { InvalidRefreshTokenError } from '../../domain/errors/invalid-refresh-token.error'
@@ -29,6 +30,7 @@ export class RefreshTokenUseCase {
 
   constructor(
     private refreshTokensRepository: RefreshTokensRepository,
+    private usersRepository: UsersRepository,
     private encrypter: EncrypterPort,
     private authConfig: AuthConfigPort,
   ) {}
@@ -74,8 +76,14 @@ export class RefreshTokenUseCase {
 
     await this.refreshTokensRepository.create(newToken)
 
+    const user = await this.usersRepository.findById(storedToken.userId)
+
+    if (!user) {
+      return left(new InvalidRefreshTokenError())
+    }
+
     const accessToken = await this.encrypter.sign(
-      { sub: storedToken.userId, family: newToken.family },
+      { sub: storedToken.userId, family: newToken.family, role: user.role },
       { expiresIn: this.authConfig.getAccessTokenExpiresIn() },
     )
 

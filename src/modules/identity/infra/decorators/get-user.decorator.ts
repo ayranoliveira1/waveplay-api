@@ -4,6 +4,7 @@ import { createParamDecorator } from '@nestjs/common'
 export interface UserPayload {
   userId: string
   family: string
+  role: string
 }
 
 export const GetUser = createParamDecorator(

@@ -85,7 +85,7 @@ export class AuthenticateUseCase {
     await this.refreshTokensRepository.create(refreshToken)
 
     const accessToken = await this.encrypter.sign(
-      { sub: user.id.toValue(), family: refreshToken.family },
+      { sub: user.id.toValue(), family: refreshToken.family, role: user.role },
       { expiresIn: this.authConfig.getAccessTokenExpiresIn() },
     )
 
