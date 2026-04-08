@@ -73,11 +73,9 @@ waveplay-api/
 │       ├── identity/                    # BC: Identidade & Acesso
 │       │   ├── domain/
 │       │   │   ├── entities/
-│       │   │   │   ├── user.ts          # AggregateRoot — emite UserRegisteredEvent
+│       │   │   │   ├── user.ts          # AggregateRoot
 │       │   │   │   ├── refresh-token.ts
 │       │   │   │   └── password-reset-token.ts
-│       │   │   ├── events/
-│       │   │   │   └── user-registered-event.ts  # DomainEvent: disparado em User.create()
 │       │   │   ├── repositories/
 │       │   │   │   ├── users-repository.ts
 │       │   │   │   ├── refresh-tokens-repository.ts
@@ -156,8 +154,6 @@ waveplay-api/
 │       │   ├── application/
 │       │   │   ├── ports/
 │       │   │   │   └── user-plan-gateway.port.ts  # Interface: getMaxProfiles() — cross-BC query
-│       │   │   ├── subscribers/
-│       │   │   │   └── on-user-registered.ts      # EventHandler: cria primeiro perfil via domain event
 │       │   │   └── use-cases/
 │       │   │       ├── create-profile-use-case.ts
 │       │   │       ├── list-profiles-use-case.ts
@@ -289,8 +285,6 @@ waveplay-api/
 │       │   ├── application/
 │       │   │   ├── ports/
 │       │   │   │   └── profile-ownership-gateway.port.ts  # Interface: validateOwnership() — cross-BC query
-│       │   │   ├── subscribers/
-│       │   │   │   └── on-user-registered.ts  # Cria subscription "basico" via domain event
 │       │   │   └── use-cases/
 │       │   │       ├── list-plans-use-case.ts
 │       │   │       ├── start-stream-use-case.ts
@@ -426,10 +420,7 @@ waveplay-api/
 
 ### Comunicação entre Bounded Contexts
 
-- **Domain Events:** O Identity BC emite `UserRegisteredEvent`. Dois BCs escutam:
-  - **Profile BC** (`OnUserRegistered`): cria o primeiro perfil do usuário
-  - **Subscription BC** (`OnUserRegisteredSubscription`): cria subscription com plano "basico"
-  - Os subscribers importam diretamente o tipo do evento do Identity BC — aceitável em monolito modular, mas a ser revisado se os BCs forem extraídos para microserviços.
+- **Orquestração no RegisterUseCase:** O Identity BC cria perfil e subscription diretamente no `RegisterUseCase`, usando repositórios importados dos BCs Profile e Subscription via módulos NestJS. A criação é síncrona e explícita — sem domain events.
 - **Gateways cross-BC:** O Profile BC consulta dados do plano do usuário via `UserPlanGatewayPort` → `PrismaUserPlanGateway` (acessa `subscription.plan.maxProfiles` pela subscription ativa). Segue o padrão Port/Adapter para evitar acoplamento direto.
 
 ---
@@ -492,35 +483,23 @@ Em caso de erro:
 
 ---
 
-## Domain Events
+## Fluxo de Registro
 
-O sistema usa **Domain Events** para comunicação desacoplada entre Bounded Contexts, seguindo DDD.
-
-### Infraestrutura (core/)
-
-| Componente | Descrição |
-|------------|-----------|
-| `DomainEvent` | Interface: `ocurredAt`, `getAggregateId()` |
-| `DomainEvents` | Registry estático: `register()`, `dispatchEventsForAggregate()`, `markForDispatch()` |
-| `AggregateRoot` | Extends Entity: `addDomainEvent()`, `domainEvents` getter, `clearEvents()` |
-| `EventHandler` | Interface: `setupSubscriptions()` |
-
-### Fluxo: Registro de novo usuário (domain events)
+O `RegisterUseCase` orquestra diretamente a criação de perfil e subscription:
 
 ```
-User.create() (Identity BC)
-    ↓ addDomainEvent(new UserRegisteredEvent(user))
-Repository.create(user) (Identity BC)
-    ↓ DomainEvents.dispatchEventsForAggregate(user.id)
-    ├── OnUserRegistered (Profile BC) → cria primeiro perfil
-    └── OnUserRegisteredSubscription (Subscription BC) → cria subscription "basico"
+RegisterUseCase (Identity BC)
+    ↓ cria User
+    ↓ cria Subscription com plano "basico" (via SubscriptionsRepository)
+    ↓ cria Profile com nome do usuário (via ProfilesRepository)
+    ↓ gera tokens (accessToken + refreshToken)
 ```
 
-- `User` é um `AggregateRoot` que emite `UserRegisteredEvent` quando criado (sem ID pré-existente)
-- Dois subscribers escutam o evento: Profile BC (perfil) e Subscription BC (assinatura)
-- Ambos implementam `EventHandler` + `OnModuleInit`, registrando o handler em `DomainEvents` ao inicializar o módulo
-- O dispatch acontece no repositório, após o persist, garantindo que o evento só é disparado se o user foi salvo com sucesso
-- `DomainEvents.clearHandlers()` + `clearMarkedAggregates()` devem ser chamados no `afterEach` dos testes para evitar acúmulo de handlers
+A criação é síncrona e explícita — sem domain events. Os repositórios de Profile e Subscription são importados via módulos NestJS (`ProfileModule` e `SubscriptionModule` exportam seus repositórios).
+
+### Infraestrutura de Domain Events (core/)
+
+A infraestrutura de domain events existe em `core/events/` (`DomainEvent`, `DomainEvents`, `EventHandler`) e em `core/entities/aggregate-root.ts`, mas **não é utilizada atualmente**. Mantida para uso futuro caso necessário.
 
 ---
 

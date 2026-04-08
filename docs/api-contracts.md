@@ -28,7 +28,7 @@ Erro:
 
 ### POST /auth/register
 
-Cria conta + primeiro perfil automático + subscription (plano Básico) via domain events.
+Cria conta + primeiro perfil automático + subscription (plano Básico) automaticamente no registro.
 
 **Headers (opcional):** `X-Platform: mobile`
 

@@ -8,7 +8,7 @@
 
 | Regra | Descrição |
 |-------|-----------|
-| Todo usuário recebe uma assinatura ao registrar | Via domain event, o user recebe uma Subscription com plano "basico" (status: active) |
+| Todo usuário recebe uma assinatura ao registrar | Criada automaticamente no registro — o user recebe uma Subscription com plano "basico" (status: active) |
 | Subscription conecta User a Plan | `User ← Subscription → Plan` (não há relação direta User→Plan) |
 | Plano define limite de perfis | `plan.maxProfiles` via subscription ativa do user |
 | Plano define limite de telas | `plan.maxStreams` via subscription ativa do user |
@@ -50,7 +50,7 @@
 ### Fluxo de autenticação
 
 ```
-Register → valida confirmPassword → cria user + hash senha → domain event → cria subscription (basico) + perfil → retorna tokens
+Register → valida confirmPassword → cria user + hash senha → cria subscription (basico) + perfil → retorna tokens
 Login    → verifica lockout → valida email + argon2 verify → gera family → retorna tokens
 Refresh  → valida hash do token → revoga atual → gera novo com mesma family
 Logout   → revoga todos tokens da family
