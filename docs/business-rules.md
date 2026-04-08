@@ -356,6 +356,8 @@ O endpoint de analytics retorna dois blocos: **overview** (snapshot do estado at
 | Formato de data | ISO 8601 (YYYY-MM-DD), validado com Zod |
 | Overview não depende de datas | Sempre retorna o snapshot atual, independente dos params |
 | Period depende de StreamSession | Gráficos de streams por hora, duração média e total dependem da tabela StreamSession |
+| Performance | Todas as queries do gateway executam em paralelo (`Promise.all`) para minimizar tempo de resposta |
+| Índices otimizados | StreamSession indexada por `startedAt` e `endedAt` para queries de período rápidas |
 
 ### Gestão de Usuários
 
@@ -364,7 +366,7 @@ O endpoint de analytics retorna dois blocos: **overview** (snapshot do estado at
 | Criar usuário | Admin pode criar usuário com plano específico — cria user + subscription + primeiro perfil |
 | Email único | Não permite criar usuário com email já existente (409) |
 | Senha obrigatória | Admin define a senha inicial do usuário |
-| Listar usuários | Paginado com filtro por nome/email |
+| Listar usuários | Paginado com filtro por nome/email. Frontend define `perPage` (max 100) |
 | Detalhes do usuário | Retorna dados + subscription ativa + perfis |
 | Alterar subscription | Admin pode trocar o plano de qualquer usuário |
 | Downgrade não bloqueia perfis | Se user tem mais perfis que o novo plano permite, não deleta — apenas avisa |
