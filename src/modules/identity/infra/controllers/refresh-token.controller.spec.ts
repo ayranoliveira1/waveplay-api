@@ -13,9 +13,13 @@ import { InMemoryRefreshTokensRepository } from 'test/repositories/in-memory-ref
 import { FakeEncrypter } from 'test/cryptography/fake-encrypter'
 import { FakeAuthConfig } from 'test/ports/fake-auth-config'
 import { RefreshTokensRepository } from '../../domain/repositories/refresh-tokens-repository'
+import { UsersRepository } from '../../domain/repositories/users-repository'
+import { InMemoryUsersRepository } from 'test/repositories/in-memory-users-repository'
 import { EncrypterPort } from '../../application/ports/encrypter.port'
 import { AuthConfigPort } from '../../application/ports/auth-config.port'
 import { RefreshToken } from '../../domain/entities/refresh-token'
+import { User } from '../../domain/entities/user'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { AllExceptionsFilter } from '@/shared/filters/nest-exception-filter'
 
 let app: INestApplication
@@ -37,6 +41,7 @@ describe('RefreshTokenController', () => {
           provide: RefreshTokensRepository,
           useClass: InMemoryRefreshTokensRepository,
         },
+        { provide: UsersRepository, useClass: InMemoryUsersRepository },
         { provide: EncrypterPort, useClass: FakeEncrypter },
         { provide: AuthConfigPort, useClass: FakeAuthConfig },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
@@ -50,6 +55,18 @@ describe('RefreshTokenController', () => {
 
     refreshTokensRepository = module.get(RefreshTokensRepository)
     authConfig = module.get(AuthConfigPort)
+
+    const usersRepository = module.get<InMemoryUsersRepository>(UsersRepository)
+    usersRepository.items.push(
+      User.create(
+        {
+          name: 'Test User',
+          email: 'test@email.com',
+          passwordHash: 'hash',
+        },
+        new UniqueEntityID('user-1'),
+      ),
+    )
   })
 
   it('should return 400 when refreshToken is not a string', async () => {

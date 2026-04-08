@@ -65,6 +65,20 @@ describe('AuthenticateUseCase', () => {
     expect(refreshTokensRepository.items).toHaveLength(1)
   })
 
+  it('should include role in JWT payload', async () => {
+    const result = await sut.execute({
+      email: 'joao@email.com',
+      password: '12345678',
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      const decoded = await encrypter.verify(result.value.accessToken)
+      expect(decoded).toHaveProperty('role', 'user')
+    }
+  })
+
   it('should return error when email does not exist', async () => {
     const result = await sut.execute({
       email: 'inexistente@email.com',

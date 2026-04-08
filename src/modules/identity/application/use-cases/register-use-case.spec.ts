@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createHash } from 'node:crypto'
 
+import { UserRole } from '../../domain/entities/user'
 import { RegisterUseCase } from './register-use-case'
 import { InMemoryUsersRepository } from 'test/repositories/in-memory-users-repository'
 import { InMemoryRefreshTokensRepository } from 'test/repositories/in-memory-refresh-tokens-repository'
@@ -84,6 +85,37 @@ describe('RegisterUseCase', () => {
 
     expect(usersRepository.items).toHaveLength(1)
     expect(refreshTokensRepository.items).toHaveLength(1)
+  })
+
+  it('should create user with role "user" by default', async () => {
+    const result = await sut.execute({
+      name: 'João Silva',
+      email: 'joao2@email.com',
+      password: 'Abc12345',
+      confirmPassword: 'Abc12345',
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.user.role).toBe(UserRole.USER)
+    }
+  })
+
+  it('should include role in JWT payload', async () => {
+    const result = await sut.execute({
+      name: 'João Silva',
+      email: 'joao3@email.com',
+      password: 'Abc12345',
+      confirmPassword: 'Abc12345',
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      const decoded = await encrypter.verify(result.value.accessToken)
+      expect(decoded).toHaveProperty('role', 'user')
+    }
   })
 
   it('should return error when email already exists', async () => {

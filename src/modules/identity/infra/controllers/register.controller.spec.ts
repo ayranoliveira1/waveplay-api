@@ -100,13 +100,9 @@ describe('RegisterController', () => {
 
     expect(response.status).toBe(201)
     expect(response.body.success).toBe(true)
-    expect(response.body.data.user).toBeDefined()
-    expect(response.body.data.user.email).toBe('joao@email.com')
+    expect(response.body.data.user).toBeUndefined()
     expect(response.body.data.accessToken).toBeDefined()
     expect(response.body.data.refreshToken).toBeDefined()
-
-    // Não deve ter passwordHash no response
-    expect(response.body.data.user.passwordHash).toBeUndefined()
   })
 
   it('should set refresh token as httpOnly cookie for web platform', async () => {

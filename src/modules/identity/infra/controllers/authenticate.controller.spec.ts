@@ -77,7 +77,7 @@ describe('AuthenticateController', () => {
 
     expect(response.status).toBe(200)
     expect(response.body.success).toBe(true)
-    expect(response.body.data.user.email).toBe('joao@email.com')
+    expect(response.body.data.user).toBeUndefined()
     expect(response.body.data.accessToken).toBeDefined()
     expect(response.body.data.refreshToken).toBeDefined()
   })

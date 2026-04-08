@@ -80,6 +80,7 @@ describe('GetAccountController', () => {
     expect(userData.id).toBe(user.id.toValue())
     expect(userData.name).toBe('João Silva')
     expect(userData.email).toBe('joao@email.com')
+    expect(userData.role).toBe('user')
     expect(userData.createdAt).toBeDefined()
 
     expect(userData.subscription).not.toBeNull()

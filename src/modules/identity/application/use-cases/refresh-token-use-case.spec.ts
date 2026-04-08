@@ -3,25 +3,43 @@ import { createHash, randomUUID } from 'node:crypto'
 
 import { RefreshTokenUseCase } from './refresh-token-use-case'
 import { InMemoryRefreshTokensRepository } from 'test/repositories/in-memory-refresh-tokens-repository'
+import { InMemoryUsersRepository } from 'test/repositories/in-memory-users-repository'
 import { FakeEncrypter } from 'test/cryptography/fake-encrypter'
 import { FakeAuthConfig } from 'test/ports/fake-auth-config'
 import { RefreshToken } from '../../domain/entities/refresh-token'
+import { User } from '../../domain/entities/user'
 import { InvalidRefreshTokenError } from '../../domain/errors/invalid-refresh-token.error'
 import { TokenTheftDetectedError } from '../../domain/errors/token-theft-detected.error'
 
 let refreshTokensRepository: InMemoryRefreshTokensRepository
+let usersRepository: InMemoryUsersRepository
 let encrypter: FakeEncrypter
 let authConfig: FakeAuthConfig
 let sut: RefreshTokenUseCase
 
 describe('RefreshTokenUseCase', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     refreshTokensRepository = new InMemoryRefreshTokensRepository()
+    usersRepository = new InMemoryUsersRepository()
     encrypter = new FakeEncrypter()
     authConfig = new FakeAuthConfig()
 
+    const user = User.create(
+      {
+        name: 'João Silva',
+        email: 'joao@email.com',
+        passwordHash: '12345678-hashed',
+      },
+      new (await import('@/core/entities/unique-entity-id')).UniqueEntityID(
+        'user-1',
+      ),
+    )
+
+    await usersRepository.create(user)
+
     sut = new RefreshTokenUseCase(
       refreshTokensRepository,
+      usersRepository,
       encrypter,
       authConfig,
     )
@@ -54,6 +72,27 @@ describe('RefreshTokenUseCase', () => {
 
     // Novo token herda a mesma family
     expect(refreshTokensRepository.items[1].family).toBe('family-1')
+  })
+
+  it('should include user role in new access token', async () => {
+    const rawToken = randomUUID()
+    const { refreshToken } = RefreshToken.createFromRawToken({
+      rawToken,
+      userId: 'user-1',
+      expiresInMs: authConfig.getRefreshTokenExpiresInMs(),
+      family: 'family-role',
+    })
+
+    await refreshTokensRepository.create(refreshToken)
+
+    const result = await sut.execute({ refreshToken: rawToken })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      const decoded = await encrypter.verify(result.value.accessToken)
+      expect(decoded).toHaveProperty('role', 'user')
+    }
   })
 
   it('should revoke old token after refresh', async () => {
