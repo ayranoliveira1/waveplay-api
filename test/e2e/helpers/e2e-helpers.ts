@@ -54,12 +54,23 @@ export async function registerUser(
     await new Promise((r) => setTimeout(r, 150))
   }
 
+  const accessToken = response.body?.data?.accessToken as string | undefined
+
+  // Extract userId from JWT payload (register no longer returns user data)
+  let userId: string | undefined
+  if (accessToken) {
+    const payload = JSON.parse(
+      Buffer.from(accessToken.split('.')[1], 'base64').toString(),
+    )
+    userId = payload.sub
+  }
+
   return {
     response,
     email,
     password,
-    userId: response.body?.data?.user?.id as string | undefined,
-    accessToken: response.body?.data?.accessToken as string | undefined,
+    userId,
+    accessToken,
     refreshToken: response.body?.data?.refreshToken as string | undefined,
   }
 }

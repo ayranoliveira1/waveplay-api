@@ -48,12 +48,7 @@ describe('POST /auth/register', () => {
     expect(response.status).toBe(201)
     expect(response.body.success).toBe(true)
     expect(response.body.error).toBeNull()
-    expect(response.body.data.user).toBeDefined()
-    expect(response.body.data.user.id).toBeDefined()
-    expect(response.body.data.user.name).toBe('Test User')
-    expect(response.body.data.user.email).toBe(email)
-    expect(response.body.data.user.createdAt).toBeDefined()
-    expect(response.body.data.user.passwordHash).toBeUndefined()
+    expect(response.body.data.user).toBeUndefined()
     expect(response.body.data.accessToken).toBeDefined()
     expect(typeof response.body.data.accessToken).toBe('string')
   })
@@ -284,9 +279,8 @@ describe('POST /auth/register', () => {
       })
 
     expect(response.status).toBe(201)
-    expect(response.body.data.user.role).toBeUndefined()
-    expect(response.body.data.user.isAdmin).toBeUndefined()
-    expect(response.body.data.user.passwordHash).toBeUndefined()
+    expect(response.body.data.user).toBeUndefined()
+    expect(response.body.data.accessToken).toBeDefined()
   })
 })
 
@@ -308,8 +302,7 @@ describe('POST /auth/login', () => {
     expect(response.body.success).toBe(true)
     expect(response.body.data.accessToken).toBeDefined()
     expect(response.body.data.refreshToken).toBeDefined()
-    expect(response.body.data.user).toBeDefined()
-    expect(response.body.data.user.email).toBe(email)
+    expect(response.body.data.user).toBeUndefined()
   })
 
   it('should return 401 for wrong password (anti-enumeration: same message)', async () => {
@@ -785,6 +778,7 @@ describe('GET /account', () => {
     expect(user.id).toBeDefined()
     expect(user.name).toBeDefined()
     expect(user.email).toBeDefined()
+    expect(user.role).toBe('user')
     expect(user.createdAt).toBeDefined()
 
     expect(user.subscription).not.toBeNull()
