@@ -1165,7 +1165,7 @@ Limpa todo o histórico do perfil.
 
 ### GET /admin/analytics
 
-Dashboard com métricas do sistema. Retorna dois blocos: **overview** (snapshot atual) e **period** (filtrado por intervalo de datas).
+Dashboard com métricas do sistema. Retorna dois blocos: **overview** (snapshot atual) e **period** (filtrado por intervalo de datas). Todas as queries do gateway são executadas em paralelo (`Promise.all`) para minimizar o tempo de resposta.
 
 **Query params (opcionais):**
 - `startDate` — data início do período (ISO 8601: `YYYY-MM-DD`, default: 30 dias atrás)
@@ -1268,13 +1268,13 @@ Criar usuário com plano específico. Cria automaticamente subscription e primei
 
 ---
 
-### GET /admin/users?page=1&limit=20&search=john
+### GET /admin/users?page=1&perPage=20&search=john
 
 Lista paginada de usuários com filtro por nome/email.
 
 **Query params:**
 - `page` — página (default: 1)
-- `limit` — itens por página (default: 20, max: 100)
+- `perPage` — itens por página, definido pelo frontend (default: 20, max: 100)
 - `search` — filtro por nome ou email (opcional)
 
 **Response 200:**
