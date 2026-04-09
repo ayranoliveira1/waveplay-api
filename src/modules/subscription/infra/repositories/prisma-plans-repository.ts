@@ -40,4 +40,17 @@ export class PrismaPlansRepository implements PlansRepository {
 
     return plans.map((plan) => PrismaPlanMapper.toDomain(plan))
   }
+
+  async create(plan: Plan): Promise<void> {
+    const data = PrismaPlanMapper.toPrisma(plan)
+    await this.prisma.plan.create({ data })
+  }
+
+  async save(plan: Plan): Promise<void> {
+    const data = PrismaPlanMapper.toPrisma(plan)
+    await this.prisma.plan.update({
+      where: { id: data.id },
+      data,
+    })
+  }
 }

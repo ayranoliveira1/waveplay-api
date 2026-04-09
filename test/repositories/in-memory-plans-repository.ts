@@ -15,4 +15,15 @@ export class InMemoryPlansRepository implements PlansRepository {
   async findAll(): Promise<Plan[]> {
     return this.items.filter((item) => item.active)
   }
+
+  async create(plan: Plan): Promise<void> {
+    this.items.push(plan)
+  }
+
+  async save(plan: Plan): Promise<void> {
+    const index = this.items.findIndex((item) => item.id.equals(plan.id))
+    if (index >= 0) {
+      this.items[index] = plan
+    }
+  }
 }
