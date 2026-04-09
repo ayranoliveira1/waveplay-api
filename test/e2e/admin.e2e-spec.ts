@@ -566,3 +566,337 @@ describe('PATCH /admin/users/:id/subscription', () => {
     expect(asUser.status).toBe(403)
   })
 })
+
+// ---------------------------------------------------------------------------
+// POST /admin/plans
+// ---------------------------------------------------------------------------
+
+describe('POST /admin/plans', () => {
+  afterAll(async () => {
+    const prisma = app.get(PrismaService)
+    await prisma.plan.deleteMany({
+      where: { slug: { startsWith: 'test-plan-' } },
+    })
+  })
+
+  it('should return 201 and create a plan with active=true', async () => {
+    const slug = `test-plan-create-${Date.now()}`
+    const response = await request(app.getHttpServer())
+      .post('/admin/plans')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Test Plan Create',
+        slug,
+        priceCents: 4990,
+        maxProfiles: 6,
+        maxStreams: 5,
+        description: 'Plano de teste',
+      })
+
+    expect(response.status).toBe(201)
+    expect(response.body.success).toBe(true)
+    expect(response.body.data.plan).toMatchObject({
+      id: expect.any(String),
+      name: 'Test Plan Create',
+      slug,
+      priceCents: 4990,
+      maxProfiles: 6,
+      maxStreams: 5,
+      description: 'Plano de teste',
+      active: true,
+    })
+  })
+
+  it('should persist the plan in the database', async () => {
+    const slug = `test-plan-persist-${Date.now()}`
+    await request(app.getHttpServer())
+      .post('/admin/plans')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Test Plan Persist',
+        slug,
+        priceCents: 5990,
+        maxProfiles: 7,
+        maxStreams: 6,
+      })
+
+    const prisma = app.get(PrismaService)
+    const stored = await prisma.plan.findUnique({ where: { slug } })
+    expect(stored).not.toBeNull()
+    expect(stored?.active).toBe(true)
+    expect(stored?.priceCents).toBe(5990)
+  })
+
+  it('should return 409 when slug already exists', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/admin/plans')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Duplicado',
+        slug: 'basico',
+        priceCents: 1990,
+        maxProfiles: 3,
+        maxStreams: 2,
+      })
+
+    expect(response.status).toBe(409)
+  })
+
+  it('should return 400 when slug has invalid characters', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/admin/plans')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Test',
+        slug: 'Invalid!',
+        priceCents: 1990,
+        maxProfiles: 3,
+        maxStreams: 2,
+      })
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should return 400 when body has extra field (strict mode)', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/admin/plans')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Test',
+        slug: `test-plan-strict-${Date.now()}`,
+        priceCents: 1990,
+        maxProfiles: 3,
+        maxStreams: 2,
+        active: false,
+      })
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should return 401/403 for unauthenticated or non-admin', async () => {
+    const payload = {
+      name: 'Test',
+      slug: `test-plan-auth-${Date.now()}`,
+      priceCents: 1990,
+      maxProfiles: 3,
+      maxStreams: 2,
+    }
+
+    const noAuth = await request(app.getHttpServer())
+      .post('/admin/plans')
+      .send(payload)
+    expect(noAuth.status).toBe(401)
+
+    const { accessToken } = await registerUser(app)
+    const asUser = await request(app.getHttpServer())
+      .post('/admin/plans')
+      .set(authHeader(accessToken!))
+      .send(payload)
+    expect(asUser.status).toBe(403)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// PATCH /admin/plans/:id
+// ---------------------------------------------------------------------------
+
+describe('PATCH /admin/plans/:id', () => {
+  afterAll(async () => {
+    const prisma = app.get(PrismaService)
+    await prisma.plan.deleteMany({
+      where: { slug: { startsWith: 'test-plan-' } },
+    })
+  })
+
+  async function createTestPlan(slug: string) {
+    const response = await request(app.getHttpServer())
+      .post('/admin/plans')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Inicial',
+        slug,
+        priceCents: 1990,
+        maxProfiles: 3,
+        maxStreams: 2,
+        description: 'Descrição inicial',
+      })
+    return response.body.data.plan.id as string
+  }
+
+  it('should update name + priceCents and persist to database', async () => {
+    const planId = await createTestPlan(`test-plan-update-${Date.now()}`)
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/plans/${planId}`)
+      .set(authHeader(adminToken))
+      .send({ name: 'Atualizado', priceCents: 2490 })
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.plan).toMatchObject({
+      id: planId,
+      name: 'Atualizado',
+      priceCents: 2490,
+      maxProfiles: 3,
+      maxStreams: 2,
+    })
+
+    const prisma = app.get(PrismaService)
+    const stored = await prisma.plan.findUnique({ where: { id: planId } })
+    expect(stored?.name).toBe('Atualizado')
+    expect(stored?.priceCents).toBe(2490)
+  })
+
+  it('should partial-update (only priceCents) preserving other fields', async () => {
+    const planId = await createTestPlan(`test-plan-partial-${Date.now()}`)
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/plans/${planId}`)
+      .set(authHeader(adminToken))
+      .send({ priceCents: 9990 })
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.plan).toMatchObject({
+      name: 'Inicial',
+      priceCents: 9990,
+      maxProfiles: 3,
+      maxStreams: 2,
+      description: 'Descrição inicial',
+    })
+  })
+
+  it('should return 404 when planId does not exist', async () => {
+    const response = await request(app.getHttpServer())
+      .patch('/admin/plans/00000000-0000-4000-8000-000000000000')
+      .set(authHeader(adminToken))
+      .send({ priceCents: 2490 })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 400 when body has extra field (strict mode)', async () => {
+    const planId = await createTestPlan(`test-plan-strictup-${Date.now()}`)
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/plans/${planId}`)
+      .set(authHeader(adminToken))
+      .send({ priceCents: 2490, slug: 'hacked' })
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should return 401/403 for unauthenticated or non-admin', async () => {
+    const fakeId = '11111111-1111-4111-8111-111111111111'
+
+    const noAuth = await request(app.getHttpServer())
+      .patch(`/admin/plans/${fakeId}`)
+      .send({ priceCents: 2490 })
+    expect(noAuth.status).toBe(401)
+
+    const { accessToken } = await registerUser(app)
+    const asUser = await request(app.getHttpServer())
+      .patch(`/admin/plans/${fakeId}`)
+      .set(authHeader(accessToken!))
+      .send({ priceCents: 2490 })
+    expect(asUser.status).toBe(403)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// PATCH /admin/plans/:id/toggle
+// ---------------------------------------------------------------------------
+
+describe('PATCH /admin/plans/:id/toggle', () => {
+  afterAll(async () => {
+    const prisma = app.get(PrismaService)
+    await prisma.plan.deleteMany({
+      where: { slug: { startsWith: 'test-plan-' } },
+    })
+  })
+
+  async function createTestPlan(slug: string) {
+    const response = await request(app.getHttpServer())
+      .post('/admin/plans')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Toggle Plan',
+        slug,
+        priceCents: 1990,
+        maxProfiles: 3,
+        maxStreams: 2,
+      })
+    return response.body.data.plan.id as string
+  }
+
+  it('should deactivate an active plan and persist to database', async () => {
+    const planId = await createTestPlan(`test-plan-toggle-off-${Date.now()}`)
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/plans/${planId}/toggle`)
+      .set(authHeader(adminToken))
+      .send()
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.plan.active).toBe(false)
+
+    const prisma = app.get(PrismaService)
+    const stored = await prisma.plan.findUnique({ where: { id: planId } })
+    expect(stored?.active).toBe(false)
+  })
+
+  it('should reactivate an inactive plan and persist to database', async () => {
+    const planId = await createTestPlan(`test-plan-toggle-on-${Date.now()}`)
+
+    // first deactivate
+    await request(app.getHttpServer())
+      .patch(`/admin/plans/${planId}/toggle`)
+      .set(authHeader(adminToken))
+      .send()
+
+    // then reactivate
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/plans/${planId}/toggle`)
+      .set(authHeader(adminToken))
+      .send()
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.plan.active).toBe(true)
+
+    const prisma = app.get(PrismaService)
+    const stored = await prisma.plan.findUnique({ where: { id: planId } })
+    expect(stored?.active).toBe(true)
+  })
+
+  it('should return 404 when planId does not exist', async () => {
+    const response = await request(app.getHttpServer())
+      .patch('/admin/plans/00000000-0000-4000-8000-000000000000/toggle')
+      .set(authHeader(adminToken))
+      .send()
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 400 when id is not a valid UUID', async () => {
+    const response = await request(app.getHttpServer())
+      .patch('/admin/plans/not-a-uuid/toggle')
+      .set(authHeader(adminToken))
+      .send()
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should return 401/403 for unauthenticated or non-admin', async () => {
+    const fakeId = '11111111-1111-4111-8111-111111111111'
+
+    const noAuth = await request(app.getHttpServer())
+      .patch(`/admin/plans/${fakeId}/toggle`)
+      .send()
+    expect(noAuth.status).toBe(401)
+
+    const { accessToken } = await registerUser(app)
+    const asUser = await request(app.getHttpServer())
+      .patch(`/admin/plans/${fakeId}/toggle`)
+      .set(authHeader(accessToken!))
+      .send()
+    expect(asUser.status).toBe(403)
+  })
+})
