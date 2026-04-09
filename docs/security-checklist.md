@@ -56,7 +56,7 @@
 |---|-----------------|-----------|----------------------|------------|
 | 3.1 | **IDOR** (Insecure Direct Object Reference) | Acessar recursos de outros usuarios alterando IDs na URL | Ownership validation em TODOS os use cases: `profile.userId === auth.userId`. Nunca confiar no ID da URL sem verificar ownership | Critica |
 | 3.2 | **BOLA** (Broken Object Level Authorization) — OWASP API1 | Mesmo que IDOR mas no contexto de APIs | Cada use case que recebe profileId, streamId, etc. deve verificar que o recurso pertence ao usuario autenticado | Critica |
-| 3.3 | **BFLA** (Broken Function Level Authorization) — OWASP API5 | Usuario acessa funcoes administrativas | Nosso sistema nao tem admin routes na v1. Se adicionar: criar role-based guard separado | Alta |
+| 3.3 | **BFLA** (Broken Function Level Authorization) — OWASP API5 | Usuario acessa funcoes administrativas | `AdminGuard` checa `req.user.role === 'admin'` nas rotas decoradas com `@Admin()`. Retorna 403 para qualquer token de role `user`. Ver secao 19 (Admin BC) | Alta |
 | 3.4 | **Vertical Privilege Escalation** | Usuario regular executa acoes de admin | AuthGuard em todas as rotas protegidas. Nao expor endpoints de gerenciamento de planos para usuarios comuns | Critica |
 | 3.5 | **Horizontal Privilege Escalation** | Usuario A acessa dados do usuario B | Ownership validation: `profile.userId === auth.userId` em Profile, Library, Playback, Streams. Nunca retornar dados de outros usuarios | Critica |
 | 3.6 | **Missing Function Level Access Control** | Endpoints sem protecao de autenticacao | AuthGuard global no AppModule. Usar @Public() decorator apenas nas rotas que realmente devem ser publicas (register, login, forgot-password) | Alta |
@@ -287,7 +287,22 @@
 
 ---
 
-## 19. Checklist por Task
+## 19. Admin BC — RBAC & Authorization
+
+| # | Vulnerabilidade | Descricao | Prevencao no WavePlay | Severidade |
+|---|-----------------|-----------|----------------------|------------|
+| 19.1 | **Escalacao de privilegio via body** | User comum envia `{ role: 'admin' }` em PATCH /users/me ou register | Role nunca aceita no body de nenhum endpoint (Zod `.strict()`). Promocao admin e manual via seed/DB. `register` sempre cria com `role = 'user'` | Critica |
+| 19.2 | **Role exposta em endpoint publico** | Presenter publico vaza campo `role`, permitindo enumeracao de admins | `user-presenter.ts` publico nao inclui `role`. Apenas `admin-user-presenter.ts` expoe, e so e usado em rotas com `@Admin()` | Alta |
+| 19.3 | **Bypass do AdminGuard** | Endpoint admin sem o decorator `@Admin()` | Todos os 8 controllers do Admin BC usam `@Admin()`. Revisao em code review + E2E com `registerUser()` (role=user) esperando 403 em todos os endpoints | Critica |
+| 19.4 | **Input invalido em rotas admin** | Admin altera plano com preco negativo ou maxProfiles=0 quebrando o dominio | Zod `.strict()` em todos os controllers admin. Regras: `priceCents >= 0`, `maxProfiles >= 1`, `maxStreams >= 1`, `slug` regex `^[a-z0-9-]+$` | Alta |
+| 19.5 | **IDOR em rotas admin** | Admin passa UUID invalido na rota e recebe stack trace | Todos os `:id` validados com `z.string().uuid()`. `PlanNotFoundError` / `UserNotFoundError` retornam 404 generico sem expor detalhes | Media |
+| 19.6 | **Rate limiting ausente em rotas admin** | Ataque por forca bruta em endpoints caros (analytics, listagem) | `ThrottlerGuard` global aplica rate limit em todas as rotas (default: 300 req/min). Endpoints admin nao tem isencao | Media |
+| 19.7 | **Falta de audit log** | Acoes destrutivas (toggle plano, alterar subscription) nao logadas | Logar via `Logger` em `CustomHttpException` handler + no use case. Incluir `adminUserId` no log. (Nota: audit log completo e trabalho futuro — Task 22+) | Media |
+| 19.8 | **Delete de plano com subscriptions ativas** | Remover plano quebra integridade referencial e deixa users orfaos | Nao ha endpoint DELETE de plano. Unico mecanismo de desativacao e o toggle (`active: false`) que preserva subscriptions existentes | Alta |
+
+---
+
+## 20. Checklist por Task
 
 Tabela de referencia rapida: quais categorias de vulnerabilidade verificar em cada task.
 
@@ -309,7 +324,12 @@ Tabela de referencia rapida: quais categorias de vulnerabilidade verificar em ca
 | **14 — Library BC** | 3.1-3.2 (IDOR/BOLA), 3.5 (Horizontal), 12.1 (Race Condition), 14.1 (Mass Assignment) |
 | **15 — Playback BC** | 3.1-3.2 (IDOR/BOLA), 12.8 (Negative Values), 12.1 (Race Condition), 12.2 (Limite 50 historico), 14.1 (Mass Assignment) |
 | **16 — Integracao + E2E** | Todas — verificacao final de todas as categorias. Testar especialmente: 2 (Auth), 3 (Access Control), 5 (Misconfiguration), 12 (Business Logic) |
+| **17 — Admin Domain** | 3.3-3.4 (BFLA/Vertical), 3.11 (Broken Property Auth), 19.1-19.2 (Role no body / exposicao) |
+| **18 — Admin Analytics** | 19.3 (@Admin() guard), 19.6 (Rate limit), 13 (DoS em queries pesadas) |
+| **19 — Admin User Mgmt** | 19.1 (Role no body), 19.4 (Zod validation), 19.5 (IDOR), 14 (Mass Assignment) |
+| **20 — Admin Plan Mgmt** | 19.4 (Zod validation), 19.8 (No DELETE), 3.11 (Slug imutavel), 16.2 (Validation) |
+| **21 — Admin Docs** | Revisao final de todas as categorias 19 |
 
 ---
 
-> **Como usar**: Antes de implementar cada task, consultar a tabela da secao 19 para saber quais categorias priorizar. Ao finalizar, verificar cada item da categoria correspondente.
+> **Como usar**: Antes de implementar cada task, consultar a tabela da secao 20 para saber quais categorias priorizar. Ao finalizar, verificar cada item da categoria correspondente.
