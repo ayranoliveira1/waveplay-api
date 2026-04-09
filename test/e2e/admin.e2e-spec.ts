@@ -2,12 +2,20 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import type { INestApplication } from '@nestjs/common'
 import request from 'supertest'
 import { createE2EApp } from './helpers/e2e-app'
-import { registerUser, authHeader, fullCleanup } from './helpers/e2e-helpers'
+import {
+  registerUser,
+  authHeader,
+  fullCleanup,
+  uniqueEmail,
+} from './helpers/e2e-helpers'
 import { PrismaService } from '@/shared/database/prisma.service'
 import { hash } from 'argon2'
 
 let app: INestApplication
 let adminToken: string
+let basicoPlanId: string
+let padraoPlanId: string
+let premiumPlanId: string
 
 async function loginAsAdmin(app: INestApplication): Promise<string> {
   const prisma = app.get(PrismaService)
@@ -43,6 +51,14 @@ beforeAll(async () => {
   app = e2e.app
   await fullCleanup(app)
   adminToken = await loginAsAdmin(app)
+
+  const prisma = app.get(PrismaService)
+  const plans = await prisma.plan.findMany({
+    where: { slug: { in: ['basico', 'padrao', 'premium'] } },
+  })
+  basicoPlanId = plans.find((p) => p.slug === 'basico')!.id
+  padraoPlanId = plans.find((p) => p.slug === 'padrao')!.id
+  premiumPlanId = plans.find((p) => p.slug === 'premium')!.id
 })
 
 afterAll(async () => {
@@ -120,5 +136,433 @@ describe('GET /admin/analytics', () => {
       .set(authHeader(accessToken!))
 
     expect(response.status).toBe(403)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// POST /admin/users
+// ---------------------------------------------------------------------------
+
+describe('POST /admin/users', () => {
+  it('should return 201 and create user with specific plan', async () => {
+    const email = uniqueEmail('admin-create')
+
+    const response = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Created User',
+        email,
+        password: 'SenhaForte1',
+        planId: premiumPlanId,
+      })
+
+    expect(response.status).toBe(201)
+    expect(response.body.success).toBe(true)
+    expect(response.body.data).toMatchObject({
+      name: 'Created User',
+      email,
+      role: 'user',
+    })
+    expect(response.body.data.passwordHash).toBeUndefined()
+  })
+
+  it('should persist user + subscription + profile via Prisma', async () => {
+    const email = uniqueEmail('admin-create-persist')
+
+    const response = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Persisted User',
+        email,
+        password: 'SenhaForte1',
+        planId: padraoPlanId,
+      })
+
+    expect(response.status).toBe(201)
+
+    const prisma = app.get(PrismaService)
+    const dbUser = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        subscriptions: { where: { status: 'active' }, include: { plan: true } },
+        profiles: true,
+      },
+    })
+
+    expect(dbUser).not.toBeNull()
+    expect(dbUser!.subscriptions).toHaveLength(1)
+    expect(dbUser!.subscriptions[0].plan.slug).toBe('padrao')
+    expect(dbUser!.profiles).toHaveLength(1)
+    expect(dbUser!.profiles[0].name).toBe('Persisted User')
+  })
+
+  it('should return 409 when email already exists', async () => {
+    const email = uniqueEmail('admin-dup')
+
+    await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'First',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+
+    const response = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Second',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+
+    expect(response.status).toBe(409)
+  })
+
+  it('should return 400 for weak password', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Weak',
+        email: uniqueEmail('weak'),
+        password: 'weakpass',
+        planId: basicoPlanId,
+      })
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should return 404 when planId is a valid UUID but does not exist', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'NoPlan',
+        email: uniqueEmail('noplan'),
+        password: 'SenhaForte1',
+        planId: '99999999-9999-4999-8999-999999999999',
+      })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 400 with extra field (strict mode)', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Strict',
+        email: uniqueEmail('strict'),
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+        role: 'admin',
+      })
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should return 401/403 for unauthenticated or non-admin request', async () => {
+    const noAuth = await request(app.getHttpServer())
+      .post('/admin/users')
+      .send({
+        name: 'X',
+        email: uniqueEmail('noauth'),
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    expect(noAuth.status).toBe(401)
+
+    const { accessToken } = await registerUser(app)
+    const asUser = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(accessToken!))
+      .send({
+        name: 'Y',
+        email: uniqueEmail('asuser'),
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    expect(asUser.status).toBe(403)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// GET /admin/users
+// ---------------------------------------------------------------------------
+
+describe('GET /admin/users', () => {
+  it('should return 200 with paginated shape and profilesCount', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/admin/users')
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(response.body.data.users).toBeDefined()
+    expect(response.body.data.page).toBeDefined()
+    expect(response.body.data.totalPages).toBeDefined()
+    expect(response.body.data.totalItems).toBeGreaterThanOrEqual(1)
+    expect(response.body.data.users[0].profilesCount).toBeDefined()
+  })
+
+  it('should filter by search (case-insensitive)', async () => {
+    const email = uniqueEmail('search-target')
+    await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Searchable Person',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+
+    const response = await request(app.getHttpServer())
+      .get('/admin/users')
+      .query({ search: 'SEARCHABLE' })
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(200)
+    expect(
+      response.body.data.users.some(
+        (u: { email: string }) => u.email === email,
+      ),
+    ).toBe(true)
+  })
+
+  it('should use defaults page=1 perPage=20', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/admin/users')
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.page).toBe(1)
+    expect(response.body.data.users.length).toBeLessThanOrEqual(20)
+  })
+
+  it('should return 400 when perPage > 100', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/admin/users')
+      .query({ perPage: '101' })
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should return 401/403 for unauthenticated or non-admin', async () => {
+    const noAuth = await request(app.getHttpServer()).get('/admin/users')
+    expect(noAuth.status).toBe(401)
+
+    const { accessToken } = await registerUser(app)
+    const asUser = await request(app.getHttpServer())
+      .get('/admin/users')
+      .set(authHeader(accessToken!))
+    expect(asUser.status).toBe(403)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// GET /admin/users/:id
+// ---------------------------------------------------------------------------
+
+describe('GET /admin/users/:id', () => {
+  it('should return 200 with subscription plan and profiles', async () => {
+    const email = uniqueEmail('detail-target')
+
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Detail User',
+        email,
+        password: 'SenhaForte1',
+        planId: premiumPlanId,
+      })
+
+    const userId = createResponse.body.data.id
+
+    const response = await request(app.getHttpServer())
+      .get(`/admin/users/${userId}`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.id).toBe(userId)
+    expect(response.body.data.subscription.plan.slug).toBe('premium')
+    expect(response.body.data.profiles).toHaveLength(1)
+  })
+
+  it('should return 404 when UUID is valid but user does not exist', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/admin/users/00000000-0000-4000-8000-000000000000')
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 400 for invalid UUID', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/admin/users/not-a-uuid')
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should return 401/403 for unauthenticated or non-admin', async () => {
+    const fakeId = '11111111-1111-4111-8111-111111111111'
+
+    const noAuth = await request(app.getHttpServer()).get(
+      `/admin/users/${fakeId}`,
+    )
+    expect(noAuth.status).toBe(401)
+
+    const { accessToken } = await registerUser(app)
+    const asUser = await request(app.getHttpServer())
+      .get(`/admin/users/${fakeId}`)
+      .set(authHeader(accessToken!))
+    expect(asUser.status).toBe(403)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// PATCH /admin/users/:id/subscription
+// ---------------------------------------------------------------------------
+
+describe('PATCH /admin/users/:id/subscription', () => {
+  it('should update subscription from basico to premium', async () => {
+    const email = uniqueEmail('patch-update')
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Patch Update',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/users/${userId}/subscription`)
+      .set(authHeader(adminToken))
+      .send({ planId: premiumPlanId })
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.subscription.planId).toBe(premiumPlanId)
+    expect(response.body.data.warning).toBeNull()
+  })
+
+  it('should create subscription when user has none (after deletion)', async () => {
+    const email = uniqueEmail('patch-create')
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Patch Create',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    const prisma = app.get(PrismaService)
+    await prisma.subscription.deleteMany({ where: { userId } })
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/users/${userId}/subscription`)
+      .set(authHeader(adminToken))
+      .send({ planId: premiumPlanId })
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.subscription.planId).toBe(premiumPlanId)
+
+    const subs = await prisma.subscription.findMany({ where: { userId } })
+    expect(subs).toHaveLength(1)
+  })
+
+  it('should return warning on downgrade and keep profiles intact', async () => {
+    const email = uniqueEmail('patch-downgrade')
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Patch Downgrade',
+        email,
+        password: 'SenhaForte1',
+        planId: premiumPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    const prisma = app.get(PrismaService)
+    await prisma.profile.createMany({
+      data: [
+        { userId, name: 'Extra 1' },
+        { userId, name: 'Extra 2' },
+        { userId, name: 'Extra 3' },
+      ],
+    })
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/users/${userId}/subscription`)
+      .set(authHeader(adminToken))
+      .send({ planId: basicoPlanId })
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.warning).toContain('4 perfis')
+    expect(response.body.data.warning).toContain('apenas 1')
+
+    const remainingProfiles = await prisma.profile.count({ where: { userId } })
+    expect(remainingProfiles).toBe(4)
+  })
+
+  it('should return 404 when user does not exist', async () => {
+    const response = await request(app.getHttpServer())
+      .patch('/admin/users/00000000-0000-4000-8000-000000000000/subscription')
+      .set(authHeader(adminToken))
+      .send({ planId: basicoPlanId })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 404 when plan does not exist', async () => {
+    const email = uniqueEmail('patch-missing-plan')
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Patch Missing Plan',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/users/${userId}/subscription`)
+      .set(authHeader(adminToken))
+      .send({ planId: '99999999-9999-4999-8999-999999999999' })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 401/403 for unauthenticated or non-admin', async () => {
+    const fakeId = '11111111-1111-4111-8111-111111111111'
+
+    const noAuth = await request(app.getHttpServer())
+      .patch(`/admin/users/${fakeId}/subscription`)
+      .send({ planId: basicoPlanId })
+    expect(noAuth.status).toBe(401)
+
+    const { accessToken } = await registerUser(app)
+    const asUser = await request(app.getHttpServer())
+      .patch(`/admin/users/${fakeId}/subscription`)
+      .set(authHeader(accessToken!))
+      .send({ planId: basicoPlanId })
+    expect(asUser.status).toBe(403)
   })
 })
