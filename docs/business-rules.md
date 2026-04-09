@@ -320,6 +320,7 @@ Ou, se expirada:
 | JWT inclui role | Payload: `{ sub, family, role }` |
 | AdminGuard | Valida `role === 'admin'`, retorna 403 se não for |
 | Role não exposta publicamente | `user-presenter.ts` público não inclui `role` |
+| Role não aceita via body | `POST /admin/users` não aceita campo `role` — usuário criado sempre nasce com `role = 'user'`. Promoção para admin é manual via seed/DB |
 | Admin padrão via seed | Criado no seed com email configurável via `.env` |
 
 ### Analytics (GET /admin/analytics)
@@ -378,5 +379,6 @@ O endpoint de analytics retorna dois blocos: **overview** (snapshot do estado at
 |-------|-----------|
 | Criar plano | Nome, slug (único), preço, maxProfiles, maxStreams, descrição |
 | Editar plano | Alterar nome, preço, limites, descrição |
-| Ativar/desativar plano | `plan.active` toggle — planos inativos não aparecem para novos usuários |
+| Slug imutável | Uma vez criado, o slug não pode ser alterado (não faz parte do PATCH). Corrigir slug errado exige criar plano novo + toggle inativo do antigo |
+| Ativar/desativar plano | `plan.active` toggle. Planos inativos somem dos listings públicos e não podem ser escolhidos em novos registros/upgrades. **Subscriptions existentes continuam ativas** até expirarem naturalmente (nenhum cascade) |
 | Deletar plano | **Não permitido** — integridade referencial com subscriptions existentes |

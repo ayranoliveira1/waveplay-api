@@ -416,9 +416,10 @@ waveplay-api/
        │
        ▼
  ┌──────────────┐
- │    Admin      │  Lê dados de todos os BCs via gateways
- │ (analytics/   │  Protegido por AdminGuard (role=admin)
- │  gestão)      │
+ │    Admin      │  Protegido por AdminGuard (role=admin)
+ │ (analytics/   │  Lê via AnalyticsGateway: Identity, Subscription,
+ │  gestão)      │    Profile, Library, Playback, Streams
+ │               │  Lê via UserGateway: Identity, Subscription, Profile
  └──────────────┘
 ```
 
@@ -426,6 +427,10 @@ waveplay-api/
 
 - **Orquestração no RegisterUseCase:** O Identity BC cria perfil e subscription diretamente no `RegisterUseCase`, usando repositórios importados dos BCs Profile e Subscription via módulos NestJS. A criação é síncrona e explícita — sem domain events.
 - **Gateways cross-BC:** O Profile BC consulta dados do plano do usuário via `UserPlanGatewayPort` → `PrismaUserPlanGateway` (acessa `subscription.plan.maxProfiles` pela subscription ativa). Segue o padrão Port/Adapter para evitar acoplamento direto.
+- **Gateways do Admin BC:** O Admin BC não tem repositórios próprios. Ele lê dados dos outros BCs via dois gateways Port/Adapter:
+  - `AnalyticsGatewayPort` → `PrismaAnalyticsGateway` — consolida snapshot de usuários, subscriptions, perfis, streams ativas e histórico para o endpoint `GET /admin/dashboard/analytics`.
+  - `UserGatewayPort` → `PrismaUserGateway` — consolida usuário + subscription + perfis para as telas de gestão de usuários.
+  Escreve em `subscription.plan` diretamente via `PlansRepository` (reusado do Subscription BC através do `SubscriptionModule` importado) nos endpoints de criação/edição/toggle de planos.
 
 ---
 

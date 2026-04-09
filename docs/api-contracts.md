@@ -1294,6 +1294,13 @@ Lista paginada de usuários com filtro por nome/email.
 }
 ```
 
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+
 ### GET /admin/users/:id
 
 Detalhes completos de um usuário.
@@ -1331,6 +1338,14 @@ Detalhes completos de um usuário.
   "error": null
 }
 ```
+
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+| 404 | Usuário não encontrado |
 
 ### PATCH /admin/users/:id/subscription
 
@@ -1377,6 +1392,14 @@ Alterar subscription de um usuário (trocar plano, definir expiração).
 }
 ```
 
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+| 404 | Usuário não encontrado ou plano não encontrado |
+
 ### POST /admin/plans
 
 Criar novo plano.
@@ -1392,6 +1415,14 @@ Criar novo plano.
   "description": "Plano ultra com 8 perfis e 6 telas"
 }
 ```
+
+**Validações (Zod `.strict()`):**
+- `name` — string, 1-100 chars
+- `slug` — string, 1-50 chars, regex `^[a-z0-9-]+$`
+- `priceCents` — integer, >= 0
+- `maxProfiles` — integer, >= 1
+- `maxStreams` — integer, >= 1
+- `description` — string, max 500 chars (opcional)
 
 **Response 201:**
 ```json
@@ -1413,6 +1444,15 @@ Criar novo plano.
 }
 ```
 
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 400 | Validação (slug inválido, priceCents negativo, campo extra, etc) |
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+| 409 | Já existe um plano com este slug |
+
 ### PATCH /admin/plans/:id
 
 Editar plano existente.
@@ -1425,11 +1465,28 @@ Editar plano existente.
 }
 ```
 
+**Validações (Zod `.strict()`):**
+- Body aceita apenas: `name`, `priceCents`, `maxProfiles`, `maxStreams`, `description`
+- Slug não é aceito no body (imutável)
+- Body vazio (`{}`) é rejeitado com 400
+- `description: null` é válido — limpa a descrição
+
 **Response 200:** Mesmo formato do POST.
+
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 400 | Validação (UUID inválido, body vazio, campo extra, slug no body) |
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+| 404 | Plano não encontrado |
 
 ### PATCH /admin/plans/:id/toggle
 
 Ativar/desativar plano.
+
+**Observação:** Não aceita body. Apenas inverte `plan.active`. Subscriptions existentes do plano continuam ativas (ver business-rules.md seção 12).
 
 **Response 200:**
 ```json
@@ -1446,6 +1503,15 @@ Ativar/desativar plano.
 }
 ```
 
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 400 | UUID inválido na rota |
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+| 404 | Plano não encontrado |
+
 ---
 
 ## Headers obrigatórios
@@ -1453,7 +1519,7 @@ Ativar/desativar plano.
 | Header | Valor | Quando |
 |--------|-------|--------|
 | `Content-Type` | `application/json` | Todas as requests com body |
-| `Authorization` | `Bearer {accessToken}` | Todas exceto register, login, refresh, plans |
+| `Authorization` | `Bearer {accessToken}` | Todas exceto register, login, refresh, forgot-password, reset-password, GET /plans (público) |
 
 ## Status codes
 
