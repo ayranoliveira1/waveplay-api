@@ -1,25 +1,51 @@
 import { Module } from '@nestjs/common'
 
 import { SubscriptionModule } from '@/modules/subscription/infra/subscription.module'
+import { IdentityModule } from '@/modules/identity/infra/identity.module'
+import { ProfileModule } from '@/modules/profile/infra/profile.module'
 
 // Use cases
 import { GetDashboardAnalyticsUseCase } from '../application/use-cases/get-dashboard-analytics-use-case'
+import { ListUsersUseCase } from '../application/use-cases/list-users-use-case'
+import { GetUserDetailUseCase } from '../application/use-cases/get-user-detail-use-case'
+import { AdminCreateUserUseCase } from '../application/use-cases/admin-create-user-use-case'
+import { UpdateUserSubscriptionUseCase } from '../application/use-cases/update-user-subscription-use-case'
 
 // Controllers
 import { DashboardAnalyticsController } from './controllers/dashboard-analytics.controller'
+import { ListUsersController } from './controllers/list-users.controller'
+import { GetUserDetailController } from './controllers/get-user-detail.controller'
+import { AdminCreateUserController } from './controllers/admin-create-user.controller'
+import { UpdateUserSubscriptionController } from './controllers/update-user-subscription.controller'
 
 // Ports (cross-BC gateway)
 import { AdminAnalyticsGatewayPort } from '../application/ports/admin-analytics-gateway.port'
 import { PrismaAdminAnalyticsGateway } from './gateways/prisma-admin-analytics-gateway'
+import { AdminUserGatewayPort } from '../application/ports/admin-user-gateway.port'
+import { PrismaAdminUserGateway } from './gateways/prisma-admin-user-gateway'
 
 @Module({
-  imports: [SubscriptionModule],
-  controllers: [DashboardAnalyticsController],
+  imports: [SubscriptionModule, IdentityModule, ProfileModule],
+  controllers: [
+    DashboardAnalyticsController,
+    ListUsersController,
+    GetUserDetailController,
+    AdminCreateUserController,
+    UpdateUserSubscriptionController,
+  ],
   providers: [
     GetDashboardAnalyticsUseCase,
+    ListUsersUseCase,
+    GetUserDetailUseCase,
+    AdminCreateUserUseCase,
+    UpdateUserSubscriptionUseCase,
     {
       provide: AdminAnalyticsGatewayPort,
       useClass: PrismaAdminAnalyticsGateway,
+    },
+    {
+      provide: AdminUserGatewayPort,
+      useClass: PrismaAdminUserGateway,
     },
   ],
 })

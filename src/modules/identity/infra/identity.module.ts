@@ -115,5 +115,6 @@ import { SubscriptionModule } from '@/modules/subscription/infra/subscription.mo
     // Global guard
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
+  exports: [UsersRepository, HasherPort],
 })
 export class IdentityModule {}
