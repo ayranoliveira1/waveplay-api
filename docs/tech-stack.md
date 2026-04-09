@@ -81,7 +81,17 @@
 | vitest | ^4.0.18 | Test runner |
 | @nestjs/testing | ^11.1.11 | Utilitários de teste do NestJS |
 | @faker-js/faker | ^10.3.0 | Dados fake para testes |
-| supertest | ^7.x | Testes e2e de endpoints HTTP |
+| supertest | ^7.x | Testes HTTP (integration + e2e) |
+
+### Estratégia em 3 camadas
+
+| Camada | Pattern | Comando | O que valida | Infra |
+|---|---|---|---|---|
+| **Unit** | `*.spec.ts` em `application/use-cases/` | `pnpm test` | Lógica do use case isoladamente | Fakes in-memory, sem NestJS DI |
+| **Controller integration** | `*.controller.spec.ts` em `infra/controllers/` | `pnpm test` | HTTP + pipes Zod + guards + filters + presenters + roteamento | `Test.createTestingModule` mínimo com `InMemory*Repository` e `FakeAuthGuard`, sem Postgres/Redis |
+| **E2E** | `*.e2e-spec.ts` em `test/e2e/` | `pnpm test:e2e` | Stack completa (AppModule, cross-BC, DB real) | Postgres (schema isolado por arquivo), Redis real, `FakeEmailSender` |
+
+**Regra prática:** toda feature nova entrega as 3 camadas quando expõe endpoint HTTP. Unit tests ficam junto com o use case; controller specs ficam junto com o controller; E2E vão no arquivo `test/e2e/<bc>.e2e-spec.ts` do bounded context. `pnpm test` roda unit + controller integration (mesmo `vitest.config.ts`); `pnpm test:e2e` usa `vitest.config.e2e.ts` com setup global de Postgres/Redis.
 
 ---
 
