@@ -26,6 +26,8 @@ export class GetDashboardAnalyticsUseCase {
     request: GetDashboardAnalyticsRequest,
   ): Promise<GetDashboardAnalyticsResponse> {
     const endDate = request.endDate ?? new Date()
+    endDate.setUTCHours(23, 59, 59, 999)
+
     const startDate =
       request.startDate ??
       new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000)
