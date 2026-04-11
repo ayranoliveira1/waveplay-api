@@ -41,6 +41,14 @@ export class PrismaPlansRepository implements PlansRepository {
     return plans.map((plan) => PrismaPlanMapper.toDomain(plan))
   }
 
+  async findAllAdmin(): Promise<Plan[]> {
+    const plans = await this.prisma.plan.findMany({
+      orderBy: { priceCents: 'asc' },
+    })
+
+    return plans.map((plan) => PrismaPlanMapper.toDomain(plan))
+  }
+
   async create(plan: Plan): Promise<void> {
     const data = PrismaPlanMapper.toPrisma(plan)
     await this.prisma.plan.create({ data })

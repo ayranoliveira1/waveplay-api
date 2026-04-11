@@ -16,6 +16,10 @@ export class InMemoryPlansRepository implements PlansRepository {
     return this.items.filter((item) => item.active)
   }
 
+  async findAllAdmin(): Promise<Plan[]> {
+    return [...this.items]
+  }
+
   async create(plan: Plan): Promise<void> {
     this.items.push(plan)
   }

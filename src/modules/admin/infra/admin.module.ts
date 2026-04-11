@@ -13,6 +13,7 @@ import { UpdateUserSubscriptionUseCase } from '../application/use-cases/update-u
 import { CreatePlanUseCase } from '../application/use-cases/create-plan-use-case'
 import { UpdatePlanUseCase } from '../application/use-cases/update-plan-use-case'
 import { TogglePlanActiveUseCase } from '../application/use-cases/toggle-plan-active-use-case'
+import { ListAdminPlansUseCase } from '../application/use-cases/list-admin-plans-use-case'
 
 // Controllers
 import { DashboardAnalyticsController } from './controllers/dashboard-analytics.controller'
@@ -23,6 +24,7 @@ import { UpdateUserSubscriptionController } from './controllers/update-user-subs
 import { CreatePlanController } from './controllers/create-plan.controller'
 import { UpdatePlanController } from './controllers/update-plan.controller'
 import { TogglePlanActiveController } from './controllers/toggle-plan-active.controller'
+import { ListAdminPlansController } from './controllers/list-admin-plans.controller'
 
 // Ports (cross-BC gateway)
 import { AdminAnalyticsGatewayPort } from '../application/ports/admin-analytics-gateway.port'
@@ -41,6 +43,7 @@ import { PrismaAdminUserGateway } from './gateways/prisma-admin-user-gateway'
     CreatePlanController,
     UpdatePlanController,
     TogglePlanActiveController,
+    ListAdminPlansController,
   ],
   providers: [
     GetDashboardAnalyticsUseCase,
@@ -51,6 +54,7 @@ import { PrismaAdminUserGateway } from './gateways/prisma-admin-user-gateway'
     CreatePlanUseCase,
     UpdatePlanUseCase,
     TogglePlanActiveUseCase,
+    ListAdminPlansUseCase,
     {
       provide: AdminAnalyticsGatewayPort,
       useClass: PrismaAdminAnalyticsGateway,
