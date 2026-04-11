@@ -568,6 +568,91 @@ describe('PATCH /admin/users/:id/subscription', () => {
 })
 
 // ---------------------------------------------------------------------------
+// GET /admin/plans
+// ---------------------------------------------------------------------------
+
+describe('GET /admin/plans', () => {
+  it('should return 200 with seed plans and correct shape', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/admin/plans')
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(response.body.error).toBeNull()
+
+    const { plans } = response.body.data
+    expect(plans.length).toBeGreaterThanOrEqual(3)
+
+    const basico = plans.find((p: { slug: string }) => p.slug === 'basico')
+    expect(basico).toBeDefined()
+    expect(basico).toMatchObject({
+      id: expect.any(String),
+      name: expect.any(String),
+      slug: 'basico',
+      priceCents: expect.any(Number),
+      maxProfiles: expect.any(Number),
+      maxStreams: expect.any(Number),
+      active: true,
+    })
+  })
+
+  it('should include inactive plans in the response', async () => {
+    const slug = `test-plan-list-inactive-${Date.now()}`
+
+    // create plan
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/plans')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'List Inactive',
+        slug,
+        priceCents: 990,
+        maxProfiles: 1,
+        maxStreams: 1,
+      })
+    const planId = createResponse.body.data.plan.id
+
+    // deactivate
+    await request(app.getHttpServer())
+      .patch(`/admin/plans/${planId}/toggle`)
+      .set(authHeader(adminToken))
+      .send()
+
+    // list should include it with active=false
+    const response = await request(app.getHttpServer())
+      .get('/admin/plans')
+      .set(authHeader(adminToken))
+
+    const found = response.body.data.plans.find(
+      (p: { slug: string }) => p.slug === slug,
+    )
+    expect(found).toBeDefined()
+    expect(found.active).toBe(false)
+
+    // cleanup
+    const prisma = app.get(PrismaService)
+    await prisma.plan.deleteMany({ where: { slug } })
+  })
+
+  it('should return 401 without authentication', async () => {
+    const response = await request(app.getHttpServer()).get('/admin/plans')
+
+    expect(response.status).toBe(401)
+  })
+
+  it('should return 403 for non-admin user', async () => {
+    const { accessToken } = await registerUser(app)
+
+    const response = await request(app.getHttpServer())
+      .get('/admin/plans')
+      .set(authHeader(accessToken!))
+
+    expect(response.status).toBe(403)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // POST /admin/plans
 // ---------------------------------------------------------------------------
 
