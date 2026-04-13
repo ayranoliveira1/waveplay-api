@@ -128,6 +128,20 @@ describe('AuthenticateController', () => {
     expect(message).toMatch(/credenciais inválidas/i)
   })
 
+  it('should allow login with uppercase email when stored lowercase', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('X-Platform', 'mobile')
+      .send({
+        email: 'JOAO@Email.COM',
+        password: 'Abc12345',
+      })
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(response.body.data.accessToken).toBeDefined()
+  })
+
   it('should return 429 on account lockout', async () => {
     // 5 tentativas falhas para travar a conta
     for (let i = 0; i < 5; i++) {

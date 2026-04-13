@@ -18,7 +18,7 @@ import { Public } from '../decorators/public.decorator'
 import { isMobile, setRefreshTokenCookie } from './platform-utils'
 
 const authenticateSchema = z.object({
-  email: z.string().email('Email inválido'),
+  email: z.string().email('Email inválido').toLowerCase(),
   password: z.string(),
 })
 
