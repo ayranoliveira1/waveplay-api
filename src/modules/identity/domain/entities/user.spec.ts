@@ -50,6 +50,84 @@ describe('User', () => {
     )
   })
 
+  it('should default active to true on create', () => {
+    const user = User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      passwordHash: 'hashed-password',
+    })
+
+    expect(user.active).toBe(true)
+  })
+
+  it('should deactivate the user and touch updatedAt', async () => {
+    const user = User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      passwordHash: 'hashed-password',
+    })
+
+    const previousUpdatedAt = user.updatedAt
+
+    await new Promise((resolve) => setTimeout(resolve, 5))
+    user.deactivate()
+
+    expect(user.active).toBe(false)
+    expect(user.updatedAt.getTime()).toBeGreaterThan(
+      previousUpdatedAt.getTime(),
+    )
+  })
+
+  it('should activate a previously deactivated user and touch updatedAt', async () => {
+    const user = User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      passwordHash: 'hashed-password',
+      active: false,
+    })
+
+    const previousUpdatedAt = user.updatedAt
+
+    await new Promise((resolve) => setTimeout(resolve, 5))
+    user.activate()
+
+    expect(user.active).toBe(true)
+    expect(user.updatedAt.getTime()).toBeGreaterThan(
+      previousUpdatedAt.getTime(),
+    )
+  })
+
+  it('should be a no-op when deactivating an already inactive user', () => {
+    const user = User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      passwordHash: 'hashed-password',
+      active: false,
+    })
+
+    const previousUpdatedAt = user.updatedAt
+
+    user.deactivate()
+
+    expect(user.active).toBe(false)
+    expect(user.updatedAt.getTime()).toBe(previousUpdatedAt.getTime())
+  })
+
+  it('should be a no-op when activating an already active user', () => {
+    const user = User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      passwordHash: 'hashed-password',
+    })
+
+    const previousUpdatedAt = user.updatedAt
+
+    user.activate()
+
+    expect(user.active).toBe(true)
+    expect(user.updatedAt.getTime()).toBe(previousUpdatedAt.getTime())
+  })
+
   it('should compare two users by id', () => {
     const id = new UniqueEntityID('same-id')
 

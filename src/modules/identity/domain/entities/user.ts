@@ -12,6 +12,7 @@ export interface UserProps {
   email: string
   passwordHash: string
   role: UserRole
+  active: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -48,6 +49,10 @@ export class User extends AggregateRoot<UserProps> {
     return this.props.role
   }
 
+  get active() {
+    return this.props.active
+  }
+
   get createdAt() {
     return this.props.createdAt
   }
@@ -56,18 +61,31 @@ export class User extends AggregateRoot<UserProps> {
     return this.props.updatedAt
   }
 
+  deactivate() {
+    if (!this.props.active) return
+    this.props.active = false
+    this.touch()
+  }
+
+  activate() {
+    if (this.props.active) return
+    this.props.active = true
+    this.touch()
+  }
+
   private touch() {
     this.props.updatedAt = new Date()
   }
 
   static create(
-    props: Optional<UserProps, 'createdAt' | 'updatedAt' | 'role'>,
+    props: Optional<UserProps, 'createdAt' | 'updatedAt' | 'role' | 'active'>,
     id?: UniqueEntityID,
   ) {
     const user = new User(
       {
         ...props,
         role: props.role ?? UserRole.USER,
+        active: props.active ?? true,
         createdAt: props.createdAt ?? new Date(),
         updatedAt: props.updatedAt ?? new Date(),
       },

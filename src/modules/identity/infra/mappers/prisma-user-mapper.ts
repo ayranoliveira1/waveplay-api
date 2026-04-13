@@ -11,6 +11,7 @@ export class PrismaUserMapper {
         email: raw.email,
         passwordHash: raw.passwordHash,
         role: raw.role as UserRole,
+        active: raw.active,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
       },
@@ -25,6 +26,7 @@ export class PrismaUserMapper {
       email: user.email,
       passwordHash: user.passwordHash,
       role: user.role,
+      active: user.active,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     }
