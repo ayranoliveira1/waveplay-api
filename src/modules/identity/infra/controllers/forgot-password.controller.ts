@@ -7,7 +7,7 @@ import { ZodValidationPipe } from '@/shared/pipes/zod-validation.pipe'
 import { Public } from '../decorators/public.decorator'
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email('Email inválido'),
+  email: z.string().email('Email inválido').toLowerCase(),
 })
 
 type ForgotPasswordBody = z.infer<typeof forgotPasswordSchema>

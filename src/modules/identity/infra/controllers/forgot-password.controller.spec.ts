@@ -16,12 +16,15 @@ import { PasswordResetTokensRepository } from '../../domain/repositories/passwor
 import { EmailSenderPort } from '@/shared/email/email-sender.port'
 import { AuthConfigPort } from '../../application/ports/auth-config.port'
 import { AllExceptionsFilter } from '@/shared/filters/nest-exception-filter'
+import { User } from '../../domain/entities/user'
+import type { TestingModule } from '@nestjs/testing'
 
 let app: INestApplication
+let testModule: TestingModule
 
 describe('ForgotPasswordController', () => {
   beforeEach(async () => {
-    const module = await Test.createTestingModule({
+    testModule = await Test.createTestingModule({
       imports: [
         ThrottlerModule.forRoot({
           throttlers: [{ ttl: 60000, limit: 300 }],
@@ -41,7 +44,7 @@ describe('ForgotPasswordController', () => {
       ],
     }).compile()
 
-    app = module.createNestApplication()
+    app = testModule.createNestApplication()
     app.useGlobalFilters(new AllExceptionsFilter())
     await app.init()
   })
@@ -53,6 +56,28 @@ describe('ForgotPasswordController', () => {
 
     expect(response.status).toBe(200)
     expect(response.body.success).toBe(true)
+  })
+
+  it('should normalize email before triggering reset flow', async () => {
+    const usersRepository =
+      testModule.get<InMemoryUsersRepository>(UsersRepository)
+    const emailSender = testModule.get<FakeEmailSender>(EmailSenderPort)
+
+    await usersRepository.create(
+      User.create({
+        name: 'João Silva',
+        email: 'joao@email.com',
+        passwordHash: 'hashed',
+      }),
+    )
+
+    const response = await request(app.getHttpServer())
+      .post('/auth/forgot-password')
+      .send({ email: 'Joao@Email.COM' })
+
+    expect(response.status).toBe(200)
+    expect(emailSender.emailsSent).toHaveLength(1)
+    expect(emailSender.emailsSent[0].to).toBe('joao@email.com')
   })
 
   it('should return 429 after exceeding rate limit (3 req/min)', async () => {
