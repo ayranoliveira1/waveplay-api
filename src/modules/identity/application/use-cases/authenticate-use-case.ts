@@ -12,6 +12,7 @@ import { AccountLockoutPort } from '../ports/account-lockout.port'
 import { AuthConfigPort } from '../ports/auth-config.port'
 import { InvalidCredentialsError } from '../../domain/errors/invalid-credentials.error'
 import { AccountLockedError } from '../../domain/errors/account-locked.error'
+import { UserDeactivatedError } from '../../domain/errors/user-deactivated.error'
 
 interface AuthenticateUseCaseRequest {
   email: string
@@ -21,7 +22,7 @@ interface AuthenticateUseCaseRequest {
 }
 
 type AuthenticateUseCaseResponse = Either<
-  InvalidCredentialsError | AccountLockedError,
+  InvalidCredentialsError | AccountLockedError | UserDeactivatedError,
   {
     user: User
     accessToken: string
@@ -69,6 +70,11 @@ export class AuthenticateUseCase {
       await this.accountLockout.incrementFailures(email, ipAddress)
       this.logger.warn(`Failed login attempt: ${email}`)
       return left(new InvalidCredentialsError())
+    }
+
+    if (!user.active) {
+      this.logger.warn(`Deactivated user login attempt: ${email}`)
+      return left(new UserDeactivatedError())
     }
 
     await this.accountLockout.resetFailures(email)

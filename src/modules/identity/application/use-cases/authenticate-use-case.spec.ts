@@ -9,6 +9,7 @@ import { FakeAccountLockout } from 'test/ports/fake-account-lockout'
 import { FakeAuthConfig } from 'test/ports/fake-auth-config'
 import { InvalidCredentialsError } from '../../domain/errors/invalid-credentials.error'
 import { AccountLockedError } from '../../domain/errors/account-locked.error'
+import { UserDeactivatedError } from '../../domain/errors/user-deactivated.error'
 import { User } from '../../domain/entities/user'
 
 let usersRepository: InMemoryUsersRepository
@@ -195,6 +196,37 @@ describe('AuthenticateUseCase', () => {
     }
 
     expect(accountLockout.getLockoutCount('joao@email.com')).toBe(2)
+  })
+
+  it('should return UserDeactivatedError when user.active is false', async () => {
+    const user = usersRepository.items.find(
+      (item) => item.email === 'joao@email.com',
+    )!
+    user.deactivate()
+
+    const result = await sut.execute({
+      email: 'joao@email.com',
+      password: '12345678',
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(UserDeactivatedError)
+    expect(refreshTokensRepository.items).toHaveLength(0)
+  })
+
+  it('should return InvalidCredentialsError (not UserDeactivatedError) when password is wrong for inactive user', async () => {
+    const user = usersRepository.items.find(
+      (item) => item.email === 'joao@email.com',
+    )!
+    user.deactivate()
+
+    const result = await sut.execute({
+      email: 'joao@email.com',
+      password: 'senha-errada',
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(InvalidCredentialsError)
   })
 
   it('should reset failure counter after successful login', async () => {
