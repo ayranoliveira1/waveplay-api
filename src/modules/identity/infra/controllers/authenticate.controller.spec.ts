@@ -104,6 +104,30 @@ describe('AuthenticateController', () => {
     expect(refreshCookie).toContain('HttpOnly')
   })
 
+  it('should return 401 with generic message when user is deactivated (anti-enumeration)', async () => {
+    const user = usersRepository.items.find(
+      (item) => item.email === 'joao@email.com',
+    )!
+    user.deactivate()
+
+    const response = await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('X-Platform', 'mobile')
+      .send({
+        email: 'joao@email.com',
+        password: 'Abc12345',
+      })
+
+    expect(response.status).toBe(401)
+    expect(response.body.success).toBe(false)
+    const message = response.body.error
+      .map((e: { message?: string } | string) =>
+        typeof e === 'string' ? e : e.message,
+      )
+      .join(' ')
+    expect(message).toMatch(/credenciais inválidas/i)
+  })
+
   it('should return 429 on account lockout', async () => {
     // 5 tentativas falhas para travar a conta
     for (let i = 0; i < 5; i++) {

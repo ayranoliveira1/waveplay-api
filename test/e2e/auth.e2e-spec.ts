@@ -12,6 +12,7 @@ import {
 } from './helpers/e2e-helpers'
 import { REDIS_CLIENT } from '@/shared/redis/redis.module'
 import type Redis from 'ioredis'
+import { PrismaService } from '@/shared/database/prisma.service'
 
 let app: INestApplication
 let emailSpy: FakeEmailSender
@@ -402,6 +403,29 @@ describe('POST /auth/login', () => {
       .map((e: any) => (typeof e === 'string' ? e : e.message))
       .join(' ')
     expect(message).toMatch(/bloqueada/i)
+  })
+
+  it('should return 401 with generic message when user is deactivated (anti-enumeration)', async () => {
+    const email = uniqueEmail('deactivated')
+    await registerUser(app, { email })
+
+    const prisma = app.get(PrismaService)
+    await prisma.user.update({
+      where: { email },
+      data: { active: false },
+    })
+
+    const response = await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('X-Platform', 'mobile')
+      .send({ email, password: 'Test1234' })
+
+    expect(response.status).toBe(401)
+    expect(response.body.success).toBe(false)
+    const message = response.body.error
+      .map((e: any) => (typeof e === 'string' ? e : e.message))
+      .join(' ')
+    expect(message).toMatch(/credenciais inválidas/i)
   })
 
   it('[LOCKOUT] should allow login again after clearing the Redis lockout key', async () => {
