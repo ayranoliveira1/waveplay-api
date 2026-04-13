@@ -47,6 +47,7 @@
 | 2.17 | **JWT — Key Confusion** (RS256 para HS256) | Atacante muda algoritmo para HS256 e assina com a chave publica | Especificar algoritmo fixo no JwtModule. Rejeitar tokens com algoritmo diferente do configurado | Critica |
 | 2.18 | **JWT — Token Replay** | Reutilizar access token apos logout | Access token e stateless (15min TTL curto). Refresh token: rotacao obrigatoria, tokens antigos invalidados. Theft detection revoga toda a familia | Alta |
 | 2.19 | **JWT — Insufficient Claims** | Nao validar claims como iss, aud, sub | Validar `sub` (userId) em todo token. Considerar adicionar `iss` e `aud` no futuro | Media |
+| 2.20 | **Email Case Duplication** | `Joao@X.com` e `joao@x.com` criam contas distintas ou impedem login cross-case. Abre porta para account duplication, confusao de identidade e enumeration indireto | Normalizar email para lowercase via `.toLowerCase()` no schema Zod de **todos** os pontos que recebem email como input (register, login, forgot-password, admin create, admin update). `findByEmail` no repositorio e case-sensitive por design — a normalizacao vive na borda | Alta |
 
 ---
 
