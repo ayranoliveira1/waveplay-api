@@ -12,6 +12,7 @@ export abstract class ActiveStreamsRepository {
   ): Promise<void>
   abstract updatePing(id: string, lastPing: Date): Promise<void>
   abstract delete(id: string): Promise<void>
+  abstract deleteAllByUserId(userId: string): Promise<void>
   abstract findExpired(threshold: Date): Promise<ActiveStream[]>
   abstract deleteExpired(threshold: Date): Promise<number>
 }

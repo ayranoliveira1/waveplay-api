@@ -61,6 +61,10 @@ export class InMemoryActiveStreamsRepository implements ActiveStreamsRepository 
     this.items = this.items.filter((item) => item.id.toValue() !== id)
   }
 
+  async deleteAllByUserId(userId: string): Promise<void> {
+    this.items = this.items.filter((item) => item.userId !== userId)
+  }
+
   async findExpired(threshold: Date): Promise<ActiveStream[]> {
     return this.items.filter((item) => item.lastPing < threshold)
   }
