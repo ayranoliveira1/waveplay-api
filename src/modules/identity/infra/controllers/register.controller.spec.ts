@@ -134,6 +134,25 @@ describe('RegisterController', () => {
     expect(refreshCookie).toContain('Path=/auth')
   })
 
+  it('should normalize email to lowercase on registration', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/auth/register')
+      .set('X-Platform', 'mobile')
+      .send({
+        name: 'João Silva',
+        email: 'Joao@Email.COM',
+        password: 'Abc12345',
+        confirmPassword: 'Abc12345',
+      })
+
+    expect(response.status).toBe(201)
+
+    const usersRepository =
+      testModule.get<InMemoryUsersRepository>(UsersRepository)
+    expect(usersRepository.items).toHaveLength(1)
+    expect(usersRepository.items[0].email).toBe('joao@email.com')
+  })
+
   it('should create first profile automatically after registration', async () => {
     const response = await request(app.getHttpServer())
       .post('/auth/register')

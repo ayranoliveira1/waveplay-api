@@ -19,7 +19,7 @@ import { isMobile, setRefreshTokenCookie } from './platform-utils'
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
-  email: z.string().email('Email inválido'),
+  email: z.string().email('Email inválido').toLowerCase(),
   password: z.string(),
   confirmPassword: z.string(),
 })
