@@ -430,6 +430,131 @@ describe('GET /admin/users/:id', () => {
 })
 
 // ---------------------------------------------------------------------------
+// PATCH /admin/users/:id
+// ---------------------------------------------------------------------------
+
+describe('PATCH /admin/users/:id', () => {
+  it('should return 200 and update the name', async () => {
+    const email = uniqueEmail('update-user-name')
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Original Name',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/users/${userId}`)
+      .set(authHeader(adminToken))
+      .send({ name: 'Updated Name' })
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(response.body.data.user).toMatchObject({
+      id: userId,
+      name: 'Updated Name',
+      email,
+      role: 'user',
+      active: true,
+    })
+    expect(response.body.data.user.createdAt).toBeDefined()
+    expect(response.body.data.user.updatedAt).toBeDefined()
+  })
+
+  it('should return 200 and persist the new email via Prisma', async () => {
+    const email = uniqueEmail('update-user-email')
+    const newEmail = uniqueEmail('update-user-email-new')
+
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Email User',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/users/${userId}`)
+      .set(authHeader(adminToken))
+      .send({ email: newEmail })
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.user.email).toBe(newEmail)
+
+    const prisma = app.get(PrismaService)
+    const dbUser = await prisma.user.findUnique({ where: { id: userId } })
+    expect(dbUser!.email).toBe(newEmail)
+  })
+
+  it('should return 409 when email conflicts with another user', async () => {
+    const firstEmail = uniqueEmail('update-user-conflict-a')
+    const secondEmail = uniqueEmail('update-user-conflict-b')
+
+    await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'User A',
+        email: firstEmail,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+
+    const secondResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'User B',
+        email: secondEmail,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    const secondUserId = secondResponse.body.data.id
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/users/${secondUserId}`)
+      .set(authHeader(adminToken))
+      .send({ email: firstEmail })
+
+    expect(response.status).toBe(409)
+  })
+
+  it('should return 404 when userId does not exist', async () => {
+    const response = await request(app.getHttpServer())
+      .patch('/admin/users/99999999-9999-4999-8999-999999999999')
+      .set(authHeader(adminToken))
+      .send({ name: 'Ghost' })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 401 without auth header', async () => {
+    const response = await request(app.getHttpServer())
+      .patch('/admin/users/11111111-1111-4111-8111-111111111111')
+      .send({ name: 'NoAuth' })
+
+    expect(response.status).toBe(401)
+  })
+
+  it('should return 403 when caller is non-admin user', async () => {
+    const { accessToken } = await registerUser(app)
+    const response = await request(app.getHttpServer())
+      .patch('/admin/users/11111111-1111-4111-8111-111111111111')
+      .set(authHeader(accessToken!))
+      .send({ name: 'Forbidden' })
+
+    expect(response.status).toBe(403)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // PATCH /admin/users/:id/subscription
 // ---------------------------------------------------------------------------
 
