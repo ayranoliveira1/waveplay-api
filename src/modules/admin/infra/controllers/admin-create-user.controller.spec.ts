@@ -135,6 +135,26 @@ describe('AdminCreateUserController', () => {
     expect(profilesRepository.items[0].name).toBe('Alice Silva')
   })
 
+  it('should normalize email to lowercase on admin create', async () => {
+    asAdmin()
+
+    const response = await request(app.getHttpServer())
+      .post('/admin/users')
+      .send({
+        name: 'Alice Silva',
+        email: 'Alice@Example.COM',
+        password: 'SenhaForte1',
+        planId: PLAN_ID,
+      })
+
+    expect(response.status).toBe(201)
+    expect(response.body.data.email).toBe('alice@example.com')
+
+    const usersRepository =
+      testModule.get<InMemoryUsersRepository>(UsersRepository)
+    expect(usersRepository.items[0].email).toBe('alice@example.com')
+  })
+
   it('should return 409 when email already exists', async () => {
     asAdmin()
 

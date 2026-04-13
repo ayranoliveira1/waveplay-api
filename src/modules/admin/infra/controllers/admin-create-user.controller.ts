@@ -10,7 +10,7 @@ import { CustomHttpException } from '@/shared/http/custom-http.exception'
 const bodySchema = z
   .object({
     name: z.string().min(1, 'Nome é obrigatório').max(100),
-    email: z.string().email('Email inválido'),
+    email: z.string().email('Email inválido').toLowerCase(),
     password: z.string().min(8).max(128),
     planId: z.string().uuid('ID de plano inválido'),
   })
