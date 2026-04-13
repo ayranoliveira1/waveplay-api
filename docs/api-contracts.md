@@ -1217,7 +1217,8 @@ Criar usuário com plano específico. Cria automaticamente subscription e primei
   "name": "João Silva",
   "email": "joao@email.com",
   "password": "Abc12345",
-  "planId": "uuid-do-plano"
+  "planId": "uuid-do-plano",
+  "endsAt": "2026-12-31"
 }
 ```
 
@@ -1225,6 +1226,7 @@ Criar usuário com plano específico. Cria automaticamente subscription e primei
 - `email` — email válido (string, email)
 - `password` — senha (string, min 8, uppercase + lowercase + digit)
 - `planId` — ID do plano para a subscription (string, uuid)
+- `endsAt` — data de expiração da subscription (opcional, ISO 8601, `null` = indefinida, deve ser futura)
 
 **Response 201:**
 ```json
@@ -1247,11 +1249,155 @@ Criar usuário com plano específico. Cria automaticamente subscription e primei
 
 | Status | Mensagem |
 |--------|----------|
-| 400 | Senha fraca |
+| 400 | Senha fraca / `endsAt` no passado / formato inválido |
 | 401 | Não autenticado |
 | 403 | Acesso restrito a admins |
 | 404 | Plano não encontrado |
 | 409 | Email já cadastrado |
+
+---
+
+### PATCH /admin/users/:id
+
+Editar dados básicos do usuário (nome e/ou email). Campo `role` nunca é aceito.
+
+**Request body (pelo menos um campo obrigatório):**
+```json
+{
+  "name": "João Silva Santos",
+  "email": "joao.santos@email.com"
+}
+```
+
+- `name` — string, min 2 chars (opcional)
+- `email` — email válido (opcional)
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "uuid",
+      "name": "João Silva Santos",
+      "email": "joao.santos@email.com",
+      "role": "user",
+      "active": true
+    }
+  },
+  "error": null
+}
+```
+
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 400 | Body vazio, campo extra (strict mode), email inválido |
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+| 404 | Usuário não encontrado |
+| 409 | Email já cadastrado por outro usuário |
+
+---
+
+### PATCH /admin/users/:id/deactivate
+
+Desativar usuário (soft delete). Revoga todos os refresh tokens e encerra streams ativos. Idempotente.
+
+**Request body:** vazio
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "uuid",
+      "active": false
+    }
+  },
+  "error": null
+}
+```
+
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins / Não é permitido desativar admins |
+| 404 | Usuário não encontrado |
+
+---
+
+### PATCH /admin/users/:id/activate
+
+Reativar usuário desativado. Não restaura tokens/streams anteriores — usuário pode logar novamente.
+
+**Request body:** vazio
+
+**Response 200:** Mesmo formato do deactivate, com `active: true`.
+
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+| 404 | Usuário não encontrado |
+
+---
+
+### DELETE /admin/users/:id
+
+Hard delete do usuário. **Requer que o usuário esteja desativado** (`active === false`). Remove em cascata profiles, subscriptions, refresh tokens, watch history e stream sessions.
+
+**Request body:** vazio
+
+**Response 204:** sem body.
+
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 400 | UUID inválido |
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins / Não é permitido deletar admins |
+| 404 | Usuário não encontrado |
+| 409 | Usuário ainda ativo — desative antes de deletar |
+
+---
+
+### DELETE /admin/users/:id/subscription
+
+Remover o plano do usuário (cancelar subscription ativa). Marca `status = 'canceled'` e `endsAt = now()`. Usuário continua existindo sem plano ativo.
+
+**Request body:** vazio
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "subscription": {
+      "id": "uuid",
+      "status": "canceled",
+      "endsAt": "2026-04-13T..."
+    }
+  },
+  "error": null
+}
+```
+
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 400 | UUID inválido |
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+| 404 | Usuário não encontrado / Usuário não possui subscription ativa |
 
 ---
 
@@ -1275,6 +1421,7 @@ Lista paginada de usuários com filtro por nome/email.
         "name": "John Doe",
         "email": "john@example.com",
         "role": "user",
+        "active": true,
         "subscription": {
           "id": "uuid",
           "status": "active",
@@ -1315,6 +1462,7 @@ Detalhes completos de um usuário.
       "name": "John Doe",
       "email": "john@example.com",
       "role": "user",
+      "active": true,
       "createdAt": "2024-01-10T...",
       "subscription": {
         "id": "uuid",
@@ -1511,6 +1659,64 @@ Ativar/desativar plano.
 | 401 | Não autenticado |
 | 403 | Acesso restrito a admins |
 | 404 | Plano não encontrado |
+
+---
+
+### GET /admin/plans
+
+Lista todos os planos (ativos e inativos) com contagem de usuários ativos vinculados. Usado pelo frontend para decidir entre "Excluir" e "Desativar".
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "plans": [
+      {
+        "id": "uuid",
+        "name": "Padrão",
+        "slug": "padrao",
+        "priceCents": 2990,
+        "maxProfiles": 3,
+        "maxStreams": 2,
+        "description": "Plano padrão",
+        "active": true,
+        "usersCount": 42
+      }
+    ]
+  },
+  "error": null
+}
+```
+
+- `usersCount` — número de subscriptions com `status: 'active'` vinculadas ao plano. Subscriptions canceladas/expiradas não contam.
+
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+
+---
+
+### DELETE /admin/plans/:id
+
+Deletar plano permanentemente. **Permitido apenas quando `usersCount === 0`** (nenhuma subscription ativa vinculada). Caso contrário, admin deve desativar o plano ao invés de excluir.
+
+**Request body:** vazio
+
+**Response 204:** sem body.
+
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 400 | UUID inválido |
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+| 404 | Plano não encontrado |
+| 409 | Plano possui usuários ativos vinculados — desative ao invés de excluir |
 
 ---
 

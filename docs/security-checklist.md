@@ -298,7 +298,13 @@
 | 19.5 | **IDOR em rotas admin** | Admin passa UUID invalido na rota e recebe stack trace | Todos os `:id` validados com `z.string().uuid()`. `PlanNotFoundError` / `UserNotFoundError` retornam 404 generico sem expor detalhes | Media |
 | 19.6 | **Rate limiting ausente em rotas admin** | Ataque por forca bruta em endpoints caros (analytics, listagem) | `ThrottlerGuard` global aplica rate limit em todas as rotas (default: 300 req/min). Endpoints admin nao tem isencao | Media |
 | 19.7 | **Falta de audit log** | Acoes destrutivas (toggle plano, alterar subscription) nao logadas | Logar via `Logger` em `CustomHttpException` handler + no use case. Incluir `adminUserId` no log. (Nota: audit log completo e trabalho futuro — Task 22+) | Media |
-| 19.8 | **Delete de plano com subscriptions ativas** | Remover plano quebra integridade referencial e deixa users orfaos | Nao ha endpoint DELETE de plano. Unico mecanismo de desativacao e o toggle (`active: false`) que preserva subscriptions existentes | Alta |
+| 19.8 | **Delete de plano com subscriptions ativas** | Remover plano quebra integridade referencial e deixa users orfaos | `DELETE /admin/plans/:id` so executa quando `countActiveSubscriptionsByPlanId === 0`. Caso contrario retorna 409 `PlanHasActiveSubscriptionsError`. Frontend tambem filtra opcao "Excluir" baseado em `usersCount` retornado pelo list | Alta |
+| 19.9 | **Admin auto-desativacao (lock-out)** | Admin desativa ou deleta a propria conta ou outro admin e perde acesso ao painel | `DeactivateUserUseCase` e `DeleteUserUseCase` verificam `user.role === 'admin'` e retornam 403 `CannotDeactivateAdminError` / `CannotDeleteAdminError`. Promocao/rebaixamento e exclusivamente manual via seed/DB | Critica |
+| 19.10 | **Hard delete sem soft delete previo** | Admin deleta usuario em producao e perde dados irrecuperavelmente | `DeleteUserUseCase` exige `user.active === false` (409 `UserStillActiveError`). Fluxo de duas etapas obriga admin a desativar + confirmar + deletar. Frontend reforca desabilitando botao "Deletar" quando user ativo | Alta |
+| 19.11 | **Sessao ativa apos desativacao** | User desativado continua com refresh tokens validos e consegue gerar novos access tokens ate a expiracao | `DeactivateUserUseCase` chama `refreshTokensRepository.revokeAllByUserId(userId)` e `streamSessionsRepository.endAllByUserId(userId)`. `JwtStrategy` tambem rejeita tokens de user inativo (dupla barreira). `AuthenticateUseCase` bloqueia login com `UserDeactivatedError` | Critica |
+| 19.12 | **Cascade delete silencioso em hard delete** | DELETE /admin/users/:id remove user mas orfaos ficam em profiles/subscriptions/history | Schema Prisma tem `onDelete: Cascade` em todas as FKs de `User` (`Profile.userId`, `Subscription.userId`, `RefreshToken.userId`, `WatchHistory.userId`, `StreamSession.userId`). Migration auditada em code review + E2E verifica remocao via Prisma queries | Alta |
+| 19.13 | **Mass assignment em PATCH /admin/users/:id** | Admin edita usuario e body aceita `role`, `active`, `password` nao autorizados | `UpdateUserUseCase` so aceita `name` e `email`. Controller usa Zod `.strict()` — campos extras retornam 400. Role continua imutavel via API. Mudanca de senha/status segue endpoints proprios | Critica |
+| 19.14 | **endsAt no passado cria subscription expirada** | Admin define `endsAt` no passado ao criar usuario gerando subscription que ja nasce invalida | Use case valida `endsAt > now()` quando presente. `InvalidSubscriptionEndDateError` retorna 400. Controller usa `z.coerce.date().optional().nullable()` + refine | Media |
 
 ---
 
@@ -329,6 +335,13 @@ Tabela de referencia rapida: quais categorias de vulnerabilidade verificar em ca
 | **19 — Admin User Mgmt** | 19.1 (Role no body), 19.4 (Zod validation), 19.5 (IDOR), 14 (Mass Assignment) |
 | **20 — Admin Plan Mgmt** | 19.4 (Zod validation), 19.8 (No DELETE), 3.11 (Slug imutavel), 16.2 (Validation) |
 | **21 — Admin Docs** | Revisao final de todas as categorias 19 |
+| **22 — User.active + session revoke** | 19.11 (Sessao apos desativacao), 2.14-2.18 (JWT), 4.5 (Erros) |
+| **23 — Admin Update User** | 19.13 (Mass assignment PATCH), 19.1 (Role no body), 14.1 (Mass Assignment) |
+| **24 — Deactivate User** | 19.9 (Admin lock-out), 19.11 (Session revoke), 19.5 (IDOR) |
+| **25 — Delete User** | 19.10 (Hard delete sem soft), 19.9 (Admin lock-out), 19.12 (Cascade), 4.5 (Erros) |
+| **26 — Cancel User Subscription** | 19.5 (IDOR), 3.3 (BFLA), 4.5 (Erros) |
+| **27 — Create User endsAt** | 19.14 (endsAt passado), 16.2 (Validation), 14.1 (Mass Assignment) |
+| **28 — Delete Plan + usersCount** | 19.8 (Delete com subscriptions), 19.4 (Zod), 19.5 (IDOR) |
 
 ---
 

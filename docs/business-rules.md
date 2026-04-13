@@ -372,6 +372,58 @@ O endpoint de analytics retorna dois blocos: **overview** (snapshot do estado at
 | Alterar subscription | Admin pode trocar o plano de qualquer usuário |
 | Downgrade não bloqueia perfis | Se user tem mais perfis que o novo plano permite, não deleta — apenas avisa |
 | `endsAt` pode ser null | Significa subscription indefinida (sem data de expiração) |
+| `endsAt` no create | Admin pode definir duração da subscription ao criar usuário. Se omitido, subscription é indefinida. Data deve ser futura |
+
+#### Edição de usuário
+
+| Regra | Descrição |
+|-------|-----------|
+| Campos editáveis | Apenas `name` e `email`. Role nunca é editável via API |
+| Validação de email | Email novo deve ser único (ignora próprio id — update idempotente) |
+| Endpoint | `PATCH /admin/users/:id` com pelo menos um campo no body |
+| Senha não editável | Reset de senha segue fluxo próprio (fora do escopo admin panel) |
+
+#### Duração de subscription (endsAt)
+
+| Regra | Descrição |
+|-------|-----------|
+| Semântica de null | `endsAt = null` significa subscription indefinida (não expira por tempo) |
+| Validação | Quando presente, deve ser data futura (> now). Passado retorna 400 |
+| Contextos de uso | `POST /admin/users` (criação), `PATCH /admin/users/:id/subscription` (update) |
+| UI | Checkbox "Sem data de término" (marcado = null) + date picker ao desmarcar |
+
+#### Desativação de usuário (soft delete)
+
+| Regra | Descrição |
+|-------|-----------|
+| Campo `active` | Boolean na entidade User, default `true` |
+| Efeito | Usuário inativo não consegue logar (`POST /sessions` → 403 `UserDeactivatedError`) |
+| Refresh tokens | Todos os refresh tokens do usuário são revogados na desativação |
+| Streams ativas | Todas as sessões de stream do usuário são encerradas |
+| JWT validation | JwtStrategy rejeita tokens de usuário inativo (403) |
+| Reversível | Admin pode reativar via `PATCH /admin/users/:id/activate` — restabelece login mas não restaura tokens/streams anteriores |
+| Admin protegido | Não é permitido desativar conta com `role === 'admin'` (403 `CannotDeactivateAdminError`) |
+| Idempotente | Desativar usuário já inativo retorna sucesso sem efeito colateral |
+
+#### Deleção de usuário (hard delete)
+
+| Regra | Descrição |
+|-------|-----------|
+| Pré-requisito | Usuário deve estar **desativado** (`active === false`). Caso contrário → 409 `UserStillActiveError` |
+| Fluxo obrigatório | Admin desativa primeiro, confirma, depois deleta (dupla confirmação operacional) |
+| Cascata | Remove profiles, subscriptions, refresh tokens, watch history, stream sessions (Prisma `onDelete: Cascade`) |
+| Irreversível | Hard delete — dados são perdidos permanentemente |
+| Admin protegido | Não é permitido deletar conta com `role === 'admin'` (403 `CannotDeleteAdminError`) |
+
+#### Cancelamento de subscription do usuário (remover plano)
+
+| Regra | Descrição |
+|-------|-----------|
+| Diferente de deletar user | Usuário continua existindo, apenas fica sem plano ativo |
+| Endpoint | `DELETE /admin/users/:id/subscription` |
+| Estado da subscription | `status = 'canceled'`, `endsAt = now()` |
+| Histórico preservado | Subscriptions passadas (canceladas/expiradas) não são afetadas |
+| Erro se não tem ativa | Retorna 404 `SubscriptionNotFoundError` quando user não possui subscription ativa |
 
 ### Gestão de Planos
 
@@ -381,4 +433,13 @@ O endpoint de analytics retorna dois blocos: **overview** (snapshot do estado at
 | Editar plano | Alterar nome, preço, limites, descrição |
 | Slug imutável | Uma vez criado, o slug não pode ser alterado (não faz parte do PATCH). Corrigir slug errado exige criar plano novo + toggle inativo do antigo |
 | Ativar/desativar plano | `plan.active` toggle. Planos inativos somem dos listings públicos e não podem ser escolhidos em novos registros/upgrades. **Subscriptions existentes continuam ativas** até expirarem naturalmente (nenhum cascade) |
-| Deletar plano | **Não permitido** — integridade referencial com subscriptions existentes |
+
+#### Deleção de plano
+
+| Regra | Descrição |
+|-------|-----------|
+| Permitido | Apenas quando **não há subscriptions ativas vinculadas** (`usersCount === 0`) |
+| Endpoint | `DELETE /admin/plans/:id` |
+| Erro se em uso | Retorna 409 `PlanHasActiveSubscriptionsError` — admin deve desativar o plano ao invés |
+| `usersCount` no list | `GET /admin/plans` retorna `usersCount` (subscriptions ativas) por plano. Frontend decide UI: `> 0` → só "Desativar"; `=== 0` → "Excluir" disponível |
+| Hard delete | Remove registro do banco permanentemente. Subscriptions canceladas/expiradas vinculadas ao plano não bloqueiam (só ativas contam) |

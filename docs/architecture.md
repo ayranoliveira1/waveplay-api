@@ -358,7 +358,13 @@ waveplay-api/
 │   ├── domain/
 │   │   └── errors/
 │   │       ├── user-not-found.error.ts
-│   │       └── plan-not-found.error.ts
+│   │       ├── plan-not-found.error.ts
+│   │       ├── cannot-deactivate-admin.error.ts
+│   │       ├── cannot-delete-admin.error.ts
+│   │       ├── user-still-active.error.ts
+│   │       ├── user-deactivated.error.ts
+│   │       ├── invalid-subscription-end-date.error.ts
+│   │       └── plan-has-active-subscriptions.error.ts
 │   ├── application/
 │   │   ├── ports/
 │   │   │   ├── admin-analytics-gateway.port.ts
@@ -367,10 +373,18 @@ waveplay-api/
 │   │       ├── get-dashboard-analytics-use-case.ts
 │   │       ├── list-users-use-case.ts
 │   │       ├── get-user-detail-use-case.ts
+│   │       ├── admin-create-user-use-case.ts           # aceita endsAt
+│   │       ├── admin-update-user-use-case.ts           # novo (name/email)
+│   │       ├── deactivate-user-use-case.ts             # novo (soft delete)
+│   │       ├── activate-user-use-case.ts               # novo
+│   │       ├── delete-user-use-case.ts                 # novo (hard delete)
+│   │       ├── cancel-user-subscription-use-case.ts    # novo (remover plano)
 │   │       ├── update-user-subscription-use-case.ts
+│   │       ├── list-admin-plans-use-case.ts            # retorna usersCount
 │   │       ├── create-plan-use-case.ts
 │   │       ├── update-plan-use-case.ts
-│   │       └── toggle-plan-active-use-case.ts
+│   │       ├── toggle-plan-active-use-case.ts
+│   │       └── delete-plan-use-case.ts                 # novo (hard delete se vazio)
 │   └── infra/
 │       ├── admin.module.ts
 │       ├── guards/
@@ -384,14 +398,23 @@ waveplay-api/
 │       │   ├── dashboard-analytics.controller.ts
 │       │   ├── list-users.controller.ts
 │       │   ├── get-user-detail.controller.ts
+│       │   ├── admin-create-user.controller.ts
+│       │   ├── admin-update-user.controller.ts         # novo
+│       │   ├── deactivate-user.controller.ts           # novo
+│       │   ├── activate-user.controller.ts             # novo
+│       │   ├── delete-user.controller.ts               # novo
+│       │   ├── cancel-user-subscription.controller.ts  # novo
 │       │   ├── update-user-subscription.controller.ts
+│       │   ├── list-admin-plans.controller.ts
 │       │   ├── create-plan.controller.ts
 │       │   ├── update-plan.controller.ts
-│       │   └── toggle-plan-active.controller.ts
+│       │   ├── toggle-plan-active.controller.ts
+│       │   └── delete-plan.controller.ts               # novo
 │       └── presenters/
 │           ├── analytics-presenter.ts
-│           ├── admin-user-presenter.ts
-│           └── admin-plan-presenter.ts
+│           ├── admin-user-presenter.ts                 # expõe active + subscription.endsAt
+│           ├── admin-subscription-presenter.ts
+│           └── admin-plan-presenter.ts                 # expõe usersCount
 ```
 
 ---
@@ -583,11 +606,18 @@ Cleanup     → cria StreamSession para cada expirada → deleta ActiveStreams
 | GET | /admin/analytics | admin | Admin | Dashboard com métricas |
 | GET | /admin/users | admin | Admin | Lista usuários (paginado, filtro) |
 | GET | /admin/users/:id | admin | Admin | Detalhes do usuário |
-| POST | /admin/users | admin | Admin | Criar usuário com plano específico |
-| PATCH | /admin/users/:id/subscription | admin | Admin | Alterar plano do usuário |
+| POST | /admin/users | admin | Admin | Criar usuário com plano específico (suporta `endsAt`) |
+| PATCH | /admin/users/:id | admin | Admin | Editar nome/email do usuário |
+| PATCH | /admin/users/:id/deactivate | admin | Admin | Desativar usuário (soft delete + revoga sessões) |
+| PATCH | /admin/users/:id/activate | admin | Admin | Reativar usuário desativado |
+| DELETE | /admin/users/:id | admin | Admin | Hard delete — exige `active=false` |
+| PATCH | /admin/users/:id/subscription | admin | Admin | Alterar plano/endsAt do usuário |
+| DELETE | /admin/users/:id/subscription | admin | Admin | Cancelar subscription (remover plano) |
+| GET | /admin/plans | admin | Admin | Lista planos com `usersCount` |
 | POST | /admin/plans | admin | Admin | Criar plano |
 | PATCH | /admin/plans/:id | admin | Admin | Editar plano |
 | PATCH | /admin/plans/:id/toggle | admin | Admin | Ativar/desativar plano |
+| DELETE | /admin/plans/:id | admin | Admin | Hard delete — exige `usersCount=0` |
 
 ---
 
