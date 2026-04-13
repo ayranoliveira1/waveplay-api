@@ -40,6 +40,18 @@ export class AdminUserPresenter {
     }
   }
 
+  static toUpdatedHTTP(user: User) {
+    return {
+      id: user.id.toValue(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      active: user.active,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    }
+  }
+
   static toSubscriptionHTTP(subscription: Subscription) {
     return {
       id: subscription.id.toValue(),

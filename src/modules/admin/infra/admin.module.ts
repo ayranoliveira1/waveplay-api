@@ -9,6 +9,7 @@ import { GetDashboardAnalyticsUseCase } from '../application/use-cases/get-dashb
 import { ListUsersUseCase } from '../application/use-cases/list-users-use-case'
 import { GetUserDetailUseCase } from '../application/use-cases/get-user-detail-use-case'
 import { AdminCreateUserUseCase } from '../application/use-cases/admin-create-user-use-case'
+import { AdminUpdateUserUseCase } from '../application/use-cases/admin-update-user-use-case'
 import { UpdateUserSubscriptionUseCase } from '../application/use-cases/update-user-subscription-use-case'
 import { CreatePlanUseCase } from '../application/use-cases/create-plan-use-case'
 import { UpdatePlanUseCase } from '../application/use-cases/update-plan-use-case'
@@ -20,6 +21,7 @@ import { DashboardAnalyticsController } from './controllers/dashboard-analytics.
 import { ListUsersController } from './controllers/list-users.controller'
 import { GetUserDetailController } from './controllers/get-user-detail.controller'
 import { AdminCreateUserController } from './controllers/admin-create-user.controller'
+import { AdminUpdateUserController } from './controllers/admin-update-user.controller'
 import { UpdateUserSubscriptionController } from './controllers/update-user-subscription.controller'
 import { CreatePlanController } from './controllers/create-plan.controller'
 import { UpdatePlanController } from './controllers/update-plan.controller'
@@ -39,6 +41,7 @@ import { PrismaAdminUserGateway } from './gateways/prisma-admin-user-gateway'
     ListUsersController,
     GetUserDetailController,
     AdminCreateUserController,
+    AdminUpdateUserController,
     UpdateUserSubscriptionController,
     CreatePlanController,
     UpdatePlanController,
@@ -50,6 +53,7 @@ import { PrismaAdminUserGateway } from './gateways/prisma-admin-user-gateway'
     ListUsersUseCase,
     GetUserDetailUseCase,
     AdminCreateUserUseCase,
+    AdminUpdateUserUseCase,
     UpdateUserSubscriptionUseCase,
     CreatePlanUseCase,
     UpdatePlanUseCase,
