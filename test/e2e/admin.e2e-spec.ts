@@ -1270,3 +1270,159 @@ describe('PATCH /admin/users/:id/deactivate', () => {
     expect(asUser.status).toBe(403)
   })
 })
+
+// ---------------------------------------------------------------------------
+// DELETE /admin/users/:id
+// ---------------------------------------------------------------------------
+
+describe('DELETE /admin/users/:id', () => {
+  async function createAndDeactivateUser(prefix: string): Promise<string> {
+    const email = uniqueEmail(prefix)
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'To Delete',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    await request(app.getHttpServer())
+      .patch(`/admin/users/${userId}/deactivate`)
+      .set(authHeader(adminToken))
+
+    return userId
+  }
+
+  it('should return 204 and hard delete an inactive user', async () => {
+    const userId = await createAndDeactivateUser('delete-ok')
+
+    const response = await request(app.getHttpServer())
+      .delete(`/admin/users/${userId}`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(204)
+    expect(response.body).toEqual({})
+
+    const prisma = app.get(PrismaService)
+    const dbUser = await prisma.user.findUnique({ where: { id: userId } })
+    expect(dbUser).toBeNull()
+  })
+
+  it('should cascade delete profiles, subscriptions and refresh tokens', async () => {
+    const email = uniqueEmail('delete-cascade')
+    const password = 'SenhaForte1'
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Cascade User',
+        email,
+        password,
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    await loginUser(app, email, password, 'mobile')
+
+    await request(app.getHttpServer())
+      .patch(`/admin/users/${userId}/deactivate`)
+      .set(authHeader(adminToken))
+
+    const prisma = app.get(PrismaService)
+    const profilesBefore = await prisma.profile.findMany({ where: { userId } })
+    const subscriptionsBefore = await prisma.subscription.findMany({
+      where: { userId },
+    })
+    const tokensBefore = await prisma.refreshToken.findMany({
+      where: { userId },
+    })
+    expect(profilesBefore.length).toBeGreaterThanOrEqual(1)
+    expect(subscriptionsBefore.length).toBeGreaterThanOrEqual(1)
+    expect(tokensBefore.length).toBeGreaterThanOrEqual(1)
+
+    const response = await request(app.getHttpServer())
+      .delete(`/admin/users/${userId}`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(204)
+
+    const profilesAfter = await prisma.profile.findMany({ where: { userId } })
+    const subscriptionsAfter = await prisma.subscription.findMany({
+      where: { userId },
+    })
+    const tokensAfter = await prisma.refreshToken.findMany({
+      where: { userId },
+    })
+    expect(profilesAfter).toHaveLength(0)
+    expect(subscriptionsAfter).toHaveLength(0)
+    expect(tokensAfter).toHaveLength(0)
+  })
+
+  it('should return 409 when user is still active', async () => {
+    const email = uniqueEmail('delete-active')
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Still Active',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    const response = await request(app.getHttpServer())
+      .delete(`/admin/users/${userId}`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(409)
+
+    const prisma = app.get(PrismaService)
+    const dbUser = await prisma.user.findUnique({ where: { id: userId } })
+    expect(dbUser).not.toBeNull()
+  })
+
+  it('should return 404 when user does not exist', async () => {
+    const response = await request(app.getHttpServer())
+      .delete('/admin/users/99999999-9999-4999-8999-999999999999')
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 403 when target user is admin', async () => {
+    const prisma = app.get(PrismaService)
+    const adminUser = await prisma.user.findUnique({
+      where: { email: 'admin@waveplay.com' },
+    })
+
+    const response = await request(app.getHttpServer())
+      .delete(`/admin/users/${adminUser!.id}`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(403)
+
+    const stillExists = await prisma.user.findUnique({
+      where: { id: adminUser!.id },
+    })
+    expect(stillExists).not.toBeNull()
+  })
+
+  it('should return 401/403 for unauthenticated or non-admin', async () => {
+    const fakeId = '11111111-1111-4111-8111-111111111111'
+
+    const noAuth = await request(app.getHttpServer()).delete(
+      `/admin/users/${fakeId}`,
+    )
+    expect(noAuth.status).toBe(401)
+
+    const { accessToken } = await registerUser(app)
+    const asUser = await request(app.getHttpServer())
+      .delete(`/admin/users/${fakeId}`)
+      .set(authHeader(accessToken!))
+    expect(asUser.status).toBe(403)
+  })
+})
