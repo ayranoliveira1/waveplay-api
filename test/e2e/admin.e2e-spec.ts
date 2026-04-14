@@ -4,9 +4,11 @@ import request from 'supertest'
 import { createE2EApp } from './helpers/e2e-app'
 import {
   registerUser,
+  loginUser,
   authHeader,
   fullCleanup,
   uniqueEmail,
+  getFirstProfileId,
 } from './helpers/e2e-helpers'
 import { PrismaService } from '@/shared/database/prisma.service'
 import { hash } from 'argon2'
@@ -1107,6 +1109,164 @@ describe('PATCH /admin/plans/:id/toggle', () => {
       .patch(`/admin/plans/${fakeId}/toggle`)
       .set(authHeader(accessToken!))
       .send()
+    expect(asUser.status).toBe(403)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// PATCH /admin/users/:id/deactivate
+// ---------------------------------------------------------------------------
+
+describe('PATCH /admin/users/:id/deactivate', () => {
+  it('should return 200 and persist active=false in the database', async () => {
+    const email = uniqueEmail('deactivate-active')
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'To Deactivate',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/users/${userId}/deactivate`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(response.body.data.user).toMatchObject({
+      id: userId,
+      email,
+      active: false,
+    })
+
+    const prisma = app.get(PrismaService)
+    const dbUser = await prisma.user.findUnique({ where: { id: userId } })
+    expect(dbUser!.active).toBe(false)
+  })
+
+  it('should revoke all refresh tokens of the deactivated user', async () => {
+    const email = uniqueEmail('deactivate-tokens')
+    const password = 'SenhaForte1'
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Tokens User',
+        email,
+        password,
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    await loginUser(app, email, password, 'mobile')
+    await loginUser(app, email, password, 'mobile')
+
+    const prisma = app.get(PrismaService)
+    const tokensBefore = await prisma.refreshToken.findMany({
+      where: { userId },
+    })
+    expect(tokensBefore.length).toBeGreaterThanOrEqual(1)
+    expect(tokensBefore.every((t) => t.revokedAt === null)).toBe(true)
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/users/${userId}/deactivate`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(200)
+
+    const tokensAfter = await prisma.refreshToken.findMany({
+      where: { userId },
+    })
+    expect(tokensAfter.length).toBe(tokensBefore.length)
+    expect(tokensAfter.every((t) => t.revokedAt !== null)).toBe(true)
+  })
+
+  it('should delete all active streams of the deactivated user', async () => {
+    const email = uniqueEmail('deactivate-streams')
+    const password = 'SenhaForte1'
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Streams User',
+        email,
+        password,
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    const { accessToken } = await loginUser(app, email, password, 'mobile')
+    const profileId = await getFirstProfileId(app, accessToken!)
+
+    const prisma = app.get(PrismaService)
+    await prisma.activeStream.create({
+      data: {
+        userId,
+        profileId,
+        tmdbId: 550,
+        type: 'movie',
+      },
+    })
+
+    const streamsBefore = await prisma.activeStream.findMany({
+      where: { userId },
+    })
+    expect(streamsBefore.length).toBe(1)
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/users/${userId}/deactivate`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(200)
+
+    const streamsAfter = await prisma.activeStream.findMany({
+      where: { userId },
+    })
+    expect(streamsAfter.length).toBe(0)
+  })
+
+  it('should return 403 when target user is admin (anti-lockout)', async () => {
+    const prisma = app.get(PrismaService)
+    const adminUser = await prisma.user.findUnique({
+      where: { email: 'admin@waveplay.com' },
+    })
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/users/${adminUser!.id}/deactivate`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(403)
+
+    const stillActive = await prisma.user.findUnique({
+      where: { id: adminUser!.id },
+    })
+    expect(stillActive!.active).toBe(true)
+  })
+
+  it('should return 404 when userId does not exist', async () => {
+    const response = await request(app.getHttpServer())
+      .patch('/admin/users/99999999-9999-4999-8999-999999999999/deactivate')
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 401/403 for unauthenticated or non-admin', async () => {
+    const fakeId = '11111111-1111-4111-8111-111111111111'
+
+    const noAuth = await request(app.getHttpServer()).patch(
+      `/admin/users/${fakeId}/deactivate`,
+    )
+    expect(noAuth.status).toBe(401)
+
+    const { accessToken } = await registerUser(app)
+    const asUser = await request(app.getHttpServer())
+      .patch(`/admin/users/${fakeId}/deactivate`)
+      .set(authHeader(accessToken!))
     expect(asUser.status).toBe(403)
   })
 })
