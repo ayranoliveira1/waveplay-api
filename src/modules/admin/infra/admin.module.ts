@@ -11,6 +11,7 @@ import { GetUserDetailUseCase } from '../application/use-cases/get-user-detail-u
 import { AdminCreateUserUseCase } from '../application/use-cases/admin-create-user-use-case'
 import { AdminUpdateUserUseCase } from '../application/use-cases/admin-update-user-use-case'
 import { DeactivateUserUseCase } from '../application/use-cases/deactivate-user-use-case'
+import { DeleteUserUseCase } from '../application/use-cases/delete-user-use-case'
 import { UpdateUserSubscriptionUseCase } from '../application/use-cases/update-user-subscription-use-case'
 import { CreatePlanUseCase } from '../application/use-cases/create-plan-use-case'
 import { UpdatePlanUseCase } from '../application/use-cases/update-plan-use-case'
@@ -24,6 +25,7 @@ import { GetUserDetailController } from './controllers/get-user-detail.controlle
 import { AdminCreateUserController } from './controllers/admin-create-user.controller'
 import { AdminUpdateUserController } from './controllers/admin-update-user.controller'
 import { DeactivateUserController } from './controllers/deactivate-user.controller'
+import { DeleteUserController } from './controllers/delete-user.controller'
 import { UpdateUserSubscriptionController } from './controllers/update-user-subscription.controller'
 import { CreatePlanController } from './controllers/create-plan.controller'
 import { UpdatePlanController } from './controllers/update-plan.controller'
@@ -45,6 +47,7 @@ import { PrismaAdminUserGateway } from './gateways/prisma-admin-user-gateway'
     AdminCreateUserController,
     AdminUpdateUserController,
     DeactivateUserController,
+    DeleteUserController,
     UpdateUserSubscriptionController,
     CreatePlanController,
     UpdatePlanController,
@@ -58,6 +61,7 @@ import { PrismaAdminUserGateway } from './gateways/prisma-admin-user-gateway'
     AdminCreateUserUseCase,
     AdminUpdateUserUseCase,
     DeactivateUserUseCase,
+    DeleteUserUseCase,
     UpdateUserSubscriptionUseCase,
     CreatePlanUseCase,
     UpdatePlanUseCase,
