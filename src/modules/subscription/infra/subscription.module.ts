@@ -71,6 +71,7 @@ import { RedisStreamCache } from './cache/redis-stream-cache'
   exports: [
     SubscriptionsRepository,
     PlansRepository,
+    ActiveStreamsRepository,
     StreamSessionsRepository,
     StreamCachePort,
   ],
