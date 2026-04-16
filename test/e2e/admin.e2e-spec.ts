@@ -1426,3 +1426,90 @@ describe('DELETE /admin/users/:id', () => {
     expect(asUser.status).toBe(403)
   })
 })
+
+// ---------------------------------------------------------------------------
+// DELETE /admin/users/:id/subscription
+// ---------------------------------------------------------------------------
+
+describe('DELETE /admin/users/:id/subscription', () => {
+  it('should cancel subscription and persist via Prisma', async () => {
+    const email = uniqueEmail('cancel-sub')
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Cancel Sub',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    const response = await request(app.getHttpServer())
+      .delete(`/admin/users/${userId}/subscription`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(response.body.data.subscription.status).toBe('canceled')
+    expect(response.body.data.subscription.endsAt).toBeDefined()
+
+    const prisma = app.get(PrismaService)
+    const sub = await prisma.subscription.findFirst({
+      where: { userId, status: 'canceled' },
+    })
+    expect(sub).not.toBeNull()
+    expect(new Date(sub!.endsAt!).getTime()).toBeLessThanOrEqual(
+      Date.now(),
+    )
+  })
+
+  it('should return 404 when user has no active subscription', async () => {
+    const email = uniqueEmail('cancel-no-sub')
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Cancel No Sub',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    await request(app.getHttpServer())
+      .delete(`/admin/users/${userId}/subscription`)
+      .set(authHeader(adminToken))
+
+    const response = await request(app.getHttpServer())
+      .delete(`/admin/users/${userId}/subscription`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 404 when user does not exist', async () => {
+    const response = await request(app.getHttpServer())
+      .delete(
+        '/admin/users/99999999-9999-4999-8999-999999999999/subscription',
+      )
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 401/403 for unauthenticated or non-admin', async () => {
+    const fakeId = '11111111-1111-4111-8111-111111111111'
+
+    const noAuth = await request(app.getHttpServer()).delete(
+      `/admin/users/${fakeId}/subscription`,
+    )
+    expect(noAuth.status).toBe(401)
+
+    const { accessToken } = await registerUser(app)
+    const asUser = await request(app.getHttpServer())
+      .delete(`/admin/users/${fakeId}/subscription`)
+      .set(authHeader(accessToken!))
+    expect(asUser.status).toBe(403)
+  })
+})
