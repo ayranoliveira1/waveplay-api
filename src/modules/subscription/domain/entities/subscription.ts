@@ -48,6 +48,12 @@ export class Subscription extends Entity<SubscriptionProps> {
     this.touch()
   }
 
+  cancel() {
+    this.props.status = 'canceled'
+    this.props.endsAt = new Date()
+    this.touch()
+  }
+
   get createdAt() {
     return this.props.createdAt
   }
