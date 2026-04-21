@@ -364,7 +364,7 @@ waveplay-api/
 │   │       ├── user-still-active.error.ts
 │   │       ├── user-deactivated.error.ts
 │   │       ├── invalid-subscription-end-date.error.ts
-│   │       └── plan-has-active-subscriptions.error.ts
+│   │       └── plan-has-subscriptions.error.ts
 │   ├── application/
 │   │   ├── ports/
 │   │   │   ├── admin-analytics-gateway.port.ts

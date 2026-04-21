@@ -438,8 +438,8 @@ O endpoint de analytics retorna dois blocos: **overview** (snapshot do estado at
 
 | Regra | Descrição |
 |-------|-----------|
-| Permitido | Apenas quando **não há subscriptions ativas vinculadas** (`usersCount === 0`) |
+| Permitido | Apenas quando **não há nenhuma subscription vinculada** ao plano (`usersCount === 0`), independente de status |
 | Endpoint | `DELETE /admin/plans/:id` |
-| Erro se em uso | Retorna 409 `PlanHasActiveSubscriptionsError` — admin deve desativar o plano ao invés |
-| `usersCount` no list | `GET /admin/plans` retorna `usersCount` (subscriptions ativas) por plano. Frontend decide UI: `> 0` → só "Desativar"; `=== 0` → "Excluir" disponível |
-| Hard delete | Remove registro do banco permanentemente. Subscriptions canceladas/expiradas vinculadas ao plano não bloqueiam (só ativas contam) |
+| Erro se em uso | Retorna 409 `PlanHasSubscriptionsError` — admin deve desativar o plano ao invés |
+| `usersCount` no list | `GET /admin/plans` retorna `usersCount` (todas as subscriptions, inclusive canceladas/expiradas) por plano. Frontend decide UI: `> 0` → só "Desativar"; `=== 0` → "Excluir" disponível |
+| Hard delete | Remove registro do banco permanentemente. Preserva histórico: planos que tiveram usuários (mesmo cancelados) nunca são excluídos — são desativados |

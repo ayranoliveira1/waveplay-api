@@ -778,7 +778,32 @@ describe('GET /admin/plans', () => {
       maxProfiles: expect.any(Number),
       maxStreams: expect.any(Number),
       active: true,
+      usersCount: expect.any(Number),
     })
+  })
+
+  it('should return usersCount reflecting active subscriptions per plan', async () => {
+    const email = uniqueEmail('plans-users-count')
+    await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'UsersCount User',
+        email,
+        password: 'SenhaForte1',
+        planId: premiumPlanId,
+      })
+
+    const response = await request(app.getHttpServer())
+      .get('/admin/plans')
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(200)
+
+    const premium = response.body.data.plans.find(
+      (p: { id: string }) => p.id === premiumPlanId,
+    )
+    expect(premium.usersCount).toBeGreaterThanOrEqual(1)
   })
 
   it('should include inactive plans in the response', async () => {
@@ -1562,6 +1587,142 @@ describe('DELETE /admin/users/:id/subscription', () => {
     const { accessToken } = await registerUser(app)
     const asUser = await request(app.getHttpServer())
       .delete(`/admin/users/${fakeId}/subscription`)
+      .set(authHeader(accessToken!))
+    expect(asUser.status).toBe(403)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// DELETE /admin/plans/:id
+// ---------------------------------------------------------------------------
+
+describe('DELETE /admin/plans/:id', () => {
+  afterAll(async () => {
+    const prisma = app.get(PrismaService)
+    const residualPlans = await prisma.plan.findMany({
+      where: { slug: { startsWith: 'test-plan-' } },
+      select: { id: true },
+    })
+    const planIds = residualPlans.map((p) => p.id)
+    if (planIds.length > 0) {
+      await prisma.subscription.deleteMany({
+        where: { planId: { in: planIds } },
+      })
+      await prisma.plan.deleteMany({ where: { id: { in: planIds } } })
+    }
+  })
+
+  async function createTestPlan(slug: string): Promise<string> {
+    const response = await request(app.getHttpServer())
+      .post('/admin/plans')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Plano para deletar',
+        slug,
+        priceCents: 1990,
+        maxProfiles: 2,
+        maxStreams: 2,
+      })
+    return response.body.data.plan.id as string
+  }
+
+  it('should return 204 and hard delete a plan without active subscriptions', async () => {
+    const planId = await createTestPlan(`test-plan-delete-${Date.now()}`)
+
+    const response = await request(app.getHttpServer())
+      .delete(`/admin/plans/${planId}`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(204)
+    expect(response.body).toEqual({})
+
+    const prisma = app.get(PrismaService)
+    const stored = await prisma.plan.findUnique({ where: { id: planId } })
+    expect(stored).toBeNull()
+  })
+
+  it('should return 409 when plan has active subscriptions', async () => {
+    const planId = await createTestPlan(`test-plan-delete-busy-${Date.now()}`)
+
+    await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Plan Holder',
+        email: uniqueEmail('plan-holder'),
+        password: 'SenhaForte1',
+        planId,
+      })
+
+    const response = await request(app.getHttpServer())
+      .delete(`/admin/plans/${planId}`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(409)
+
+    const prisma = app.get(PrismaService)
+    const stored = await prisma.plan.findUnique({ where: { id: planId } })
+    expect(stored).not.toBeNull()
+  })
+
+  it('should return 409 even when plan has only canceled subscriptions', async () => {
+    const planId = await createTestPlan(
+      `test-plan-delete-canceled-${Date.now()}`,
+    )
+
+    const createUserResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Cancel Then Delete',
+        email: uniqueEmail('cancel-then-delete'),
+        password: 'SenhaForte1',
+        planId,
+      })
+    const userId = createUserResponse.body.data.id
+
+    await request(app.getHttpServer())
+      .delete(`/admin/users/${userId}/subscription`)
+      .set(authHeader(adminToken))
+
+    const response = await request(app.getHttpServer())
+      .delete(`/admin/plans/${planId}`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(409)
+
+    const prisma = app.get(PrismaService)
+    const stored = await prisma.plan.findUnique({ where: { id: planId } })
+    expect(stored).not.toBeNull()
+  })
+
+  it('should return 404 when plan does not exist', async () => {
+    const response = await request(app.getHttpServer())
+      .delete('/admin/plans/99999999-9999-4999-8999-999999999999')
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 400 when id is not a valid UUID', async () => {
+    const response = await request(app.getHttpServer())
+      .delete('/admin/plans/not-a-uuid')
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should return 401/403 for unauthenticated or non-admin', async () => {
+    const fakeId = '11111111-1111-4111-8111-111111111111'
+
+    const noAuth = await request(app.getHttpServer()).delete(
+      `/admin/plans/${fakeId}`,
+    )
+    expect(noAuth.status).toBe(401)
+
+    const { accessToken } = await registerUser(app)
+    const asUser = await request(app.getHttpServer())
+      .delete(`/admin/plans/${fakeId}`)
       .set(authHeader(accessToken!))
     expect(asUser.status).toBe(403)
   })
