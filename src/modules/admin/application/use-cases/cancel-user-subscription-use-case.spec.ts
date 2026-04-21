@@ -50,9 +50,9 @@ describe('CancelUserSubscriptionUseCase', () => {
     if (result.isRight()) {
       expect(result.value.subscription.status).toBe('canceled')
       expect(result.value.subscription.endsAt).toBeDefined()
-      expect(result.value.subscription.endsAt!.getTime()).toBeGreaterThanOrEqual(
-        before.getTime(),
-      )
+      expect(
+        result.value.subscription.endsAt!.getTime(),
+      ).toBeGreaterThanOrEqual(before.getTime())
     }
 
     expect(subscriptionsRepository.items[0].status).toBe('canceled')
