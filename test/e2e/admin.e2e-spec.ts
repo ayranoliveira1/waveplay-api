@@ -200,6 +200,63 @@ describe('POST /admin/users', () => {
     expect(dbUser!.profiles[0].name).toBe('Persisted User')
   })
 
+  it('should return 201 and persist subscription.endsAt when endsAt is provided', async () => {
+    const email = uniqueEmail('admin-create-endsat')
+    const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    const futureISO = futureDate.toISOString()
+
+    const response = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'EndsAt User',
+        email,
+        password: 'SenhaForte1',
+        planId: premiumPlanId,
+        endsAt: futureISO,
+      })
+
+    expect(response.status).toBe(201)
+    expect(response.body.data.subscription.endsAt).toBeDefined()
+
+    const prisma = app.get(PrismaService)
+    const dbUser = await prisma.user.findUnique({
+      where: { email },
+      include: { subscriptions: { where: { status: 'active' } } },
+    })
+
+    expect(dbUser).not.toBeNull()
+    expect(dbUser!.subscriptions).toHaveLength(1)
+    expect(dbUser!.subscriptions[0].endsAt).not.toBeNull()
+    expect(
+      Math.abs(
+        dbUser!.subscriptions[0].endsAt!.getTime() - futureDate.getTime(),
+      ),
+    ).toBeLessThan(1000)
+  })
+
+  it('should return 400 when endsAt is in the past', async () => {
+    const email = uniqueEmail('admin-create-past')
+    const pastISO = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+    const response = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Past User',
+        email,
+        password: 'SenhaForte1',
+        planId: premiumPlanId,
+        endsAt: pastISO,
+      })
+
+    expect(response.status).toBe(400)
+
+    const prisma = app.get(PrismaService)
+    const dbUser = await prisma.user.findUnique({ where: { email } })
+    expect(dbUser).toBeNull()
+  })
+
   it('should return 409 when email already exists', async () => {
     const email = uniqueEmail('admin-dup')
 
@@ -1459,9 +1516,7 @@ describe('DELETE /admin/users/:id/subscription', () => {
       where: { userId, status: 'canceled' },
     })
     expect(sub).not.toBeNull()
-    expect(new Date(sub!.endsAt!).getTime()).toBeLessThanOrEqual(
-      Date.now(),
-    )
+    expect(new Date(sub!.endsAt!).getTime()).toBeLessThanOrEqual(Date.now())
   })
 
   it('should return 404 when user has no active subscription', async () => {
@@ -1490,9 +1545,7 @@ describe('DELETE /admin/users/:id/subscription', () => {
 
   it('should return 404 when user does not exist', async () => {
     const response = await request(app.getHttpServer())
-      .delete(
-        '/admin/users/99999999-9999-4999-8999-999999999999/subscription',
-      )
+      .delete('/admin/users/99999999-9999-4999-8999-999999999999/subscription')
       .set(authHeader(adminToken))
 
     expect(response.status).toBe(404)
