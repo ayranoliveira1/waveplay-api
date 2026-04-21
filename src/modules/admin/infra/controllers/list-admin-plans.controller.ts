@@ -17,7 +17,9 @@ export class ListAdminPlansController {
     return {
       success: true,
       data: {
-        plans: result.value.plans.map(AdminPlanPresenter.toHTTP),
+        plans: result.value.plans.map(({ plan, usersCount }) =>
+          AdminPlanPresenter.toHTTP(plan, usersCount),
+        ),
       },
       error: null,
     }

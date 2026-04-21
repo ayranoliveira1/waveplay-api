@@ -6,8 +6,8 @@ import { APP_GUARD } from '@nestjs/core'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import request from 'supertest'
 
-import { ListAdminPlansController } from './list-admin-plans.controller'
-import { ListAdminPlansUseCase } from '../../application/use-cases/list-admin-plans-use-case'
+import { DeletePlanController } from './delete-plan.controller'
+import { DeletePlanUseCase } from '../../application/use-cases/delete-plan-use-case'
 import { PlansRepository } from '@/modules/subscription/domain/repositories/plans-repository'
 import { SubscriptionsRepository } from '@/modules/subscription/domain/repositories/subscriptions-repository'
 import { InMemoryPlansRepository } from 'test/repositories/in-memory-plans-repository'
@@ -23,6 +23,10 @@ let app: INestApplication
 let testModule: TestingModule
 
 const originalCanActivate = FakeAuthGuard.prototype.canActivate
+
+const EMPTY_PLAN_ID = '11111111-1111-4111-8111-111111111111'
+const BUSY_PLAN_ID = '22222222-2222-4222-8222-222222222222'
+const MISSING_PLAN_ID = '44444444-4444-4444-8444-444444444444'
 
 function asAdmin() {
   FakeAuthGuard.prototype.canActivate = function (context) {
@@ -40,7 +44,7 @@ function asUser() {
   }
 }
 
-describe('ListAdminPlansController', () => {
+describe('DeletePlanController', () => {
   beforeEach(async () => {
     const subscriptionsRepo = new InMemorySubscriptionsRepository()
     const plansRepo = new InMemoryPlansRepository(subscriptionsRepo)
@@ -48,55 +52,37 @@ describe('ListAdminPlansController', () => {
     plansRepo.items.push(
       Plan.create(
         {
-          name: 'Basico',
-          slug: 'basico',
+          name: 'Empty',
+          slug: 'empty',
           priceCents: 990,
           maxProfiles: 1,
           maxStreams: 1,
-          description: 'Plano basico',
           active: true,
         },
-        new UniqueEntityID('plan-basico'),
+        new UniqueEntityID(EMPTY_PLAN_ID),
       ),
       Plan.create(
         {
-          name: 'Premium',
-          slug: 'premium',
+          name: 'Busy',
+          slug: 'busy',
           priceCents: 2990,
           maxProfiles: 5,
           maxStreams: 4,
-          description: 'Plano premium',
           active: true,
         },
-        new UniqueEntityID('plan-premium'),
-      ),
-      Plan.create(
-        {
-          name: 'Legacy',
-          slug: 'legacy',
-          priceCents: 500,
-          maxProfiles: 1,
-          maxStreams: 1,
-          active: false,
-        },
-        new UniqueEntityID('plan-legacy'),
+        new UniqueEntityID(BUSY_PLAN_ID),
       ),
     )
 
     subscriptionsRepo.items.push(
       Subscription.create({
         userId: 'user-1',
-        planId: 'plan-premium',
+        planId: BUSY_PLAN_ID,
         status: 'active',
       }),
       Subscription.create({
         userId: 'user-2',
-        planId: 'plan-premium',
-        status: 'active',
-      }),
-      Subscription.create({
-        userId: 'user-3',
-        planId: 'plan-basico',
+        planId: BUSY_PLAN_ID,
         status: 'canceled',
       }),
     )
@@ -107,9 +93,9 @@ describe('ListAdminPlansController', () => {
           throttlers: [{ ttl: 60000, limit: 300 }],
         }),
       ],
-      controllers: [ListAdminPlansController],
+      controllers: [DeletePlanController],
       providers: [
-        ListAdminPlansUseCase,
+        DeletePlanUseCase,
         { provide: PlansRepository, useValue: plansRepo },
         { provide: SubscriptionsRepository, useValue: subscriptionsRepo },
         { provide: APP_GUARD, useClass: FakeAuthGuard },
@@ -126,77 +112,65 @@ describe('ListAdminPlansController', () => {
     FakeAuthGuard.prototype.canActivate = originalCanActivate
   })
 
-  it('should return 200 with all plans and usersCount shape', async () => {
+  it('should return 204 and remove the plan from repository', async () => {
     asAdmin()
 
-    const response = await request(app.getHttpServer()).get('/admin/plans')
-
-    expect(response.status).toBe(200)
-    expect(response.body.success).toBe(true)
-    expect(response.body.error).toBeNull()
-    expect(response.body.data.plans).toHaveLength(3)
-
-    expect(response.body.data.plans[0]).toMatchObject({
-      id: expect.any(String),
-      name: expect.any(String),
-      slug: expect.any(String),
-      priceCents: expect.any(Number),
-      maxProfiles: expect.any(Number),
-      maxStreams: expect.any(Number),
-      active: expect.any(Boolean),
-      usersCount: expect.any(Number),
-    })
-  })
-
-  it('should include inactive plans in the response', async () => {
-    asAdmin()
-
-    const response = await request(app.getHttpServer()).get('/admin/plans')
-
-    const inactivePlan = response.body.data.plans.find(
-      (p: { slug: string }) => p.slug === 'legacy',
-    )
-    expect(inactivePlan).toBeDefined()
-    expect(inactivePlan.active).toBe(false)
-  })
-
-  it('should return correct usersCount aggregated per plan', async () => {
-    asAdmin()
-
-    const response = await request(app.getHttpServer()).get('/admin/plans')
-
-    const premium = response.body.data.plans.find(
-      (p: { slug: string }) => p.slug === 'premium',
-    )
-    const basico = response.body.data.plans.find(
-      (p: { slug: string }) => p.slug === 'basico',
-    )
-    const legacy = response.body.data.plans.find(
-      (p: { slug: string }) => p.slug === 'legacy',
+    const response = await request(app.getHttpServer()).delete(
+      `/admin/plans/${EMPTY_PLAN_ID}`,
     )
 
-    expect(premium.usersCount).toBe(2)
-    expect(basico.usersCount).toBe(1)
-    expect(legacy.usersCount).toBe(0)
-  })
-
-  it('should return 200 with empty array when no plans exist', async () => {
-    asAdmin()
+    expect(response.status).toBe(204)
+    expect(response.body).toEqual({})
 
     const plansRepository =
       testModule.get<InMemoryPlansRepository>(PlansRepository)
-    plansRepository.items = []
-
-    const response = await request(app.getHttpServer()).get('/admin/plans')
-
-    expect(response.status).toBe(200)
-    expect(response.body.data.plans).toHaveLength(0)
+    expect(
+      plansRepository.items.some((p) => p.id.toValue() === EMPTY_PLAN_ID),
+    ).toBe(false)
   })
 
-  it('should return 403 for non-admin user', async () => {
+  it('should return 409 when plan has subscriptions (active or historical)', async () => {
+    asAdmin()
+
+    const response = await request(app.getHttpServer()).delete(
+      `/admin/plans/${BUSY_PLAN_ID}`,
+    )
+
+    expect(response.status).toBe(409)
+
+    const plansRepository =
+      testModule.get<InMemoryPlansRepository>(PlansRepository)
+    expect(
+      plansRepository.items.some((p) => p.id.toValue() === BUSY_PLAN_ID),
+    ).toBe(true)
+  })
+
+  it('should return 404 when plan does not exist', async () => {
+    asAdmin()
+
+    const response = await request(app.getHttpServer()).delete(
+      `/admin/plans/${MISSING_PLAN_ID}`,
+    )
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 400 when id is not a valid UUID', async () => {
+    asAdmin()
+
+    const response = await request(app.getHttpServer()).delete(
+      '/admin/plans/not-a-uuid',
+    )
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should return 403 when caller is a non-admin user', async () => {
     asUser()
 
-    const response = await request(app.getHttpServer()).get('/admin/plans')
+    const response = await request(app.getHttpServer()).delete(
+      `/admin/plans/${EMPTY_PLAN_ID}`,
+    )
 
     expect(response.status).toBe(403)
   })
