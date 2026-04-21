@@ -7,4 +7,6 @@ export abstract class PlansRepository {
   abstract findAllAdmin(): Promise<Plan[]>
   abstract create(plan: Plan): Promise<void>
   abstract save(plan: Plan): Promise<void>
+  abstract countSubscriptionsByPlanId(planId: string): Promise<number>
+  abstract delete(planId: string): Promise<void>
 }

@@ -61,4 +61,12 @@ export class PrismaPlansRepository implements PlansRepository {
       data,
     })
   }
+
+  async countSubscriptionsByPlanId(planId: string): Promise<number> {
+    return this.prisma.subscription.count({ where: { planId } })
+  }
+
+  async delete(planId: string): Promise<void> {
+    await this.prisma.plan.delete({ where: { id: planId } })
+  }
 }

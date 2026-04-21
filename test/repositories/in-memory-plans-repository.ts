@@ -1,8 +1,13 @@
 import type { PlansRepository } from '@/modules/subscription/domain/repositories/plans-repository'
 import type { Plan } from '@/modules/subscription/domain/entities/plan'
+import type { InMemorySubscriptionsRepository } from './in-memory-subscriptions-repository'
 
 export class InMemoryPlansRepository implements PlansRepository {
   public items: Plan[] = []
+
+  constructor(
+    private subscriptionsRepository?: InMemorySubscriptionsRepository,
+  ) {}
 
   async findById(id: string): Promise<Plan | null> {
     return this.items.find((item) => item.id.toValue() === id) ?? null
@@ -29,5 +34,16 @@ export class InMemoryPlansRepository implements PlansRepository {
     if (index >= 0) {
       this.items[index] = plan
     }
+  }
+
+  async countSubscriptionsByPlanId(planId: string): Promise<number> {
+    if (!this.subscriptionsRepository) return 0
+    return this.subscriptionsRepository.items.filter((s) => s.planId === planId)
+      .length
+  }
+
+  async delete(planId: string): Promise<void> {
+    const index = this.items.findIndex((p) => p.id.toValue() === planId)
+    if (index >= 0) this.items.splice(index, 1)
   }
 }
