@@ -12,6 +12,7 @@ import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { EmailAlreadyExistsError } from '@/modules/identity/domain/errors/email-already-exists.error'
 import { WeakPasswordError } from '@/modules/identity/domain/errors/weak-password.error'
 import { PlanNotFoundError } from '../../domain/errors/plan-not-found.error'
+import { InvalidSubscriptionEndDateError } from '../../domain/errors/invalid-subscription-end-date.error'
 
 let usersRepository: InMemoryUsersRepository
 let plansRepository: InMemoryPlansRepository
@@ -140,6 +141,52 @@ describe('AdminCreateUserUseCase', () => {
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(PlanNotFoundError)
+    expect(usersRepository.items).toHaveLength(0)
+    expect(subscriptionsRepository.items).toHaveLength(0)
+    expect(profilesRepository.items).toHaveLength(0)
+  })
+
+  it('should create user with endsAt when provided', async () => {
+    const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+
+    const result = await sut.execute({
+      name: 'Alice',
+      email: 'alice@test.com',
+      password: 'Abc12345',
+      planId: 'plan-premium',
+      endsAt: futureDate,
+    })
+
+    expect(result.isRight()).toBe(true)
+    expect(subscriptionsRepository.items).toHaveLength(1)
+    expect(subscriptionsRepository.items[0].endsAt).toEqual(futureDate)
+  })
+
+  it('should create user with endsAt=null when not provided', async () => {
+    const result = await sut.execute({
+      name: 'Alice',
+      email: 'alice@test.com',
+      password: 'Abc12345',
+      planId: 'plan-premium',
+    })
+
+    expect(result.isRight()).toBe(true)
+    expect(subscriptionsRepository.items[0].endsAt).toBeNull()
+  })
+
+  it('should return InvalidSubscriptionEndDateError when endsAt is in the past', async () => {
+    const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000)
+
+    const result = await sut.execute({
+      name: 'Alice',
+      email: 'alice@test.com',
+      password: 'Abc12345',
+      planId: 'plan-premium',
+      endsAt: pastDate,
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(InvalidSubscriptionEndDateError)
     expect(usersRepository.items).toHaveLength(0)
     expect(subscriptionsRepository.items).toHaveLength(0)
     expect(profilesRepository.items).toHaveLength(0)

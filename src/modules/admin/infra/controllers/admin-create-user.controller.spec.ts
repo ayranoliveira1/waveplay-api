@@ -255,4 +255,80 @@ describe('AdminCreateUserController', () => {
 
     expect(response.status).toBe(403)
   })
+
+  it('should return 201 with subscription.endsAt when endsAt is provided', async () => {
+    asAdmin()
+
+    const futureISO = new Date(
+      Date.now() + 30 * 24 * 60 * 60 * 1000,
+    ).toISOString()
+
+    const response = await request(app.getHttpServer())
+      .post('/admin/users')
+      .send({
+        name: 'Alice Silva',
+        email: 'alice@example.com',
+        password: 'SenhaForte1',
+        planId: PLAN_ID,
+        endsAt: futureISO,
+      })
+
+    expect(response.status).toBe(201)
+    expect(response.body.data.subscription).toBeDefined()
+    expect(response.body.data.subscription.endsAt).toBeDefined()
+    expect(new Date(response.body.data.subscription.endsAt).toISOString()).toBe(
+      futureISO,
+    )
+  })
+
+  it('should return 201 with subscription.endsAt=null when endsAt is omitted', async () => {
+    asAdmin()
+
+    const response = await request(app.getHttpServer())
+      .post('/admin/users')
+      .send({
+        name: 'Alice Silva',
+        email: 'alice@example.com',
+        password: 'SenhaForte1',
+        planId: PLAN_ID,
+      })
+
+    expect(response.status).toBe(201)
+    expect(response.body.data.subscription).toBeDefined()
+    expect(response.body.data.subscription.endsAt).toBeNull()
+  })
+
+  it('should return 400 when endsAt has invalid format', async () => {
+    asAdmin()
+
+    const response = await request(app.getHttpServer())
+      .post('/admin/users')
+      .send({
+        name: 'Alice Silva',
+        email: 'alice@example.com',
+        password: 'SenhaForte1',
+        planId: PLAN_ID,
+        endsAt: 'not-a-date',
+      })
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should return 400 when endsAt is in the past', async () => {
+    asAdmin()
+
+    const pastISO = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+    const response = await request(app.getHttpServer())
+      .post('/admin/users')
+      .send({
+        name: 'Alice Silva',
+        email: 'alice@example.com',
+        password: 'SenhaForte1',
+        planId: PLAN_ID,
+        endsAt: pastISO,
+      })
+
+    expect(response.status).toBe(400)
+  })
 })

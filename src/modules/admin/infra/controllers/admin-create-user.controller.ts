@@ -13,6 +13,7 @@ const bodySchema = z
     email: z.string().email('Email inválido').toLowerCase(),
     password: z.string().min(8).max(128),
     planId: z.string().uuid('ID de plano inválido'),
+    endsAt: z.coerce.date().optional().nullable(),
   })
   .strict()
 
@@ -31,6 +32,7 @@ export class AdminCreateUserController {
       email: body.email,
       password: body.password,
       planId: body.planId,
+      endsAt: body.endsAt,
     })
 
     if (result.isLeft()) {
@@ -39,7 +41,11 @@ export class AdminCreateUserController {
 
     return {
       success: true,
-      data: AdminUserPresenter.toCreatedHTTP(result.value.user),
+      data: AdminUserPresenter.toCreatedHTTP(
+        result.value.user,
+        result.value.subscription,
+        result.value.plan,
+      ),
       error: null,
     }
   }
