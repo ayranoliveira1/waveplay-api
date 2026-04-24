@@ -63,6 +63,7 @@ describe('ListUsersController', () => {
         name: 'Alice Silva',
         email: 'alice@example.com',
         role: 'user',
+        active: true,
         subscription: {
           id: 'sub-1',
           status: 'active',
@@ -78,6 +79,7 @@ describe('ListUsersController', () => {
         name: 'Bob Costa',
         email: 'bob@example.com',
         role: 'user',
+        active: false,
         subscription: null,
         profilesCount: 0,
         createdAt: new Date('2026-01-02'),
@@ -105,8 +107,11 @@ describe('ListUsersController', () => {
       name: expect.any(String),
       email: expect.any(String),
       role: expect.any(String),
+      active: expect.any(Boolean),
       profilesCount: expect.any(Number),
     })
+    expect(response.body.data.users[0].active).toBe(true)
+    expect(response.body.data.users[1].active).toBe(false)
   })
 
   it('should filter by search case-insensitively', async () => {

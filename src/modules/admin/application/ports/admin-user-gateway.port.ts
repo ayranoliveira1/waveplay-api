@@ -3,6 +3,7 @@ export interface AdminUserListItem {
   name: string
   email: string
   role: string
+  active: boolean
   subscription: {
     id: string
     status: string
@@ -19,6 +20,7 @@ export interface AdminUserDetail {
   name: string
   email: string
   role: string
+  active: boolean
   createdAt: Date
   subscription: {
     id: string

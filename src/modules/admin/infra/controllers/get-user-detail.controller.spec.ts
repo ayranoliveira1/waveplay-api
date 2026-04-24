@@ -64,6 +64,7 @@ describe('GetUserDetailController', () => {
       name: 'Alice Silva',
       email: 'alice@example.com',
       role: 'user',
+      active: true,
       createdAt: new Date('2026-01-01'),
       subscription: {
         id: 'sub-1',
@@ -100,6 +101,7 @@ describe('GetUserDetailController', () => {
       name: 'Alice Silva',
       email: 'alice@example.com',
       role: 'user',
+      active: true,
     })
     expect(response.body.data.subscription.plan.slug).toBe('premium')
     expect(response.body.data.profiles).toHaveLength(1)

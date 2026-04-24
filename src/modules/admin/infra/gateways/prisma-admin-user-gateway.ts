@@ -51,6 +51,7 @@ export class PrismaAdminUserGateway implements AdminUserGatewayPort {
         name: row.name,
         email: row.email,
         role: row.role,
+        active: row.active,
         subscription: activeSub
           ? {
               id: activeSub.id,
@@ -97,6 +98,7 @@ export class PrismaAdminUserGateway implements AdminUserGatewayPort {
       name: row.name,
       email: row.email,
       role: row.role,
+      active: row.active,
       createdAt: row.createdAt,
       subscription: activeSub
         ? {
