@@ -368,6 +368,7 @@ describe('GET /admin/users', () => {
     expect(response.body.data.totalPages).toBeDefined()
     expect(response.body.data.totalItems).toBeGreaterThanOrEqual(1)
     expect(response.body.data.users[0].profilesCount).toBeDefined()
+    expect(response.body.data.users[0].active).toBe(true)
   })
 
   it('should filter by search (case-insensitive)', async () => {
@@ -452,6 +453,7 @@ describe('GET /admin/users/:id', () => {
 
     expect(response.status).toBe(200)
     expect(response.body.data.id).toBe(userId)
+    expect(response.body.data.active).toBe(true)
     expect(response.body.data.subscription.plan.slug).toBe('premium')
     expect(response.body.data.profiles).toHaveLength(1)
   })
@@ -1348,6 +1350,98 @@ describe('PATCH /admin/users/:id/deactivate', () => {
     const { accessToken } = await registerUser(app)
     const asUser = await request(app.getHttpServer())
       .patch(`/admin/users/${fakeId}/deactivate`)
+      .set(authHeader(accessToken!))
+    expect(asUser.status).toBe(403)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// PATCH /admin/users/:id/activate
+// ---------------------------------------------------------------------------
+
+describe('PATCH /admin/users/:id/activate', () => {
+  it('should return 200 and persist active=true after reactivating a user', async () => {
+    const email = uniqueEmail('activate-ok')
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'To Reactivate',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    await request(app.getHttpServer())
+      .patch(`/admin/users/${userId}/deactivate`)
+      .set(authHeader(adminToken))
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/users/${userId}/activate`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(response.body.data.user).toMatchObject({
+      id: userId,
+      email,
+      active: true,
+    })
+
+    const prisma = app.get(PrismaService)
+    const dbUser = await prisma.user.findUnique({ where: { id: userId } })
+    expect(dbUser!.active).toBe(true)
+  })
+
+  it('should return 200 and be idempotent when user is already active', async () => {
+    const email = uniqueEmail('activate-idempotent')
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/users')
+      .set(authHeader(adminToken))
+      .send({
+        name: 'Already Active',
+        email,
+        password: 'SenhaForte1',
+        planId: basicoPlanId,
+      })
+    const userId = createResponse.body.data.id
+
+    const response = await request(app.getHttpServer())
+      .patch(`/admin/users/${userId}/activate`)
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.user.active).toBe(true)
+  })
+
+  it('should return 404 when userId does not exist', async () => {
+    const response = await request(app.getHttpServer())
+      .patch('/admin/users/99999999-9999-4999-8999-999999999999/activate')
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 400 when id is not a valid UUID', async () => {
+    const response = await request(app.getHttpServer())
+      .patch('/admin/users/not-a-uuid/activate')
+      .set(authHeader(adminToken))
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should return 401/403 for unauthenticated or non-admin', async () => {
+    const fakeId = '11111111-1111-4111-8111-111111111111'
+
+    const noAuth = await request(app.getHttpServer()).patch(
+      `/admin/users/${fakeId}/activate`,
+    )
+    expect(noAuth.status).toBe(401)
+
+    const { accessToken } = await registerUser(app)
+    const asUser = await request(app.getHttpServer())
+      .patch(`/admin/users/${fakeId}/activate`)
       .set(authHeader(accessToken!))
     expect(asUser.status).toBe(403)
   })
