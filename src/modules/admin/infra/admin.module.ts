@@ -11,6 +11,7 @@ import { GetUserDetailUseCase } from '../application/use-cases/get-user-detail-u
 import { AdminCreateUserUseCase } from '../application/use-cases/admin-create-user-use-case'
 import { AdminUpdateUserUseCase } from '../application/use-cases/admin-update-user-use-case'
 import { DeactivateUserUseCase } from '../application/use-cases/deactivate-user-use-case'
+import { ActivateUserUseCase } from '../application/use-cases/activate-user-use-case'
 import { DeleteUserUseCase } from '../application/use-cases/delete-user-use-case'
 import { UpdateUserSubscriptionUseCase } from '../application/use-cases/update-user-subscription-use-case'
 import { CancelUserSubscriptionUseCase } from '../application/use-cases/cancel-user-subscription-use-case'
@@ -27,6 +28,7 @@ import { GetUserDetailController } from './controllers/get-user-detail.controlle
 import { AdminCreateUserController } from './controllers/admin-create-user.controller'
 import { AdminUpdateUserController } from './controllers/admin-update-user.controller'
 import { DeactivateUserController } from './controllers/deactivate-user.controller'
+import { ActivateUserController } from './controllers/activate-user.controller'
 import { DeleteUserController } from './controllers/delete-user.controller'
 import { UpdateUserSubscriptionController } from './controllers/update-user-subscription.controller'
 import { CancelUserSubscriptionController } from './controllers/cancel-user-subscription.controller'
@@ -51,6 +53,7 @@ import { PrismaAdminUserGateway } from './gateways/prisma-admin-user-gateway'
     AdminCreateUserController,
     AdminUpdateUserController,
     DeactivateUserController,
+    ActivateUserController,
     DeleteUserController,
     UpdateUserSubscriptionController,
     CancelUserSubscriptionController,
@@ -67,6 +70,7 @@ import { PrismaAdminUserGateway } from './gateways/prisma-admin-user-gateway'
     AdminCreateUserUseCase,
     AdminUpdateUserUseCase,
     DeactivateUserUseCase,
+    ActivateUserUseCase,
     DeleteUserUseCase,
     UpdateUserSubscriptionUseCase,
     CancelUserSubscriptionUseCase,
