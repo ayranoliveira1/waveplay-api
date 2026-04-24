@@ -4,6 +4,11 @@ import { Pool } from 'pg'
 import { execSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 
+// Feature flag: E2E sempre testa com cadastro habilitado (o guard em
+// produção é controlado via .env). Override aqui garante que os E2E
+// não quebrem mesmo quando REGISTRATION_ENABLED=false no .env do ambiente.
+process.env.REGISTRATION_ENABLED = 'true'
+
 const schemaId = randomUUID()
 
 function generateUniqueDatabaseUrl(schemaId: string) {

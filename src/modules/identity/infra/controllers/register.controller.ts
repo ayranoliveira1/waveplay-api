@@ -5,6 +5,7 @@ import {
   Req,
   Res,
   HttpCode,
+  HttpException,
   HttpStatus,
 } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
@@ -39,6 +40,25 @@ export class RegisterController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
+    // Feature flag: cadastro publico temporariamente desabilitado.
+    // Setar REGISTRATION_ENABLED=true para reabilitar.
+    if (process.env.REGISTRATION_ENABLED !== 'true') {
+      throw new HttpException(
+        {
+          success: false,
+          data: null,
+          error: [
+            {
+              message:
+                'Cadastro temporariamente indisponivel. Em breve estara disponivel novamente.',
+              code: 'REGISTRATION_DISABLED',
+            },
+          ],
+        },
+        HttpStatus.SERVICE_UNAVAILABLE,
+      )
+    }
+
     const result = await this.registerUseCase.execute({
       name: body.name,
       email: body.email,

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import type { TestingModule } from '@nestjs/testing'
 import { Test } from '@nestjs/testing'
 import type { INestApplication } from '@nestjs/common'
@@ -33,6 +33,12 @@ let app: INestApplication
 let testModule: TestingModule
 
 describe('RegisterController', () => {
+  beforeAll(() => {
+    // Feature flag de cadastro publico esta desabilitada por default.
+    // Override aqui garante que os testes deste controller passem.
+    process.env.REGISTRATION_ENABLED = 'true'
+  })
+
   beforeEach(async () => {
     testModule = await Test.createTestingModule({
       imports: [
