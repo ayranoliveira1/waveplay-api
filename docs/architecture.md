@@ -438,13 +438,33 @@ waveplay-api/
        ┌──────────────────────────────────────────┘
        │
        ▼
- ┌──────────────┐
- │    Admin      │  Protegido por AdminGuard (role=admin)
- │ (analytics/   │  Lê via AnalyticsGateway: Identity, Subscription,
- │  gestão)      │    Profile, Library, Playback, Streams
- │               │  Lê via UserGateway: Identity, Subscription, Profile
- └──────────────┘
+ ┌──────────────┐    ┌──────────────────┐
+ │    Admin      │    │   Mobile App     │  GET /app/version (publico, throttled)
+ │ (analytics/   │    │  (distribuicao   │  CRUD admin de versoes APK
+ │  gestão)      │    │   de APK)        │  Storage via R2 (S3-compativel)
+ │               │    │                  │  Apenas uma versao isCurrent por vez
+ └──────────────┘    └──────────────────┘
 ```
+
+### Mobile App BC (`src/modules/mobile-app`)
+
+Distribuicao manual de APK Android via Cloudflare R2 + checagem remota
+de versao consumida pelo app `streams-tests`.
+
+| Camada | Pasta | Conteudo |
+|--------|-------|----------|
+| Domain | `domain/entities` | `MobileAppVersion` (AggregateRoot) |
+| Domain | `domain/repositories` | `MobileAppVersionsRepository` (abstract, 8 metodos) |
+| Domain | `domain/errors` | 5 errors: NotFound, AlreadyExists, InvalidSemver, NoCurrent, CannotDeleteCurrent |
+| Application | `application/ports` | `ObjectStoragePort` (S3-compativel) |
+| Application | `application/use-cases` | 6 use cases (`get-current`, `list`, `generate-upload-url`, `create`, `set-current`, `delete`) |
+| Infra | `infra/repositories` | `PrismaMobileAppVersionsRepository` (`setCurrent` usa `prisma.$transaction`) |
+| Infra | `infra/storage` | `R2ObjectStorage` (S3 SDK + presigned URL 5min) |
+| Infra | `infra/controllers` | 1 publico (`GET /app/version` + Throttle 60/min) + 5 admin |
+
+**Atomicidade da versao current:** `MobileAppVersionsRepository.setCurrent(id)` executa em transacao Prisma um `updateMany({ isCurrent: true → false })` + `update({ id, isCurrent: true })`. Combinado com partial unique index `WHERE is_current = true`, garante invariante "uma versao current por vez".
+
+**Storage via presigned URL:** Admin obtem URL pre-assinada (5min de validade) via `POST /admin/app-versions/upload-url` e faz `PUT` direto no R2. Backend nao trafega o APK — apenas registra metadata via `POST /admin/app-versions` apos o upload concluir.
 
 ### Comunicação entre Bounded Contexts
 
@@ -618,6 +638,12 @@ Cleanup     → cria StreamSession para cada expirada → deleta ActiveStreams
 | PATCH | /admin/plans/:id | admin | Admin | Editar plano |
 | PATCH | /admin/plans/:id/toggle | admin | Admin | Ativar/desativar plano |
 | DELETE | /admin/plans/:id | admin | Admin | Hard delete — exige `usersCount=0` |
+| GET | /app/version | mobile-app | Public | Versao current do app mobile (Throttle 60/min) |
+| GET | /admin/app-versions | mobile-app | Admin | Lista todas as versoes registradas |
+| POST | /admin/app-versions/upload-url | mobile-app | Admin | Gera presigned URL para upload do APK no R2 |
+| POST | /admin/app-versions | mobile-app | Admin | Registra metadata da versao apos upload |
+| PATCH | /admin/app-versions/:id/current | mobile-app | Admin | Promove versao a `is_current` (transacional) |
+| DELETE | /admin/app-versions/:id | mobile-app | Admin | Hard delete (bloqueado se for current) |
 
 ---
 
