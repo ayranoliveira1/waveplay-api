@@ -12,6 +12,7 @@ import { CatalogModule } from '@/modules/catalog/infra/catalog.module'
 import { LibraryModule } from '@/modules/library/infra/library.module'
 import { PlaybackModule } from '@/modules/playback/infra/playback.module'
 import { AdminModule } from '@/modules/admin/infra/admin.module'
+import { MobileAppModule } from '@/modules/mobile-app/infra/mobile-app.module'
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { AdminModule } from '@/modules/admin/infra/admin.module'
     LibraryModule,
     PlaybackModule,
     AdminModule,
+    MobileAppModule,
   ],
   providers: [
     {
