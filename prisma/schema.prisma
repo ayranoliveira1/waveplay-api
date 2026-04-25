@@ -224,3 +224,20 @@ model StreamSession {
   @@index([endedAt])
   @@map("stream_sessions")
 }
+
+model MobileAppVersion {
+  id String @id @default(uuid())
+  version String @unique
+  storageKey String @map("storage_key")
+  downloadUrl String @map("download_url")
+  fileSize Int @map("file_size")
+  releaseNotes String? @map("release_notes")
+  forceUpdate Boolean @default(false) @map("force_update")
+  isCurrent Boolean @default(false) @map("is_current")
+  publishedBy String @map("published_by")
+  publishedAt DateTime @default(now()) @map("published_at")
+  updatedAt DateTime @updatedAt
+
+  @@index([version])
+  @@map("mobile_app_versions")
+}
