@@ -20,6 +20,11 @@ export const envSchema = z.object({
   EMAIL_REDIRECT_URI: z.string().url(),
   EMAIL_REFRESH_TOKEN: z.string(),
   FRONTEND_URL: z.string().url(),
+  R2_ACCOUNT_ID: z.string(),
+  R2_ACCESS_KEY_ID: z.string(),
+  R2_SECRET_ACCESS_KEY: z.string(),
+  R2_BUCKET: z.string(),
+  R2_PUBLIC_URL: z.string().url(),
 })
 
 export type Env = z.infer<typeof envSchema>
