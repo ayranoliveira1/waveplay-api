@@ -1720,6 +1720,160 @@ Deletar plano permanentemente. **Permitido apenas quando `usersCount === 0`** (n
 
 ---
 
+## Mobile App Distribution
+
+### GET /app/version
+
+**Público.** Retorna a versão atual do app mobile. Consultado pelo `streams-tests` no boot.
+
+**Rate limit:** 60 req/min por IP.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "version": "1.0.3",
+    "downloadUrl": "https://pub-xxx.r2.dev/apks/1.0.3.apk",
+    "forceUpdate": false,
+    "releaseNotes": "Bug fixes e melhorias"
+  },
+  "error": null
+}
+```
+
+**Response 404** (`NoCurrentVersionError`):
+```json
+{
+  "success": false,
+  "data": null,
+  "error": [{
+    "message": "Nenhuma versao publicada",
+    "code": "NO_CURRENT_VERSION"
+  }]
+}
+```
+
+### GET /admin/app-versions
+
+**Admin only.** Lista todas as versões registradas, ordenadas por `publishedAt desc`.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "versions": [
+      {
+        "id": "uuid",
+        "version": "1.0.3",
+        "downloadUrl": "https://pub-xxx.r2.dev/apks/1.0.3.apk",
+        "fileSize": 31457280,
+        "releaseNotes": "Bug fixes",
+        "forceUpdate": false,
+        "isCurrent": true,
+        "publishedAt": "2026-04-25T14:00:00Z",
+        "publishedBy": "admin-uuid"
+      }
+    ]
+  },
+  "error": null
+}
+```
+
+### POST /admin/app-versions/upload-url
+
+**Admin only.** Gera URL pré-assinada para upload do APK direto no R2 (válida por 5 minutos).
+
+**Request:**
+```json
+{ "version": "1.0.3" }
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "uploadUrl": "https://r2.cloudflarestorage.com/...?X-Amz-Signature=...",
+    "storageKey": "apks/1.0.3.apk",
+    "expiresAt": "2026-04-25T14:05:00Z"
+  },
+  "error": null
+}
+```
+
+**Errors:**
+| Code | Significado |
+|------|-------------|
+| 400 | `INVALID_SEMVER` — formato de versão inválido |
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+| 409 | `VERSION_ALREADY_EXISTS` — versão já registrada |
+
+**Fluxo no admin web:**
+1. Pede URL aqui
+2. Faz `PUT {uploadUrl}` com o APK + `Content-Type: application/vnd.android.package-archive`
+3. Chama `POST /admin/app-versions` para registrar metadata
+
+### POST /admin/app-versions
+
+**Admin only.** Registra metadata da versão após upload bem-sucedido no R2.
+
+**Request:**
+```json
+{
+  "version": "1.0.3",
+  "storageKey": "apks/1.0.3.apk",
+  "fileSize": 31457280,
+  "releaseNotes": "Bug fixes",
+  "forceUpdate": false
+}
+```
+
+`releaseNotes` e `forceUpdate` são opcionais. `publishedBy` vem do JWT do admin (não do body).
+
+**Response 201:** Mesmo shape de `GET /admin/app-versions[*]`.
+
+**Errors:**
+| Code | Significado |
+|------|-------------|
+| 400 | Schema inválido (semver, storageKey vazio, fileSize negativo) |
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+| 409 | `VERSION_ALREADY_EXISTS` |
+
+### PATCH /admin/app-versions/:id/current
+
+**Admin only.** Promove uma versão a `is_current = true`. Desmarca todas as outras automaticamente (transacional).
+
+**Response 200:** Mesmo shape de `GET /admin/app-versions[*]` da versão promovida.
+
+**Errors:**
+| Code | Significado |
+|------|-------------|
+| 400 | UUID inválido |
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+| 404 | Versão não encontrada |
+
+### DELETE /admin/app-versions/:id
+
+**Admin only.** Remove a versão do banco e do R2.
+
+**Response 204:** sem body.
+
+**Errors:**
+| Code | Significado |
+|------|-------------|
+| 400 | UUID inválido |
+| 401 | Não autenticado |
+| 403 | Acesso restrito a admins |
+| 404 | Versão não encontrada |
+| 409 | `CANNOT_DELETE_CURRENT_VERSION` — promova outra versão como atual primeiro |
+
+---
+
 ## Headers obrigatórios
 
 | Header | Valor | Quando |
