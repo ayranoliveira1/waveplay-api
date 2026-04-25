@@ -443,3 +443,63 @@ O endpoint de analytics retorna dois blocos: **overview** (snapshot do estado at
 | Erro se em uso | Retorna 409 `PlanHasSubscriptionsError` — admin deve desativar o plano ao invés |
 | `usersCount` no list | `GET /admin/plans` retorna `usersCount` (todas as subscriptions, inclusive canceladas/expiradas) por plano. Frontend decide UI: `> 0` → só "Desativar"; `=== 0` → "Excluir" disponível |
 | Hard delete | Remove registro do banco permanentemente. Preserva histórico: planos que tiveram usuários (mesmo cancelados) nunca são excluídos — são desativados |
+
+---
+
+## 13. Distribuição do App Mobile (Mobile App BC)
+
+### Models envolvidos: `MobileAppVersion`
+
+Distribuição manual de APK Android via Cloudflare R2 + checagem remota de versão consumida pelo app `streams-tests`. Sem stores oficiais (Play Store / App Store).
+
+### 13.1. Versionamento
+
+| Regra | Descrição |
+|-------|-----------|
+| Formato | Semver `X.Y.Z` ou `X.Y.Z-prerelease` (ex: `1.0.0`, `1.0.0-beta.1`, `2.0.0-rc.42`) |
+| Validação | Regex `^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?$` no use case e no controller |
+| Unicidade | Constraint `@unique` no schema (`version`) impede duas versões com mesmo número |
+| Comparação | Backend só valida formato. Comparação de "qual é mais nova" fica no app mobile (Task 10 usa lib `semver`) |
+
+### 13.2. Versão atual (`isCurrent`)
+
+| Regra | Descrição |
+|-------|-----------|
+| Apenas uma | Constraint `CREATE UNIQUE INDEX ... WHERE is_current = true` (partial unique) garante apenas uma versão `isCurrent: true` por vez |
+| Promoção | `setCurrent(id)` executa em `prisma.$transaction`: `updateMany({ isCurrent: true → false })` + `update({ id, isCurrent: true })`. Atômico — sem race entre 2 admins promovendo simultaneamente |
+| Default em criação | Nova versão nasce com `isCurrent: false` (`@default(false)` no schema). Admin precisa promover explicitamente |
+| Endpoint público | `GET /app/version` retorna a versão `isCurrent: true`. Se não houver, retorna 404 `NoCurrentVersionError` |
+
+### 13.3. Upload e armazenamento
+
+| Regra | Descrição |
+|-------|-----------|
+| Storage | Cloudflare R2 (compatível com S3 API) |
+| Upload via presigned URL | Admin obtém URL pré-assinada (5 min de validade) via `POST /admin/app-versions/upload-url` e faz `PUT` direto no R2. Backend não trafega o APK |
+| Content-Type fixo | Presigned URL valida apenas `application/vnd.android.package-archive` |
+| Storage key pattern | `apks/{version}.apk` (ex: `apks/1.0.0.apk`, `apks/1.0.0-beta.1.apk`) |
+| URL pública | `R2_PUBLIC_URL/{storageKey}` — bucket configurado para acesso público (sem auth para download) |
+| Registro de metadata | Após upload, admin chama `POST /admin/app-versions` com `{ version, storageKey, fileSize, releaseNotes?, forceUpdate? }`. `publishedBy` vem do JWT do admin |
+
+### 13.4. Force update
+
+| Regra | Descrição |
+|-------|-----------|
+| Flag por versão | `forceUpdate: boolean` (default `false`) |
+| Comportamento no app | Quando `true`, modal de "Nova versão" não pode ser fechado até o usuário atualizar |
+| Casos de uso | Mudança de contrato de API, security fix crítico, bug grave que impede uso |
+
+### 13.5. Deleção de versão
+
+| Regra | Descrição |
+|-------|-----------|
+| Hard delete bloqueado se current | Versão com `isCurrent: true` retorna 409 `CannotDeleteCurrentVersionError`. Admin precisa promover outra versão primeiro |
+| Cascata de storage | `DeleteAppVersionUseCase` chama `objectStorage.delete(storageKey)` antes de remover do DB. Falha no storage gera warning no log mas não impede o delete do DB (best-effort) |
+| Hard delete | Remove registro permanentemente — sem soft delete |
+
+### 13.6. Plataformas
+
+| Plataforma | Status |
+|-----------|--------|
+| Android | Suportado via APK direto |
+| iOS | **Não suportado** — App Store não permite distribuição externa. Página `/download` no web exibe "em breve" |
