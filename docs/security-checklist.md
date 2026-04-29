@@ -48,6 +48,9 @@
 | 2.18 | **JWT — Token Replay** | Reutilizar access token apos logout | Access token e stateless (15min TTL curto). Refresh token: rotacao obrigatoria, tokens antigos invalidados. Theft detection revoga toda a familia | Alta |
 | 2.19 | **JWT — Insufficient Claims** | Nao validar claims como iss, aud, sub | Validar `sub` (userId) em todo token. Considerar adicionar `iss` e `aud` no futuro | Media |
 | 2.20 | **Email Case Duplication** | `Joao@X.com` e `joao@x.com` criam contas distintas ou impedem login cross-case. Abre porta para account duplication, confusao de identidade e enumeration indireto | Normalizar email para lowercase via `.toLowerCase()` no schema Zod de **todos** os pontos que recebem email como input (register, login, forgot-password, admin create, admin update). `findByEmail` no repositorio e case-sensitive por design — a normalizacao vive na borda | Alta |
+| 2.21 | **Weak Password on Change** | User troca a senha por uma fraca usando `PATCH /auth/password` | Validar `newPassword` com mesma regex do register/reset (8+ chars, 1 maiuscula, 1 minuscula, 1 numero) no `ChangePasswordUseCase`. Retornar `WeakPasswordError` (400) sem aceitar a troca | Alta |
+| 2.22 | **Missing Current Password Check** | Endpoint de troca de senha aceita atualizacao sem provar posse da conta | `ChangePasswordUseCase` exige `currentPassword` e valida via `HasherPort.compare` (Argon2.verify, timing-safe). Em falha, retorna `InvalidCurrentPasswordError` (401) e nao toca em `passwordHash`. Tambem rejeita `newPassword === currentPassword` (`SamePasswordError`) para evitar troca cosmetica | Alta |
+| 2.23 | **Sessions Not Revoked After Password Change** | Apos trocar a senha, sessoes antigas (em outros devices) continuam validas — atacante com refresh token roubado mantem acesso | Apos `usersRepository.save(user)` no `ChangePasswordUseCase`, chamar `refreshTokensRepository.revokeAllByUserId(userId)`. Coberto por testes unit/integration/e2e | Critica |
 
 ---
 

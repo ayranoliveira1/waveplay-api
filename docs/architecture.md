@@ -82,6 +82,9 @@ waveplay-api/
 │       │   │   │   └── password-reset-tokens-repository.ts
 │       │   │   └── errors/
 │       │   │       ├── invalid-credentials.error.ts
+│       │   │       ├── invalid-current-password.error.ts
+│       │   │       ├── same-password.error.ts
+│       │   │       ├── user-not-found.error.ts
 │       │   │       ├── email-already-exists.error.ts
 │       │   │       ├── account-locked.error.ts
 │       │   │       ├── invalid-reset-token.error.ts
@@ -104,7 +107,8 @@ waveplay-api/
 │       │   │       ├── logout-use-case.ts
 │       │   │       ├── logout-all-use-case.ts
 │       │   │       ├── forgot-password-use-case.ts
-│       │   │       └── reset-password-use-case.ts
+│       │   │       ├── reset-password-use-case.ts
+│       │   │       └── change-password-use-case.ts
 │       │   └── infra/
 │       │       ├── identity.module.ts
 │       │       ├── config/
@@ -132,7 +136,8 @@ waveplay-api/
 │       │       │   ├── logout.controller.ts
 │       │       │   ├── logout-all.controller.ts
 │       │       │   ├── forgot-password.controller.ts
-│       │       │   └── reset-password.controller.ts
+│       │       │   ├── reset-password.controller.ts
+│       │       │   └── change-password.controller.ts
 │       │       ├── presenters/
 │       │       │   └── user-presenter.ts
 │       │       ├── guards/
@@ -530,6 +535,7 @@ Em caso de erro:
 - **Logout-all:** POST /auth/logout-all → revoga todas as families do user
 - **Forgot-password:** POST /auth/forgot-password → envia email com token de reset (15min)
 - **Reset-password:** POST /auth/reset-password → valida token → atualiza senha → revoga todas as families
+- **Change-password:** PATCH /auth/password → valida JWT + currentPassword → atualiza senha → revoga todas as families do user
 - **Guard:** JwtAuthGuard protege todas as rotas exceto @Public()
 - **Storage no app:** accessToken em memória, refreshToken em expo-secure-store
 
@@ -587,6 +593,7 @@ Cleanup     → cria StreamSession para cada expirada → deleta ActiveStreams
 | POST | /auth/logout-all | identity | Auth | Revogar todas as families do user |
 | POST | /auth/forgot-password | identity | Public | Enviar email com token de reset |
 | POST | /auth/reset-password | identity | Public | Validar token e atualizar senha |
+| PATCH | /auth/password | identity | Auth | Alterar senha do user logado (requer currentPassword) |
 | GET | /profiles | profile | Auth | Listar perfis do user |
 | POST | /profiles | profile | Auth | Criar perfil (max 5) |
 | PATCH | /profiles/:id | profile | Auth | Editar perfil |

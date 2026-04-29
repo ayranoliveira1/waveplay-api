@@ -79,6 +79,19 @@ Web (padrão, sem header):
 | Salvo como hash | Token salvo como SHA-256 no banco (igual refresh token) |
 | Reset efetivo | POST /auth/reset-password valida token → atualiza senha → revoga TODAS as families |
 
+### Change Password (logado)
+
+| Regra | Descrição |
+|-------|-----------|
+| Autenticação obrigatória | PATCH /auth/password exige JWT válido (rota protegida) |
+| Validação de senha forte | newPassword segue mesma política do register/reset: 8+ chars, 1 maiúscula, 1 minúscula, 1 número |
+| `currentPassword` obrigatório | Validado via Argon2 timing-safe contra `User.passwordHash`. Nunca aceitar troca sem provar posse da conta |
+| `newPassword` ≠ `currentPassword` | Bloquear troca cosmética (string equality no use-case) |
+| Revogação de sessões | Após sucesso, revoga TODAS as families do user (`refreshTokensRepository.revokeAllByUserId`). Sessão atual é refrescada automaticamente pelo cliente que fez o request |
+| `confirmPassword` apenas no frontend | Backend recebe somente `{ currentPassword, newPassword }`. `confirmPassword` é validação de UX (anti-typo) — sem valor de segurança |
+| Rate limit | 5 tentativas / 60s por IP (mesmo padrão de auth) |
+| Sem token de email | Diferente do Reset Password — user já provou posse da conta via JWT + currentPassword |
+
 ---
 
 ## 3. Perfis

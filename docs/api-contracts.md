@@ -287,6 +287,46 @@ Valida token de reset e atualiza a senha. Revoga TODAS as families do usuário.
 
 ---
 
+### PATCH /auth/password
+
+Altera a senha do usuário autenticado. Valida `currentPassword` via Argon2 timing-safe. Após sucesso, revoga **TODAS** as families de refresh token do user (força re-login em outros devices).
+
+`confirmPassword` **não é enviado** — é validação client-side de UX (anti-typo).
+
+**Headers:** `Authorization: Bearer {accessToken}`
+
+**Body:**
+
+```json
+{
+  "currentPassword": "Atual1234",
+  "newPassword": "NovaSenh@123"
+}
+```
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Senha alterada com sucesso"
+  },
+  "error": null
+}
+```
+
+**Erros:**
+
+| Status | Mensagem |
+|--------|----------|
+| 400 | Validação Zod (body vazio, campo extra) ou `WeakPasswordError` (newPassword não atende política) ou `SamePasswordError` ("A nova senha deve ser diferente da senha atual") |
+| 401 | "Senha atual incorreta" (`InvalidCurrentPasswordError`) ou ausência de JWT |
+| 404 | "Usuário não encontrado" (defesa em profundidade — JWT válido mas user removido) |
+| 429 | Rate limit (5 tentativas / 60s por IP) |
+
+---
+
 ### GET /account
 
 Retorna dados da conta do usuário autenticado + assinatura ativa.
