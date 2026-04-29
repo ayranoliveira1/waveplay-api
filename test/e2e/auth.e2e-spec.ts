@@ -849,3 +849,100 @@ describe('GET /account', () => {
     expect(response.status).toBe(401)
   })
 })
+
+// ---------------------------------------------------------------------------
+// PATCH /auth/password
+// ---------------------------------------------------------------------------
+
+describe('PATCH /auth/password', () => {
+  it('should change password successfully and return 200', async () => {
+    const { accessToken } = await registerUser(app)
+
+    const response = await request(app.getHttpServer())
+      .patch('/auth/password')
+      .set(authHeader(accessToken!))
+      .send({ currentPassword: 'Test1234', newPassword: 'NewPass5678' })
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+    expect(response.body.data.message).toBe('Senha alterada com sucesso')
+    expect(response.body.error).toBeNull()
+  })
+
+  it('should revoke all refresh tokens after a successful change', async () => {
+    const { accessToken, refreshToken } = await registerUser(app)
+
+    await request(app.getHttpServer())
+      .patch('/auth/password')
+      .set(authHeader(accessToken!))
+      .send({ currentPassword: 'Test1234', newPassword: 'NewPass5678' })
+
+    // Tentar usar o refresh antigo deve falhar com 401
+    const refreshResponse = await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .set('X-Platform', 'mobile')
+      .send({ refreshToken })
+
+    expect(refreshResponse.status).toBe(401)
+  })
+
+  it('should allow login with the new password and reject the old one', async () => {
+    const { accessToken, email } = await registerUser(app)
+
+    await request(app.getHttpServer())
+      .patch('/auth/password')
+      .set(authHeader(accessToken!))
+      .send({ currentPassword: 'Test1234', newPassword: 'NewPass5678' })
+
+    const oldLogin = await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('X-Platform', 'mobile')
+      .send({ email, password: 'Test1234' })
+
+    expect(oldLogin.status).toBe(401)
+
+    const newLogin = await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('X-Platform', 'mobile')
+      .send({ email, password: 'NewPass5678' })
+
+    expect(newLogin.status).toBe(200)
+    expect(newLogin.body.data.accessToken).toBeDefined()
+  })
+
+  it('should return 401 when currentPassword is incorrect', async () => {
+    const { accessToken } = await registerUser(app)
+
+    const response = await request(app.getHttpServer())
+      .patch('/auth/password')
+      .set(authHeader(accessToken!))
+      .send({ currentPassword: 'WrongPass1', newPassword: 'NewPass5678' })
+
+    expect(response.status).toBe(401)
+    expect(response.body.success).toBe(false)
+    const message = response.body.error
+      .map((e: any) => (typeof e === 'string' ? e : e.message))
+      .join(' ')
+    expect(message).toMatch(/senha atual incorreta/i)
+  })
+
+  it('should return 400 when newPassword is too weak', async () => {
+    const { accessToken } = await registerUser(app)
+
+    const response = await request(app.getHttpServer())
+      .patch('/auth/password')
+      .set(authHeader(accessToken!))
+      .send({ currentPassword: 'Test1234', newPassword: 'weakpw' })
+
+    expect(response.status).toBe(400)
+    expect(response.body.success).toBe(false)
+  })
+
+  it('should return 401 when called without an access token', async () => {
+    const response = await request(app.getHttpServer())
+      .patch('/auth/password')
+      .send({ currentPassword: 'Test1234', newPassword: 'NewPass5678' })
+
+    expect(response.status).toBe(401)
+  })
+})
