@@ -17,6 +17,7 @@ import { LogoutUseCase } from '../application/use-cases/logout-use-case'
 import { LogoutAllUseCase } from '../application/use-cases/logout-all-use-case'
 import { ForgotPasswordUseCase } from '../application/use-cases/forgot-password-use-case'
 import { ResetPasswordUseCase } from '../application/use-cases/reset-password-use-case'
+import { ChangePasswordUseCase } from '../application/use-cases/change-password-use-case'
 import { GetAccountUseCase } from '../application/use-cases/get-account-use-case'
 
 // Controllers
@@ -27,6 +28,7 @@ import { LogoutController } from './controllers/logout.controller'
 import { LogoutAllController } from './controllers/logout-all.controller'
 import { ForgotPasswordController } from './controllers/forgot-password.controller'
 import { ResetPasswordController } from './controllers/reset-password.controller'
+import { ChangePasswordController } from './controllers/change-password.controller'
 import { GetAccountController } from './controllers/get-account.controller'
 
 // Repositories (abstract → impl)
@@ -78,6 +80,7 @@ import { SubscriptionModule } from '@/modules/subscription/infra/subscription.mo
     LogoutAllController,
     ForgotPasswordController,
     ResetPasswordController,
+    ChangePasswordController,
     GetAccountController,
   ],
   providers: [
@@ -89,6 +92,7 @@ import { SubscriptionModule } from '@/modules/subscription/infra/subscription.mo
     LogoutAllUseCase,
     ForgotPasswordUseCase,
     ResetPasswordUseCase,
+    ChangePasswordUseCase,
     GetAccountUseCase,
 
     // Repositories
