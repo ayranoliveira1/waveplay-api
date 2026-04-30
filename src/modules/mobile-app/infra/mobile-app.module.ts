@@ -14,6 +14,7 @@ import { DeleteAppVersionUseCase } from '../application/use-cases/delete-app-ver
 
 // Controllers
 import { GetCurrentAppVersionController } from './controllers/get-current-app-version.controller'
+import { ListPublicAppVersionsController } from './controllers/list-public-app-versions.controller'
 import { ListAppVersionsController } from './controllers/list-app-versions.controller'
 import { GenerateUploadUrlController } from './controllers/generate-upload-url.controller'
 import { CreateAppVersionController } from './controllers/create-app-version.controller'
@@ -30,6 +31,7 @@ import { R2ObjectStorage } from './storage/r2-object-storage'
   imports: [DatabaseModule, EnvModule, IdentityModule],
   controllers: [
     GetCurrentAppVersionController,
+    ListPublicAppVersionsController,
     ListAppVersionsController,
     GenerateUploadUrlController,
     CreateAppVersionController,
