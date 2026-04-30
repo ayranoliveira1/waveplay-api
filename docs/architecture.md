@@ -465,7 +465,7 @@ de versao consumida pelo app `streams-tests`.
 | Application | `application/use-cases` | 6 use cases (`get-current`, `list`, `generate-upload-url`, `create`, `set-current`, `delete`) |
 | Infra | `infra/repositories` | `PrismaMobileAppVersionsRepository` (`setCurrent` usa `prisma.$transaction`) |
 | Infra | `infra/storage` | `R2ObjectStorage` (S3 SDK + presigned URL 5min) |
-| Infra | `infra/controllers` | 1 publico (`GET /app/version` + Throttle 60/min) + 5 admin |
+| Infra | `infra/controllers` | 2 publicos (`GET /app/version` + `GET /app/versions`, ambos Throttle 60/min) + 5 admin |
 
 **Atomicidade da versao current:** `MobileAppVersionsRepository.setCurrent(id)` executa em transacao Prisma um `updateMany({ isCurrent: true → false })` + `update({ id, isCurrent: true })`. Combinado com partial unique index `WHERE is_current = true`, garante invariante "uma versao current por vez".
 
@@ -646,6 +646,7 @@ Cleanup     → cria StreamSession para cada expirada → deleta ActiveStreams
 | PATCH | /admin/plans/:id/toggle | admin | Admin | Ativar/desativar plano |
 | DELETE | /admin/plans/:id | admin | Admin | Hard delete — exige `usersCount=0` |
 | GET | /app/version | mobile-app | Public | Versao current do app mobile (Throttle 60/min) |
+| GET | /app/versions | mobile-app | Public | Lista todas as versoes publicadas (Throttle 60/min) |
 | GET | /admin/app-versions | mobile-app | Admin | Lista todas as versoes registradas |
 | POST | /admin/app-versions/upload-url | mobile-app | Admin | Gera presigned URL para upload do APK no R2 |
 | POST | /admin/app-versions | mobile-app | Admin | Registra metadata da versao apos upload |

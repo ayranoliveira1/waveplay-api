@@ -1776,11 +1776,15 @@ Deletar plano permanentemente. **Permitido apenas quando `usersCount === 0`** (n
     "version": "1.0.3",
     "downloadUrl": "https://pub-xxx.r2.dev/apks/1.0.3.apk",
     "forceUpdate": false,
-    "releaseNotes": "Bug fixes e melhorias"
+    "releaseNotes": "Bug fixes e melhorias",
+    "publishedAt": "2026-04-30T12:00:00.000Z",
+    "isCurrent": true
   },
   "error": null
 }
 ```
+
+> **Nota:** `publishedAt` e `isCurrent` foram adicionados na Task 36 para suportar a página `/download` da web exibir histórico. Clientes existentes (mobile) ignoram campos extras — sem breaking change.
 
 **Response 404** (`NoCurrentVersionError`):
 ```json
@@ -1793,6 +1797,44 @@ Deletar plano permanentemente. **Permitido apenas quando `usersCount === 0`** (n
   }]
 }
 ```
+
+### GET /app/versions
+
+**Público.** Retorna **todas** as versões publicadas do app mobile, ordenadas por `publishedAt desc`. Consumido pela página `/download` da web para exibir o histórico de releases. Sem auth.
+
+**Rate limit:** 60 req/min por IP.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "versions": [
+      {
+        "version": "1.0.3",
+        "downloadUrl": "https://pub-xxx.r2.dev/apks/1.0.3.apk",
+        "forceUpdate": false,
+        "releaseNotes": "Bug fixes e melhorias",
+        "publishedAt": "2026-04-30T12:00:00.000Z",
+        "isCurrent": true
+      },
+      {
+        "version": "1.0.2",
+        "downloadUrl": "https://pub-xxx.r2.dev/apks/1.0.2.apk",
+        "forceUpdate": false,
+        "releaseNotes": "Suporte a continuar assistindo",
+        "publishedAt": "2026-04-15T09:00:00.000Z",
+        "isCurrent": false
+      }
+    ]
+  },
+  "error": null
+}
+```
+
+**Erros:** Nenhum erro específico. Quando não há versões publicadas, retorna `versions: []` com 200.
+
+**Campos NÃO expostos** (admin-only, via `GET /admin/app-versions`): `id`, `fileSize`, `publishedBy`, `storageKey`.
 
 ### GET /admin/app-versions
 

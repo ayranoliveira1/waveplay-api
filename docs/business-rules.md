@@ -481,7 +481,9 @@ Distribuição manual de APK Android via Cloudflare R2 + checagem remota de vers
 | Apenas uma | Constraint `CREATE UNIQUE INDEX ... WHERE is_current = true` (partial unique) garante apenas uma versão `isCurrent: true` por vez |
 | Promoção | `setCurrent(id)` executa em `prisma.$transaction`: `updateMany({ isCurrent: true → false })` + `update({ id, isCurrent: true })`. Atômico — sem race entre 2 admins promovendo simultaneamente |
 | Default em criação | Nova versão nasce com `isCurrent: false` (`@default(false)` no schema). Admin precisa promover explicitamente |
-| Endpoint público | `GET /app/version` retorna a versão `isCurrent: true`. Se não houver, retorna 404 `NoCurrentVersionError` |
+| Endpoint público (current) | `GET /app/version` retorna a versão `isCurrent: true`. Se não houver, retorna 404 `NoCurrentVersionError` |
+| Endpoint público (histórico) | `GET /app/versions` retorna **todas** as versões publicadas em `publishedAt desc`. Consumido pela página `/download` da web. Sem auth. Retorna `versions: []` se não houver nenhuma |
+| Campos públicos | `version, downloadUrl, forceUpdate, releaseNotes, publishedAt, isCurrent`. Campos sensíveis (`id, fileSize, publishedBy, storageKey`) ficam admin-only |
 
 ### 13.3. Upload e armazenamento
 
