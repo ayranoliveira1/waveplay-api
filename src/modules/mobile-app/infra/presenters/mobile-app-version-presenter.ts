@@ -21,6 +21,8 @@ export class MobileAppVersionPresenter {
       downloadUrl: v.downloadUrl,
       forceUpdate: v.forceUpdate,
       releaseNotes: v.releaseNotes,
+      publishedAt: v.publishedAt,
+      isCurrent: v.isCurrent,
     }
   }
 }
