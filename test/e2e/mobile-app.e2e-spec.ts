@@ -245,6 +245,49 @@ describe('Mobile App Distribution — E2E', () => {
     })
   })
 
+  describe('GET /app/versions (public history)', () => {
+    it('should list all versions ordered by publishedAt desc without auth', async () => {
+      const response = await request(app.getHttpServer()).get('/app/versions')
+
+      expect(response.status).toBe(200)
+      expect(response.body.success).toBe(true)
+      expect(Array.isArray(response.body.data.versions)).toBe(true)
+      expect(response.body.data.versions.length).toBeGreaterThanOrEqual(2)
+
+      const dates = (
+        response.body.data.versions as Array<{ publishedAt: string }>
+      ).map((v) => new Date(v.publishedAt).getTime())
+      const sorted = [...dates].sort((a, b) => b - a)
+      expect(dates).toEqual(sorted)
+    })
+
+    it('should mark isCurrent: true on the actual current version only', async () => {
+      const response = await request(app.getHttpServer()).get('/app/versions')
+      const currents = (
+        response.body.data.versions as Array<{ isCurrent: boolean }>
+      ).filter((v) => v.isCurrent)
+
+      expect(currents).toHaveLength(1)
+    })
+
+    it('should not require authentication', async () => {
+      const response = await request(app.getHttpServer()).get('/app/versions')
+      expect(response.status).toBe(200)
+    })
+
+    it('should not expose sensitive fields (id, fileSize, publishedBy, storageKey)', async () => {
+      const response = await request(app.getHttpServer()).get('/app/versions')
+      const items = response.body.data.versions as Array<Record<string, unknown>>
+
+      for (const item of items) {
+        expect(item.id).toBeUndefined()
+        expect(item.fileSize).toBeUndefined()
+        expect(item.publishedBy).toBeUndefined()
+        expect(item.storageKey).toBeUndefined()
+      }
+    })
+  })
+
   describe('DELETE /admin/app-versions/:id', () => {
     it('should return 409 when trying to delete the current version', async () => {
       const prisma = app.get(PrismaService)
