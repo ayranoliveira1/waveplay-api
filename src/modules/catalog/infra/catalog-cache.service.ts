@@ -11,6 +11,20 @@ import {
   type TMDBPaginatedResponse,
   type TMDBMultiResult,
 } from '../domain/ports/catalog-provider.port'
+import { MoviePresenter } from './presenters/movie-presenter'
+import { SeriesPresenter } from './presenters/series-presenter'
+
+export type CatalogListItem =
+  | ReturnType<typeof MoviePresenter.toList>
+  | ReturnType<typeof SeriesPresenter.toList>
+
+export interface ByWatchProvidersResult {
+  results: CatalogListItem[]
+  page: number
+  totalPages: number
+}
+
+const WATCH_REGION = 'BR'
 
 const TTL = {
   TRENDING: 3600,
@@ -209,5 +223,59 @@ export class CatalogCacheService {
     return this.getOrFetch('catalog:genres:series', TTL.LIST, () =>
       this.catalogProvider.getSeriesGenres(),
     )
+  }
+
+  async getByWatchProviders(
+    providers: number[],
+    page: number,
+  ): Promise<ByWatchProvidersResult> {
+    const sortedProviders = [...providers].sort((a, b) => a - b)
+    const cacheKey = `catalog:by-watch-providers:${sortedProviders.join(',')}:${WATCH_REGION}:${page}`
+
+    return this.getOrFetch(cacheKey, TTL.LIST, async () => {
+      const [moviesRes, seriesRes] = await Promise.allSettled([
+        this.catalogProvider.discoverMoviesByWatchProviders(
+          providers,
+          WATCH_REGION,
+          page,
+        ),
+        this.catalogProvider.discoverSeriesByWatchProviders(
+          providers,
+          WATCH_REGION,
+          page,
+        ),
+      ])
+
+      const movies =
+        moviesRes.status === 'fulfilled'
+          ? moviesRes.value
+          : { results: [], total_pages: 0, page, total_results: 0 }
+      const series =
+        seriesRes.status === 'fulfilled'
+          ? seriesRes.value
+          : { results: [], total_pages: 0, page, total_results: 0 }
+
+      const merged: Array<{ item: CatalogListItem; popularity: number }> = [
+        ...movies.results.map((m) => ({
+          item: MoviePresenter.toList(m) as CatalogListItem,
+          popularity: m.popularity ?? 0,
+        })),
+        ...series.results.map((s) => ({
+          item: SeriesPresenter.toList(s) as CatalogListItem,
+          popularity: s.popularity ?? 0,
+        })),
+      ]
+
+      const results = merged
+        .sort((a, b) => b.popularity - a.popularity)
+        .slice(0, 20)
+        .map((x) => x.item)
+
+      return {
+        results,
+        page,
+        totalPages: Math.max(movies.total_pages ?? 0, series.total_pages ?? 0),
+      }
+    })
   }
 }
