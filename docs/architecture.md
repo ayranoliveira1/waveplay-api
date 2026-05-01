@@ -204,7 +204,8 @@ waveplay-api/
 │       │   │       ├── get-popular-series-use-case.ts
 │       │   │       ├── get-top-rated-series-use-case.ts
 │       │   │       ├── get-airing-today-series-use-case.ts
-│       │   │       └── get-on-the-air-series-use-case.ts
+│       │   │       ├── get-on-the-air-series-use-case.ts
+│       │   │       └── get-by-watch-providers-use-case.ts
 │       │   └── infra/
 │       │       ├── catalog.module.ts
 │       │       ├── tmdb-catalog-provider.ts
@@ -228,7 +229,8 @@ waveplay-api/
 │       │       │   ├── movie-genres.controller.ts
 │       │       │   ├── series-genres.controller.ts
 │       │       │   ├── movies-by-genre.controller.ts
-│       │       │   └── series-by-genre.controller.ts
+│       │       │   ├── series-by-genre.controller.ts
+│       │       │   └── by-watch-providers.controller.ts
 │       │       └── presenters/
 │       │           ├── movie-presenter.ts
 │       │           ├── series-presenter.ts
@@ -621,6 +623,7 @@ Cleanup     → cria StreamSession para cada expirada → deleta ActiveStreams
 | GET | /catalog/genres/series | catalog | Auth | Lista gêneros de séries |
 | GET | /catalog/movies/genre/:genreId | catalog | Auth | Filmes por gênero |
 | GET | /catalog/series/genre/:genreId | catalog | Auth | Séries por gênero |
+| GET | /catalog/by-watch-providers | catalog | Auth | Filmes+séries por streaming provider (mesclados) |
 | GET | /favorites/:profileId | library | Auth | Listar favoritos |
 | POST | /favorites/:profileId | library | Auth | Toggle favorito |
 | GET | /watchlist/:profileId | library | Auth | Listar watchlist |

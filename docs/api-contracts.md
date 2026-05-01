@@ -932,6 +932,62 @@ Response igual ao `/catalog/trending` (array de results com paginação, type = 
 
 ---
 
+### GET /catalog/by-watch-providers
+
+Filmes **e** séries mesclados disponíveis em um (ou mais) streaming provider, ordenados por popularidade. Usado nos carouseis "Disponível na Netflix / Disney+ / Max / Prime Video" da Home.
+
+**Query:**
+- `providers` (obrigatório): IDs TMDB separados por vírgula. Ex: `?providers=8` (Netflix), `?providers=8,337` (Netflix OU Disney+)
+- `page` (opcional, default `1`)
+
+**Region:** `BR` fixo (hardcoded — app brasileiro).
+**Monetization:** `flatrate` fixo (apenas conteúdo incluso na assinatura — não aluguel/compra).
+**Cache:** 1h (Redis). Key: `catalog:by-watch-providers:{providers-sorted}:BR:{page}`.
+
+**IDs TMDB dos providers BR:**
+- Netflix: `8`
+- Disney+: `337`
+- Max: `1899`
+- Prime Video: `119`
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "results": [
+      {
+        "id": 12345,
+        "title": "Stranger Things",
+        "overview": "...",
+        "posterPath": "/...",
+        "backdropPath": "/...",
+        "rating": 8.5,
+        "type": "series",
+        "releaseDate": "2016-07-15"
+      }
+    ],
+    "page": 1,
+    "totalPages": 100
+  },
+  "error": null
+}
+```
+
+> Top 20 items por page (após merge movies + series). Tolerância a falhas via `Promise.allSettled`: se uma das duas calls TMDB falhar, retorna resultado parcial.
+
+**Erros:**
+
+| Status | Causa |
+|--------|-------|
+| 400 | `providers` ausente, vazio ou não numérico |
+| 400 | `page` < 1 ou > 500 |
+| 401 | `Authorization` ausente ou inválido |
+| 429 | Rate limit (Throttler global) |
+
+---
+
 ## 5. Library (Favoritos & Watchlist)
 
 Todas as rotas exigem `Authorization: Bearer {accessToken}`.

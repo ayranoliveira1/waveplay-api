@@ -260,10 +260,17 @@ Ou, se expirada:
 | Regra | Descrição |
 |-------|-----------|
 | Token TMDB no backend | App nunca acessa TMDB direto. Todas as chamadas passam pela API |
+| Auth obrigatória | Todas as rotas `/catalog/*` exigem Bearer token (JwtAuthGuard global). Sem `@Public()` |
 | Cache Redis | Respostas do TMDB são cacheadas para reduzir latência e requests |
-| TTL do cache por tipo | Trending: 1h, Detail: 24h, Search: 30min |
+| TTL do cache por tipo | Trending: 1h, Detail: 24h, Search: 30min, Lists (incluindo by-watch-providers): 1h |
 | Idioma pt-BR | Todas as chamadas ao TMDB usam `language=pt-BR` |
 | Fallback sem cache | Se Redis estiver fora, busca direto do TMDB (sem cache) |
+| Filtro por streaming provider | `GET /catalog/by-watch-providers?providers=8` retorna filmes+séries mesclados disponíveis no(s) provider(s). Suporta múltiplos via vírgula (`?providers=8,337` = OR lógico) |
+| Watch region | `BR` hardcoded (constante `WATCH_REGION` em `CatalogCacheService`). App brasileiro |
+| Monetization fixa | `with_watch_monetization_types=flatrate` — apenas conteúdo incluso na assinatura. Aluguel/compra não listados |
+| Merge sort movies+series | `by-watch-providers` mescla filmes e séries em 1 lista, ordenada por `popularity desc`, top 20 items |
+| Tolerância a falhas TMDB | `Promise.allSettled` no merge — se TMDB falhar em movies OU series, retorna resultado parcial |
+| Cache key by-providers | `catalog:by-watch-providers:{providers-sorted}:BR:{page}` — providers ordenados pra deduplicar `?providers=8,337` e `?providers=337,8` |
 
 ---
 
