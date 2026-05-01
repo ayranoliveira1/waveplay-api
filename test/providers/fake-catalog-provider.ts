@@ -172,6 +172,21 @@ export class FakeCatalogProvider extends CatalogProviderPort {
     return paginate(this.seriesList, page)
   }
 
+  async discoverMoviesByWatchProviders(
+    _providers: number[],
+    _region: string,
+    page: number,
+  ) {
+    return paginate(this.movies, page)
+  }
+  async discoverSeriesByWatchProviders(
+    _providers: number[],
+    _region: string,
+    page: number,
+  ) {
+    return paginate(this.seriesList, page)
+  }
+
   async getMovieGenres() {
     return this.genres
   }

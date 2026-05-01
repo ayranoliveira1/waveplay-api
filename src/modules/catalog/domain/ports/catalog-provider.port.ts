@@ -13,6 +13,7 @@ export interface TMDBMovie {
   status: string
   original_language: string
   media_type?: string
+  popularity?: number
 }
 
 export interface TMDBSeries {
@@ -32,6 +33,7 @@ export interface TMDBSeries {
   original_language: string
   seasons: TMDBSeason[]
   media_type?: string
+  popularity?: number
 }
 
 export interface TMDBSeason {
@@ -140,6 +142,17 @@ export abstract class CatalogProviderPort {
   ): Promise<TMDBPaginatedResponse<TMDBMovie>>
   abstract getSeriesByGenre(
     genreId: number,
+    page: number,
+  ): Promise<TMDBPaginatedResponse<TMDBSeries>>
+
+  abstract discoverMoviesByWatchProviders(
+    providers: number[],
+    region: string,
+    page: number,
+  ): Promise<TMDBPaginatedResponse<TMDBMovie>>
+  abstract discoverSeriesByWatchProviders(
+    providers: number[],
+    region: string,
     page: number,
   ): Promise<TMDBPaginatedResponse<TMDBSeries>>
 
