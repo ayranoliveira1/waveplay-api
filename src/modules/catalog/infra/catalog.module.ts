@@ -20,10 +20,12 @@ import { GetPopularSeriesUseCase } from '../application/use-cases/get-popular-se
 import { GetTopRatedSeriesUseCase } from '../application/use-cases/get-top-rated-series-use-case'
 import { GetAiringTodaySeriesUseCase } from '../application/use-cases/get-airing-today-series-use-case'
 import { GetOnTheAirSeriesUseCase } from '../application/use-cases/get-on-the-air-series-use-case'
+import { GetByWatchProvidersUseCase } from '../application/use-cases/get-by-watch-providers-use-case'
 
 // Controllers (order matters: static routes before :id params)
 import { TrendingController } from './controllers/trending.controller'
 import { SearchController } from './controllers/search.controller'
+import { ByWatchProvidersController } from './controllers/by-watch-providers.controller'
 import { MovieGenresController } from './controllers/movie-genres.controller'
 import { SeriesGenresController } from './controllers/series-genres.controller'
 import { PopularMoviesController } from './controllers/popular-movies.controller'
@@ -52,6 +54,7 @@ import { TmdbCatalogProvider } from './tmdb-catalog-provider'
     // Static routes first
     TrendingController,
     SearchController,
+    ByWatchProvidersController,
     MovieGenresController,
     SeriesGenresController,
 
@@ -95,6 +98,7 @@ import { TmdbCatalogProvider } from './tmdb-catalog-provider'
     GetTopRatedSeriesUseCase,
     GetAiringTodaySeriesUseCase,
     GetOnTheAirSeriesUseCase,
+    GetByWatchProvidersUseCase,
 
     // Infra
     CatalogCacheService,
