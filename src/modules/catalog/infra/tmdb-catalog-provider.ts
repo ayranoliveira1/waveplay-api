@@ -199,6 +199,40 @@ export class TmdbCatalogProvider extends CatalogProviderPort {
     return data
   }
 
+  async discoverMoviesByWatchProviders(
+    providers: number[],
+    region: string,
+    page: number,
+  ): Promise<TMDBPaginatedResponse<TMDBMovie>> {
+    const { data } = await this.api.get('/discover/movie', {
+      params: {
+        with_watch_providers: providers.join('|'),
+        watch_region: region,
+        with_watch_monetization_types: 'flatrate',
+        sort_by: 'popularity.desc',
+        page,
+      },
+    })
+    return data
+  }
+
+  async discoverSeriesByWatchProviders(
+    providers: number[],
+    region: string,
+    page: number,
+  ): Promise<TMDBPaginatedResponse<TMDBSeries>> {
+    const { data } = await this.api.get('/discover/tv', {
+      params: {
+        with_watch_providers: providers.join('|'),
+        watch_region: region,
+        with_watch_monetization_types: 'flatrate',
+        sort_by: 'popularity.desc',
+        page,
+      },
+    })
+    return data
+  }
+
   async getMovieGenres(): Promise<TMDBGenre[]> {
     const { data } = await this.api.get('/genre/movie/list')
     return data.genres ?? []
