@@ -277,7 +277,9 @@ describe('Mobile App Distribution — E2E', () => {
 
     it('should not expose sensitive fields (id, fileSize, publishedBy, storageKey)', async () => {
       const response = await request(app.getHttpServer()).get('/app/versions')
-      const items = response.body.data.versions as Array<Record<string, unknown>>
+      const items = response.body.data.versions as Array<
+        Record<string, unknown>
+      >
 
       for (const item of items) {
         expect(item.id).toBeUndefined()
