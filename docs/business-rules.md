@@ -525,3 +525,30 @@ Distribuição manual de APK Android via Cloudflare R2 + checagem remota de vers
 |-----------|--------|
 | Android | Suportado via APK direto |
 | iOS | **Não suportado** — App Store não permite distribuição externa. Página `/download` no web exibe "em breve" |
+
+---
+
+## 14. Sports (Hub YouTube-first)
+
+### Sem model — dados vêm de 2 APIs combinadas
+
+**Filosofia:** mostra apenas jogos que dão pra assistir agora (com transmissão YouTube ativa nos canais monitorados). UX honesta: dia sem live = lista vazia.
+
+| Regra | Descrição |
+|-------|-----------|
+| Fonte primária | **YouTube Data API v3** — `search.list?eventType=live&channelId=X` por cada canal monitorado em `youtube-channels.ts` |
+| Fonte de enriquecimento | **football-data.org** — pra cada YouTube live, busca match correspondente pra ter placar/times/competição estruturados |
+| Tokens no backend | `YOUTUBE_API_KEY` + `FOOTBALL_DATA_API_TOKEN` ficam no `.env`, nunca expostos. Apps nunca acessam APIs externas direto |
+| Auth obrigatória | `GET /sports/matches/today` e `GET /sports/matches/:id` exigem Bearer. JwtAuthGuard global cobre. Sem `@Public()` |
+| Matching título → jogo | Regex `/x\|vs\|×/i` parseia "Time A x Time B" do título YouTube. Match case/accent-insensitive contra `homeTeam.name`/`shortName`/`tla` (e mesmo pro away) |
+| Descartar sem match | YouTube lives que não dão match em nenhuma partida do football-data **são descartadas**. Garante cards 100% consistentes (sempre têm escudo/placar/competição) |
+| 1 seção só ("Ao vivo") | MVP simplificado. Próximas/encerradas custariam 3x cota YouTube — fora do escopo |
+| Cache YouTube lives | Redis 1h (lives não começam/terminam a cada minuto — protege cota 10k/dia) |
+| Cache football-data raw matches | Redis 30s pra dia atual (placar fresco) |
+| Cache match individual | Redis 30s |
+| Tolerância a falhas | Se YouTube falhar (timeout/5xx), `findActiveLivesByChannels` retorna `[]`. Se football-data falhar, `getMatchesByDate` retorna `[]`. Resultado: lista vazia ao usuário, sem 500 |
+| Cobertura jogos | Determinada pela interseção de (canais YouTube monitorados ao vivo agora) × (12 ligas free do football-data) |
+| Polling no front | TanStack Query `refetchInterval: 30_000` apenas quando `broadcasts.length > 0` |
+| Stream slot | Assistir jogo consome slot do plano (igual filme/série). `StreamContentType` aceita `'match'`. Player passa `type: 'match'` em `POST /streams/start` |
+| Detalhe da partida | `GET /sports/matches/:id` retorna `{ match, youtube }`. `youtube: null` se não houver live correspondente ativa |
+| Player UX | Inline na MatchDetailPage (iframe YouTube 16:9) — não modal, não navegação separada |

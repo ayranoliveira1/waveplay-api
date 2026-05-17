@@ -2012,6 +2012,129 @@ Deletar plano permanentemente. **Permitido apenas quando `usersCount === 0`** (n
 
 ---
 
+## 13. Sports (Hub YouTube-first)
+
+Todas as rotas exigem `Authorization: Bearer {accessToken}`.
+
+**Fontes:**
+- [YouTube Data API v3](https://developers.google.com/youtube/v3) (free, 10k units/dia) — fonte primária do hub: lista de lives ativas nos canais monitorados (Cazé TV, FIFA+, etc)
+- [football-data.org](https://www.football-data.org/) (free, 10 req/min) — fonte de enriquecimento: pra cada live encontrada, busca o jogo correspondente pra ter placar/times/competição estruturados
+
+**Filosofia:** mostra **apenas jogos com transmissão YouTube ativa** (descarta o resto). UX honesta: dia sem live = lista vazia.
+
+### GET /sports/matches/today
+
+Hub de transmissões ao vivo. Lista YouTube lives ativas dos canais monitorados, enriquecidas com dados estruturados do football-data.org.
+
+**Query:** —
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "broadcasts": [
+      {
+        "youtube": {
+          "videoId": "abc123",
+          "title": "AO VIVO 🔴 Palmeiras x São Paulo - Brasileirão",
+          "channelTitle": "Cazé TV",
+          "thumbnail": "https://i.ytimg.com/vi/abc123/hqdefault.jpg"
+        },
+        "match": {
+          "id": 419123,
+          "utcDate": "2026-05-17T19:00:00Z",
+          "status": "IN_PLAY",
+          "minute": 67,
+          "score": { "home": 1, "away": 0 },
+          "competition": {
+            "id": 2013,
+            "name": "Campeonato Brasileiro Série A",
+            "code": "BSA",
+            "emblem": "https://crests.football-data.org/BSA.png"
+          },
+          "homeTeam": {
+            "id": 1765,
+            "name": "Sociedade Esportiva Palmeiras",
+            "shortName": "Palmeiras",
+            "tla": "PAL",
+            "crest": "https://crests.football-data.org/1765.png"
+          },
+          "awayTeam": { "...": "..." }
+        }
+      }
+    ]
+  },
+  "error": null
+}
+```
+
+**Lógica de matching:**
+1. Backend lista lives ativas dos canais monitorados (YouTube `eventType=live`)
+2. Pra cada live, parseia o título (`"X x Y"`, `"X vs Y"`, `"X × Y"`) pra extrair times
+3. Busca em `today matches` do football-data um jogo com `homeTeam`/`awayTeam` que casam (case/accent-insensitive, considera `name`/`shortName`/`tla`)
+4. Se acha → vira broadcast. Se não → descarta o vídeo
+
+**Cache:**
+- YouTube lives: Redis 1h por chave `sports:youtube-lives:{channelIds}`
+- football-data matches do dia: Redis 30s por chave `sports:raw-matches:{date}`
+- Resultado final (broadcasts): NÃO cacheado (combinação leve dos dois caches)
+
+**Polling no front:** `refetchInterval: 30_000` quando `broadcasts.length > 0`.
+
+**Erros:**
+
+| Status | Causa |
+|--------|-------|
+| 401 | `Authorization` ausente ou inválido |
+| 429 | Rate limit (Throttler global) |
+
+> **Tolerância a falhas:** se YouTube ou football-data caírem, o adapter respectivo retorna lista vazia — broadcasts fica vazio sem propagar erro 500.
+
+---
+
+### GET /sports/matches/:id
+
+Detalhe da partida + youtube video se houver live ativa correspondente. Usado pela tela de detalhe (player embedado + controle de stream slot).
+
+**Path params:**
+- `id` (number, 1-9999999): ID do match no football-data
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "match": { "id": 419123, "...": "..." },
+    "youtube": {
+      "videoId": "abc123",
+      "title": "AO VIVO 🔴 Palmeiras x São Paulo",
+      "channelTitle": "Cazé TV",
+      "thumbnail": "https://i.ytimg.com/vi/abc123/hqdefault.jpg"
+    }
+  },
+  "error": null
+}
+```
+
+`youtube: null` quando o jogo não está sendo transmitido em nenhum canal monitorado no momento.
+
+**Cache:**
+- Match: Redis 30s (TTL dinâmico — placar ao vivo precisa fresco)
+
+**Erros:**
+
+| Status | Causa |
+|--------|-------|
+| 400 | `id` não numérico ou fora do range |
+| 401 | Bearer ausente/inválido |
+| 404 | Match não encontrado em football-data |
+| 429 | Rate limit |
+
+---
+
 ## Headers obrigatórios
 
 | Header | Valor | Quando |

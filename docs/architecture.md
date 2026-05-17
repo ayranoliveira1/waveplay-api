@@ -422,6 +422,28 @@ waveplay-api/
 │           ├── admin-user-presenter.ts                 # expõe active + subscription.endsAt
 │           ├── admin-subscription-presenter.ts
 │           └── admin-plan-presenter.ts                 # expõe usersCount
+│
+├── sports/                              # BC: Sports (Hub YouTube-first + enriquecimento football-data)
+│   ├── domain/
+│   │   └── ports/
+│   │       ├── sports-provider.port.ts        # football-data
+│   │       └── youtube-broadcast.port.ts      # YouTube Data API v3
+│   ├── application/
+│   │   └── use-cases/
+│   │       ├── get-live-broadcasts-use-case.ts # hub (lista lives + enriquece)
+│   │       └── get-match-detail-use-case.ts    # detalhe (+ youtube se houver live)
+│   └── infra/
+│       ├── sports.module.ts
+│       ├── football-data-sports-provider.ts
+│       ├── youtube-broadcast.provider.ts
+│       ├── youtube-channels.ts                # lista de canais monitorados
+│       ├── broadcast-matcher.ts               # parseTeamsFromTitle + findMatchByTeams
+│       ├── sports-cache.service.ts
+│       ├── controllers/
+│       │   ├── today-matches.controller.ts    # GET /sports/matches/today
+│       │   └── match-detail.controller.ts     # GET /sports/matches/:id
+│       └── presenters/
+│           └── match-presenter.ts
 ```
 
 ---
@@ -445,12 +467,12 @@ waveplay-api/
        ┌──────────────────────────────────────────┘
        │
        ▼
- ┌──────────────┐    ┌──────────────────┐
- │    Admin      │    │   Mobile App     │  GET /app/version (publico, throttled)
- │ (analytics/   │    │  (distribuicao   │  CRUD admin de versoes APK
- │  gestão)      │    │   de APK)        │  Storage via R2 (S3-compativel)
- │               │    │                  │  Apenas uma versao isCurrent por vez
- └──────────────┘    └──────────────────┘
+ ┌──────────────┐    ┌──────────────────┐   ┌──────────────────┐
+ │    Admin      │    │   Mobile App     │   │     Sports       │
+ │ (analytics/   │    │  (distribuicao   │   │ (proxy           │
+ │  gestão)      │    │   de APK)        │   │  football-data)  │
+ │               │    │                  │   │  Hub de jogos    │
+ └──────────────┘    └──────────────────┘   └──────────────────┘
 ```
 
 ### Mobile App BC (`src/modules/mobile-app`)
@@ -472,6 +494,37 @@ de versao consumida pelo app `streams-tests`.
 **Atomicidade da versao current:** `MobileAppVersionsRepository.setCurrent(id)` executa em transacao Prisma um `updateMany({ isCurrent: true → false })` + `update({ id, isCurrent: true })`. Combinado com partial unique index `WHERE is_current = true`, garante invariante "uma versao current por vez".
 
 **Storage via presigned URL:** Admin obtem URL pre-assinada (5min de validade) via `POST /admin/app-versions/upload-url` e faz `PUT` direto no R2. Backend nao trafega o APK — apenas registra metadata via `POST /admin/app-versions` apos o upload concluir.
+
+### Sports BC (`src/modules/sports`)
+
+Hub YouTube-first. Fonte primária: **YouTube Data API v3** (lista de lives ativas em canais monitorados). Fonte de enriquecimento: **football-data.org** (placar/times/competição). UX honesta: mostra apenas jogos que dá pra assistir agora.
+
+| Camada | Pasta | Conteudo |
+|--------|-------|----------|
+| Domain | `domain/ports/sports-provider.port.ts` | `SportsProviderPort` (abstract) + tipos `FootballDataMatch`, `FootballDataTeam`, `FootballDataCompetition`, `MatchStatus` |
+| Domain | `domain/ports/youtube-broadcast.port.ts` | `YouTubeBroadcastProviderPort` (abstract) + tipo `YouTubeLive` |
+| Application | `application/use-cases/get-live-broadcasts-use-case.ts` | Orquestra: lista YouTube lives → enriquece com football-data → descarta sem match |
+| Application | `application/use-cases/get-match-detail-use-case.ts` | Detalhe da partida + youtube live associada se houver |
+| Infra | `infra/football-data-sports-provider.ts` | Adapter axios + header `X-Auth-Token`. Métodos `getMatchesByDate`, `getMatchById`. Defensivo: erros upstream retornam vazio sem propagar |
+| Infra | `infra/youtube-broadcast.provider.ts` | Adapter YouTube Data API v3. `findActiveLivesByChannels` (search.list por canal, `eventType=live`). `Promise.allSettled` por canal — falha de 1 canal não derruba os outros |
+| Infra | `infra/youtube-channels.ts` | Lista estática `YOUTUBE_SPORTS_CHANNELS` (Cazé TV, FIFA+) — fácil adicionar |
+| Infra | `infra/broadcast-matcher.ts` | Funções puras `parseTeamsFromTitle(title)` (regex `/x|vs|×/`) + `findMatchByTeams(matches, parsed)` (case/accent-insensitive, considera name/shortName/tla) |
+| Infra | `infra/sports-cache.service.ts` | `getLiveBroadcasts`, `getMatchById`, `findActiveYouTubeForMatch`. TTLs: YouTube lives 1h, raw matches 30s (hoje), match 30s |
+| Infra | `infra/controllers/today-matches.controller.ts` | `GET /sports/matches/today` — retorna `{ broadcasts: LiveBroadcast[] }` |
+| Infra | `infra/controllers/match-detail.controller.ts` | `GET /sports/matches/:id` — retorna `{ match, youtube }` |
+| Infra | `infra/presenters/match-presenter.ts` | `toList` (achata `score.fullTime`, mapeia teams + competition) |
+
+**Auth:** Privado (JwtAuthGuard global do IdentityModule cobre). Sem `@Public()` decorator.
+
+**Cache estratégia:**
+- YouTube lives: Redis 1h (lives não começam/terminam a cada minuto — protege cota YouTube 10k/dia)
+- football-data raw matches do dia: Redis 30s (placar fresco)
+- Match individual por id: Redis 30s (TTL fixo, simples — pode evoluir pra dinâmico por status no futuro)
+- Resultado final (broadcasts): combinação leve dos caches, recomputado por request
+
+**Polling no front:** TanStack Query `refetchInterval: 30_000` apenas quando `broadcasts.length > 0`.
+
+**Stream slot:** `StreamContentType` aceita `'match'` (além de `'movie' | 'series'`). Coluna `type: String` no Prisma — sem migration (string livre).
 
 ### Comunicação entre Bounded Contexts
 
@@ -624,6 +677,8 @@ Cleanup     → cria StreamSession para cada expirada → deleta ActiveStreams
 | GET | /catalog/movies/genre/:genreId | catalog | Auth | Filmes por gênero |
 | GET | /catalog/series/genre/:genreId | catalog | Auth | Séries por gênero |
 | GET | /catalog/by-watch-providers | catalog | Auth | Filmes+séries por streaming provider (mesclados) |
+| GET | /sports/matches/today | sports | Auth | Hub YouTube-first — lives ativas enriquecidas com football-data |
+| GET | /sports/matches/:id | sports | Auth | Detalhe da partida + youtube video se houver live ativa associada |
 | GET | /favorites/:profileId | library | Auth | Listar favoritos |
 | POST | /favorites/:profileId | library | Auth | Toggle favorito |
 | GET | /watchlist/:profileId | library | Auth | Listar watchlist |
