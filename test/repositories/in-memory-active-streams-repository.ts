@@ -1,4 +1,4 @@
-import type { ActiveStream } from '@/modules/subscription/domain/entities/active-stream'
+import { ActiveStream } from '@/modules/subscription/domain/entities/active-stream'
 import type { ActiveStreamsRepository } from '@/modules/subscription/domain/repositories/active-streams-repository'
 import { MaxStreamsReachedError } from '@/modules/subscription/domain/errors/max-streams-reached.error'
 import { STREAM_TIMEOUT_MS } from '@/modules/subscription/domain/constants/stream-timeout'
@@ -24,7 +24,7 @@ export class InMemoryActiveStreamsRepository implements ActiveStreamsRepository 
   async createOrUpdate(
     stream: ActiveStream,
     maxStreams: number,
-  ): Promise<void> {
+  ): Promise<ActiveStream> {
     const threshold = new Date(Date.now() - STREAM_TIMEOUT_MS)
 
     const activeCount = this.items.filter(
@@ -43,11 +43,24 @@ export class InMemoryActiveStreamsRepository implements ActiveStreamsRepository 
         item.userId === stream.userId && item.profileId === stream.profileId,
     )
 
-    if (existingIndex >= 0) {
-      this.items[existingIndex] = stream
-    } else {
+    if (existingIndex < 0) {
       this.items.push(stream)
+      return stream
     }
+
+    const updated = ActiveStream.create(
+      {
+        userId: stream.userId,
+        profileId: stream.profileId,
+        tmdbId: stream.tmdbId,
+        type: stream.type,
+        startedAt: stream.startedAt,
+        lastPing: stream.lastPing,
+      },
+      this.items[existingIndex].id,
+    )
+    this.items[existingIndex] = updated
+    return updated
   }
 
   async updatePing(id: string, lastPing: Date): Promise<void> {

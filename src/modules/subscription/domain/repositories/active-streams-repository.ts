@@ -9,7 +9,7 @@ export abstract class ActiveStreamsRepository {
   abstract createOrUpdate(
     stream: ActiveStream,
     maxStreams: number,
-  ): Promise<void>
+  ): Promise<ActiveStream>
   abstract updatePing(id: string, lastPing: Date): Promise<void>
   abstract delete(id: string): Promise<void>
   abstract deleteAllByUserId(userId: string): Promise<void>
