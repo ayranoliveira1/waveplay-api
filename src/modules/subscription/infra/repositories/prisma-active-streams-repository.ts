@@ -40,8 +40,8 @@ export class PrismaActiveStreamsRepository implements ActiveStreamsRepository {
   async createOrUpdate(
     stream: ActiveStream,
     maxStreams: number,
-  ): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
+  ): Promise<ActiveStream> {
+    return this.prisma.$transaction(async (tx) => {
       const threshold = new Date(Date.now() - STREAM_TIMEOUT_MS)
 
       const count = await tx.activeStream.count({
@@ -56,7 +56,7 @@ export class PrismaActiveStreamsRepository implements ActiveStreamsRepository {
         throw new MaxStreamsReachedError(maxStreams)
       }
 
-      await tx.activeStream.upsert({
+      const row = await tx.activeStream.upsert({
         where: {
           userId_profileId: {
             userId: stream.userId,
@@ -71,6 +71,8 @@ export class PrismaActiveStreamsRepository implements ActiveStreamsRepository {
           lastPing: stream.lastPing,
         },
       })
+
+      return PrismaActiveStreamMapper.toDomain(row)
     })
   }
 

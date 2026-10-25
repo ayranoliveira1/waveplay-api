@@ -5,8 +5,10 @@ import {
   FakeCatalogProvider,
   makeFakeMultiResult,
 } from 'test/providers/fake-catalog-provider'
+import { FakeEmbedSourcesProvider } from 'test/providers/fake-embed-sources-provider'
 
 let provider: FakeCatalogProvider
+let embedSourcesProvider: FakeEmbedSourcesProvider
 let redis: Record<string, any>
 let sut: CatalogCacheService
 
@@ -29,7 +31,8 @@ describe('CatalogCacheService', () => {
   beforeEach(() => {
     provider = new FakeCatalogProvider()
     redis = createFakeRedis()
-    sut = new CatalogCacheService(redis as any, provider)
+    embedSourcesProvider = new FakeEmbedSourcesProvider()
+    sut = new CatalogCacheService(redis as any, provider, embedSourcesProvider)
   })
 
   it('should return cached data on cache hit (no provider call)', async () => {
@@ -123,5 +126,45 @@ describe('CatalogCacheService', () => {
 
     expect(result.results).toHaveLength(1)
     expect(result.results[0].id).toBe(888)
+  })
+
+  it('should cache sources for 1h by title and episode', async () => {
+    await sut.getMovieSources(550)
+    await sut.getEpisodeSources(1396, 1, 2)
+
+    expect(redis.set).toHaveBeenCalledWith(
+      'catalog:sources:movie:550',
+      expect.any(String),
+      'EX',
+      3600,
+    )
+    expect(redis.set).toHaveBeenCalledWith(
+      'catalog:sources:tv:1396:1:2',
+      expect.any(String),
+      'EX',
+      3600,
+    )
+  })
+
+  it('does not cache partial sources', async () => {
+    embedSourcesProvider.complete = false
+
+    const movie = await sut.getMovieSources(550)
+    const episode = await sut.getEpisodeSources(1396, 1, 1)
+
+    expect(movie).toEqual(embedSourcesProvider.sources)
+    expect(episode).toEqual(embedSourcesProvider.sources)
+    expect(redis.set).not.toHaveBeenCalled()
+  })
+
+  it('does not cache empty sources', async () => {
+    embedSourcesProvider.sources = []
+
+    const movie = await sut.getMovieSources(550)
+    const episode = await sut.getEpisodeSources(1396, 1, 1)
+
+    expect(movie).toEqual([])
+    expect(episode).toEqual([])
+    expect(redis.set).not.toHaveBeenCalled()
   })
 })

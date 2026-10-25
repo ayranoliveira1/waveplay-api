@@ -87,8 +87,13 @@ export class StartStreamUseCase {
       type,
     })
 
+    let streamId: string
     try {
-      await this.activeStreamsRepository.createOrUpdate(stream, maxStreams)
+      const row = await this.activeStreamsRepository.createOrUpdate(
+        stream,
+        maxStreams,
+      )
+      streamId = row.id.toValue()
     } catch (error) {
       if (error instanceof MaxStreamsReachedError) {
         const activeStreams = await this.streamCache.getActiveStreams(
@@ -109,13 +114,13 @@ export class StartStreamUseCase {
       userId,
       profileId,
       profileName,
-      streamId: stream.id.toValue(),
+      streamId,
       tmdbId,
       type,
       title,
       startedAt: stream.startedAt,
     })
 
-    return right({ streamId: stream.id.toValue() })
+    return right({ streamId })
   }
 }
