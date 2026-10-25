@@ -7,6 +7,7 @@ import {
   serverOf,
   toDirectUrl,
   isVidsrc,
+  isHttpUrl,
 } from './embed-html'
 
 const movieHtml = readFileSync('test/fixtures/embed/filme-550.html', 'utf8')
@@ -72,5 +73,12 @@ describe('embed-html', () => {
       ),
     ).toBe(true)
     expect(isVidsrc('https://evil.com/?vidsrc.sh')).toBe(false)
+  })
+
+  it('isHttpUrl', () => {
+    expect(isHttpUrl('https://x.upns.xyz/#a')).toBe(true)
+    expect(isHttpUrl('http://x.upns.xyz/#a')).toBe(true)
+    expect(isHttpUrl('javascript:alert(1)')).toBe(false)
+    expect(isHttpUrl('httpx://x.upns.xyz')).toBe(false)
   })
 })

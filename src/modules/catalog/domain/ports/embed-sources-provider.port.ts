@@ -9,12 +9,18 @@ export interface EmbedSource {
   reportsTime: boolean
 }
 
+// complete = false quando alguma etapa falhou e a lista pode estar faltando fontes
+export interface EmbedSourcesResult {
+  sources: EmbedSource[]
+  complete: boolean
+}
+
 export abstract class EmbedSourcesProviderPort {
-  abstract getMovieSources(tmdbId: number): Promise<EmbedSource[]>
+  abstract getMovieSources(tmdbId: number): Promise<EmbedSourcesResult>
 
   abstract getEpisodeSources(
     tmdbId: number,
     season: number,
     episode: number,
-  ): Promise<EmbedSource[]>
+  ): Promise<EmbedSourcesResult>
 }

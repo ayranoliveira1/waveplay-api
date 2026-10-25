@@ -146,6 +146,17 @@ describe('CatalogCacheService', () => {
     )
   })
 
+  it('does not cache partial sources', async () => {
+    embedSourcesProvider.complete = false
+
+    const movie = await sut.getMovieSources(550)
+    const episode = await sut.getEpisodeSources(1396, 1, 1)
+
+    expect(movie).toEqual(embedSourcesProvider.sources)
+    expect(episode).toEqual(embedSourcesProvider.sources)
+    expect(redis.set).not.toHaveBeenCalled()
+  })
+
   it('does not cache empty sources', async () => {
     embedSourcesProvider.sources = []
 

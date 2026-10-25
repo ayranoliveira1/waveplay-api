@@ -1,6 +1,19 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  vi,
+} from 'vitest'
 import { readFileSync } from 'node:fs'
-import { createServer, type IncomingHttpHeaders, type Server } from 'node:http'
+import {
+  createServer,
+  type IncomingHttpHeaders,
+  type OutgoingHttpHeaders,
+  type Server,
+} from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { Logger } from '@nestjs/common'
 
@@ -17,7 +30,13 @@ interface Hit {
   headers: IncomingHttpHeaders
 }
 
-const routes: Record<string, { status: number; body: string }> = {
+interface Route {
+  status: number
+  body: string
+  headers?: OutgoingHttpHeaders
+}
+
+const baseRoutes: Record<string, Route> = {
   'GET /filme/550': { status: 200, body: fixture('filme-550.html') },
   'GET /serie/1396/1/1': { status: 200, body: fixture('serie-1396-1-1.html') },
   'POST action=getPlayer&video_id=71426': {
@@ -32,7 +51,9 @@ const routes: Record<string, { status: number; body: string }> = {
 
 let server: Server
 let baseUrl: string
+let routes: Record<string, Route>
 let hits: Hit[]
+let warn: ReturnType<typeof vi.spyOn>
 let sut: EmbedplaySourcesProvider
 
 describe('EmbedplaySourcesProvider', () => {
@@ -50,7 +71,7 @@ describe('EmbedplaySourcesProvider', () => {
         })
         const key = req.method === 'POST' ? `POST ${body}` : `GET ${req.url}`
         const route = routes[key] ?? { status: 500, body: '{"errors":"1"}' }
-        res.writeHead(route.status).end(route.body)
+        res.writeHead(route.status, route.headers).end(route.body)
       })
     })
     await new Promise<void>((resolve) => server.listen(0, resolve))
@@ -62,32 +83,54 @@ describe('EmbedplaySourcesProvider', () => {
   })
 
   beforeEach(() => {
+    routes = { ...baseRoutes }
     hits = []
+    warn = vi.spyOn(Logger.prototype, 'warn')
+    warn.mockClear()
     sut = new EmbedplaySourcesProvider({
       get: () => baseUrl,
     } as unknown as EnvService)
   })
 
   it('should resolve movie sources and drop the item whose getPlayer fails', async () => {
-    const sources = await sut.getMovieSources(550)
+    const result = await sut.getMovieSources(550)
 
-    expect(sources).toEqual([
-      {
-        audio: 'dublado',
-        server: 'ABYS',
-        label: 'Opção 1 (ABYS)',
-        url: 'https://player.abyssplayer.com/?v=DiXWroq-N',
-        sandbox: true,
-        reportsTime: false,
-      },
-      {
-        audio: 'legendado',
-        server: 'EUA',
-        label: 'Legendado (EUA)',
-        url: 'https://vidsrc.sh/embed/movie?imdb=tt0137523&ds_lang=pt&autoplay=1',
-        sandbox: false,
-        reportsTime: true,
-      },
+    expect(result).toEqual({
+      complete: false,
+      sources: [
+        {
+          audio: 'dublado',
+          server: 'ABYS',
+          label: 'Opção 1 (ABYS)',
+          url: 'https://player.abyssplayer.com/?v=DiXWroq-N',
+          sandbox: true,
+          reportsTime: false,
+        },
+        {
+          audio: 'legendado',
+          server: 'EUA',
+          label: 'Legendado (EUA)',
+          url: 'https://vidsrc.sh/embed/movie?imdb=tt0137523&ds_lang=pt&autoplay=1',
+          sandbox: false,
+          reportsTime: true,
+        },
+      ],
+    })
+  })
+
+  it('should mark movie sources complete when every getPlayer resolves', async () => {
+    routes['POST action=getPlayer&video_id=71427'] = {
+      status: 200,
+      body: '{"data":{"video_url":"https://embedplayapiupn.upns.xyz/#kdvvqz"}}',
+    }
+
+    const result = await sut.getMovieSources(550)
+
+    expect(result.complete).toBe(true)
+    expect(result.sources.map((source) => source.label)).toEqual([
+      'Opção 1 (ABYS)',
+      'Opção 2 (UPNS)',
+      'Legendado (EUA)',
     ])
   })
 
@@ -107,26 +150,29 @@ describe('EmbedplaySourcesProvider', () => {
   })
 
   it('should resolve episode sources and append the Vidsrc subtitled option', async () => {
-    const sources = await sut.getEpisodeSources(1396, 1, 1)
+    const result = await sut.getEpisodeSources(1396, 1, 1)
 
-    expect(sources).toEqual([
-      {
-        audio: 'dublado',
-        server: 'ABYS',
-        label: 'Opção 1 (ABYS)',
-        url: 'https://player.abyssplayer.com/?v=iqYVq7a2S',
-        sandbox: true,
-        reportsTime: false,
-      },
-      {
-        audio: 'legendado',
-        server: 'EUA',
-        label: 'Legendado (EUA)',
-        url: 'https://vidsrc.sh/embed/tv?tmdb=1396&season=1&episode=1&ds_lang=pt&autoplay=1',
-        sandbox: false,
-        reportsTime: true,
-      },
-    ])
+    expect(result).toEqual({
+      complete: true,
+      sources: [
+        {
+          audio: 'dublado',
+          server: 'ABYS',
+          label: 'Opção 1 (ABYS)',
+          url: 'https://player.abyssplayer.com/?v=iqYVq7a2S',
+          sandbox: true,
+          reportsTime: false,
+        },
+        {
+          audio: 'legendado',
+          server: 'EUA',
+          label: 'Legendado (EUA)',
+          url: 'https://vidsrc.sh/embed/tv?tmdb=1396&season=1&episode=1&ds_lang=pt&autoplay=1',
+          sandbox: false,
+          reportsTime: true,
+        },
+      ],
+    })
   })
 
   it('should number options per audio and drop non-http urls', async () => {
@@ -150,7 +196,7 @@ describe('EmbedplaySourcesProvider', () => {
       }),
     }
 
-    const sources = await sut.getEpisodeSources(1396, 1, 2)
+    const { sources } = await sut.getEpisodeSources(1396, 1, 2)
 
     expect(sources.map(({ audio, label, url }) => [audio, label, url])).toEqual(
       [
@@ -167,30 +213,68 @@ describe('EmbedplaySourcesProvider', () => {
   })
 
   it('should drop a movie player whose url is not http', async () => {
-    routes['GET /filme/551'] = routes['GET /filme/550']
     routes['POST action=getPlayer&video_id=71427'] = {
       status: 200,
       body: '{"data":{"video_url":"javascript:alert(1)"}}',
     }
 
-    const sources = await sut.getMovieSources(551)
+    const result = await sut.getMovieSources(550)
 
-    expect(sources.map((source) => source.label)).toEqual([
+    expect(result.complete).toBe(false)
+    expect(result.sources.map((source) => source.label)).toEqual([
       'Opção 1 (ABYS)',
       'Legendado (EUA)',
     ])
-    delete routes['POST action=getPlayer&video_id=71427']
   })
 
-  it('should return empty list when the episode is not on the page', async () => {
+  it('should return empty list without warning when the episode is not on the page', async () => {
     routes['GET /serie/1396/1/99'] = routes['GET /serie/1396/1/1']
 
-    expect(await sut.getEpisodeSources(1396, 1, 99)).toEqual([])
+    const result = await sut.getEpisodeSources(1396, 1, 99)
+
+    expect(result.sources).toEqual([])
     expect(hits.some((hit) => hit.method === 'POST')).toBe(false)
+    expect(warn).not.toHaveBeenCalled()
   })
 
-  it('should return empty list when the embed fails', async () => {
-    expect(await sut.getMovieSources(1)).toEqual([])
-    expect(await sut.getEpisodeSources(1, 1, 1)).toEqual([])
+  it('should warn about the layout when a 200 page has no expected block', async () => {
+    routes['GET /filme/552'] = {
+      status: 200,
+      body: '<p>ACESSO NÃO AUTORIZADO</p>',
+    }
+    routes['GET /serie/1396/1/3'] = { status: 200, body: '<p>novo layout</p>' }
+
+    expect((await sut.getMovieSources(552)).sources).toEqual([])
+    expect((await sut.getEpisodeSources(1396, 1, 3)).sources).toEqual([])
+    expect(warn).toHaveBeenCalledTimes(2)
+    expect(
+      warn.mock.calls.every(([msg]) => String(msg).includes('layout')),
+    ).toBe(true)
+  })
+
+  it('should not follow the embed redirect for a missing title', async () => {
+    routes['GET /filme/553'] = {
+      status: 302,
+      body: '',
+      headers: { Location: '/404.php' },
+    }
+    routes['GET /404.php'] = { status: 200, body: '<p>404</p>' }
+
+    const result = await sut.getMovieSources(553)
+
+    expect(result).toEqual({ sources: [], complete: false })
+    expect(hits.map((hit) => hit.url)).toEqual(['/filme/553'])
+    expect(String(warn.mock.calls[0][0])).not.toContain('layout')
+  })
+
+  it('should return empty incomplete list when the embed fails', async () => {
+    expect(await sut.getMovieSources(1)).toEqual({
+      sources: [],
+      complete: false,
+    })
+    expect(await sut.getEpisodeSources(1, 1, 1)).toEqual({
+      sources: [],
+      complete: false,
+    })
   })
 })

@@ -8,9 +8,13 @@ import {
   EmbedSourcesProviderPort,
   type EmbedAudio,
   type EmbedSource,
+  type EmbedSourcesResult,
 } from '../../domain/ports/embed-sources-provider.port'
 import {
   findEpisodeContentId,
+  hasMovieTabs,
+  hasSeasonBlocks,
+  isHttpUrl,
   isVidsrc,
   parseMovieItems,
   serverOf,
@@ -22,9 +26,6 @@ const USER_AGENT =
 
 // O embed recusa páginas sem o referer do domínio que o incorpora
 const PAGE_REFERER = 'https://embedplayapi.top/'
-
-// A URL vira o src do iframe na web: `javascript:` ou outro esquema vindo do embed nunca passa
-const isHttpUrl = (url: string) => /^https?:\/\//i.test(url)
 
 const optionsResponseSchema = z.object({
   data: z.object({
@@ -74,15 +75,25 @@ export class EmbedplaySourcesProvider extends EmbedSourcesProviderPort {
     this.api = axios.create({
       baseURL: this.env.get('EMBED_SOURCES_BASE_URL'),
       timeout: 8000,
+      // Título fora do embed responde 302 para /404.php, que é 200 e não pode virar "página sem fontes"
+      maxRedirects: 0,
       headers: { 'User-Agent': USER_AGENT },
       validateStatus: (status) => status === 200,
     })
   }
 
-  async getMovieSources(tmdbId: number): Promise<EmbedSource[]> {
+  async getMovieSources(tmdbId: number): Promise<EmbedSourcesResult> {
     try {
       const pagePath = `/filme/${tmdbId}`
-      const items = parseMovieItems(await this.getPage(pagePath))
+      const html = await this.getPage(pagePath)
+      if (!hasMovieTabs(html)) {
+        this.logger.warn(
+          `Filme ${tmdbId}: página do embed sem as abas de fontes (layout mudou?)`,
+        )
+        return { sources: [], complete: false }
+      }
+
+      const items = parseMovieItems(html)
 
       const sources = await Promise.all(
         items.map(async (item) => {
@@ -93,10 +104,15 @@ export class EmbedplaySourcesProvider extends EmbedSourcesProviderPort {
         }),
       )
 
-      return dubbedFirst(sources.filter((source) => source !== null))
+      const resolved = sources.filter((source) => source !== null)
+
+      return {
+        sources: dubbedFirst(resolved),
+        complete: resolved.length === items.length,
+      }
     } catch (error) {
       this.logger.warn(`Fontes do filme ${tmdbId} indisponíveis: ${error}`)
-      return []
+      return { sources: [], complete: false }
     }
   }
 
@@ -104,15 +120,19 @@ export class EmbedplaySourcesProvider extends EmbedSourcesProviderPort {
     tmdbId: number,
     season: number,
     episode: number,
-  ): Promise<EmbedSource[]> {
+  ): Promise<EmbedSourcesResult> {
     try {
       const pagePath = `/serie/${tmdbId}/${season}/${episode}`
-      const contentId = findEpisodeContentId(
-        await this.getPage(pagePath),
-        season,
-        episode,
-      )
-      if (!contentId) return []
+      const html = await this.getPage(pagePath)
+      if (!hasSeasonBlocks(html)) {
+        this.logger.warn(
+          `Série ${tmdbId}: página do embed sem as temporadas (layout mudou?)`,
+        )
+        return { sources: [], complete: false }
+      }
+
+      const contentId = findEpisodeContentId(html, season, episode)
+      if (!contentId) return { sources: [], complete: true }
 
       const options = optionsResponseSchema
         .parse(
@@ -122,7 +142,7 @@ export class EmbedplaySourcesProvider extends EmbedSourcesProviderPort {
           }),
         )
         .data.options.filter((option) => isHttpUrl(option.url))
-      if (options.length === 0) return []
+      if (options.length === 0) return { sources: [], complete: true }
 
       const counters: Record<EmbedAudio, number> = { dublado: 0, legendado: 0 }
       const sources = options.map((option) => {
@@ -143,12 +163,12 @@ export class EmbedplaySourcesProvider extends EmbedSourcesProviderPort {
         ),
       )
 
-      return dubbedFirst(sources)
+      return { sources: dubbedFirst(sources), complete: true }
     } catch (error) {
       this.logger.warn(
         `Fontes do episódio ${tmdbId} T${season}E${episode} indisponíveis: ${error}`,
       )
-      return []
+      return { sources: [], complete: false }
     }
   }
 

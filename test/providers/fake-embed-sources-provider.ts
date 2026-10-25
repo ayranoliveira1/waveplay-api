@@ -1,6 +1,7 @@
 import {
   EmbedSourcesProviderPort,
   type EmbedSource,
+  type EmbedSourcesResult,
 } from '@/modules/catalog/domain/ports/embed-sources-provider.port'
 
 export function makeFakeEmbedSource(
@@ -30,11 +31,13 @@ export class FakeEmbedSourcesProvider extends EmbedSourcesProviderPort {
     }),
   ]
 
-  async getMovieSources(): Promise<EmbedSource[]> {
-    return this.sources
+  complete = true
+
+  async getMovieSources(): Promise<EmbedSourcesResult> {
+    return { sources: this.sources, complete: this.complete }
   }
 
-  async getEpisodeSources(): Promise<EmbedSource[]> {
-    return this.sources
+  async getEpisodeSources(): Promise<EmbedSourcesResult> {
+    return { sources: this.sources, complete: this.complete }
   }
 }

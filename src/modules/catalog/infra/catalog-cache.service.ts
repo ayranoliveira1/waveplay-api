@@ -14,6 +14,7 @@ import {
 import {
   EmbedSourcesProviderPort,
   type EmbedSource,
+  type EmbedSourcesResult,
 } from '../domain/ports/embed-sources-provider.port'
 import { MoviePresenter } from './presenters/movie-presenter'
 import { SeriesPresenter } from './presenters/series-presenter'
@@ -37,6 +38,10 @@ const TTL = {
   LIST: 3600,
   SOURCES: 3600,
 } as const
+
+// Lista vazia ou parcial não entra no cache: a falha do embed deve ser tentada de novo no próximo pedido
+const isCacheableSources = ({ sources, complete }: EmbedSourcesResult) =>
+  complete && sources.length > 0
 
 @Injectable()
 export class CatalogCacheService {
@@ -287,14 +292,14 @@ export class CatalogCacheService {
     })
   }
 
-  // Lista vazia não entra no cache: a falha do embed deve ser tentada de novo no próximo pedido
   async getMovieSources(id: number): Promise<EmbedSource[]> {
-    return this.getOrFetch(
+    const { sources } = await this.getOrFetch(
       `catalog:sources:movie:${id}`,
       TTL.SOURCES,
       () => this.embedSourcesProvider.getMovieSources(id),
-      (sources) => sources.length > 0,
+      isCacheableSources,
     )
+    return sources
   }
 
   async getEpisodeSources(
@@ -302,7 +307,7 @@ export class CatalogCacheService {
     seasonNumber: number,
     episodeNumber: number,
   ): Promise<EmbedSource[]> {
-    return this.getOrFetch(
+    const { sources } = await this.getOrFetch(
       `catalog:sources:tv:${seriesId}:${seasonNumber}:${episodeNumber}`,
       TTL.SOURCES,
       () =>
@@ -311,7 +316,8 @@ export class CatalogCacheService {
           seasonNumber,
           episodeNumber,
         ),
-      (sources) => sources.length > 0,
+      isCacheableSources,
     )
+    return sources
   }
 }

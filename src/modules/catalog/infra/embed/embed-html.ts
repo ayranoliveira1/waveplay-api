@@ -19,6 +19,19 @@ const SEASON_REGEX =
   /<div class="episodes-of-season" data-season="(\d+)"([\s\S]*?)(?=<div class="episodes-of-season"|<\/episode-list>)/g
 const EPISODE_TAG_REGEX = /<episode-item\b[^>]*>/g
 
+// A URL vira o src do iframe na web: `javascript:` ou outro esquema vindo do embed nunca passa
+export function isHttpUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url)
+}
+
+export function hasMovieTabs(html: string): boolean {
+  return new RegExp(TAB_REGEX.source).test(html)
+}
+
+export function hasSeasonBlocks(html: string): boolean {
+  return new RegExp(SEASON_REGEX.source).test(html)
+}
+
 function attr(tag: string, name: string): string | null {
   return new RegExp(`${name}="([^"]*)"`).exec(tag)?.[1] ?? null
 }
@@ -38,7 +51,7 @@ export function parseMovieItems(html: string): EmbedMovieItem[] {
 
       // O HTML do embed também traz templates JS com os mesmos atributos (`${...}`)
       const hasVideoId = videoId !== null && /^\d+$/.test(videoId)
-      const hasUrl = url !== null && url.startsWith('http')
+      const hasUrl = url !== null && isHttpUrl(url)
       if (!hasVideoId && !hasUrl) return []
 
       return [

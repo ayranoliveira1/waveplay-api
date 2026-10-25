@@ -20,13 +20,13 @@ async function main() {
     get: () => baseUrl,
   } as unknown as EnvService)
 
-  const sources =
+  const result =
     season === undefined
       ? await provider.getMovieSources(tmdbId)
       : await provider.getEpisodeSources(tmdbId, season, episode)
 
-  process.stdout.write(`${JSON.stringify(sources, null, 2)}\n`)
-  if (sources.length === 0) process.exitCode = 1
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+  if (!result.complete || result.sources.length === 0) process.exitCode = 1
 }
 
 main()
