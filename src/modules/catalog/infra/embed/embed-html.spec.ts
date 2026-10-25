@@ -73,6 +73,8 @@ describe('embed-html', () => {
       ),
     ).toBe(true)
     expect(isVidsrc('https://evil.com/?vidsrc.sh')).toBe(false)
+    expect(isVidsrc('https://cdn.vidsrc.sh/embed/movie?tmdb=550')).toBe(false)
+    expect(isVidsrc('http://vidsrc.sh/embed/movie?tmdb=550')).toBe(false)
   })
 
   it('isHttpUrl', () => {

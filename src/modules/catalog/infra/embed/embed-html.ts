@@ -104,7 +104,7 @@ export function toDirectUrl(url: string): string {
       return `https://player.abyssplayer.com/?v=${encodeURIComponent(slug)}`
     }
   } catch {
-    // URL inválida passa intacta
+    return url
   }
 
   return url
@@ -112,8 +112,8 @@ export function toDirectUrl(url: string): string {
 
 export function isVidsrc(url: string): boolean {
   try {
-    const { hostname } = new URL(url)
-    return hostname === 'vidsrc.sh' || hostname.endsWith('.vidsrc.sh')
+    const { protocol, hostname } = new URL(url)
+    return protocol === 'https:' && hostname === 'vidsrc.sh'
   } catch {
     return false
   }
