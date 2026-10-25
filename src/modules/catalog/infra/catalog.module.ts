@@ -21,6 +21,8 @@ import { GetTopRatedSeriesUseCase } from '../application/use-cases/get-top-rated
 import { GetAiringTodaySeriesUseCase } from '../application/use-cases/get-airing-today-series-use-case'
 import { GetOnTheAirSeriesUseCase } from '../application/use-cases/get-on-the-air-series-use-case'
 import { GetByWatchProvidersUseCase } from '../application/use-cases/get-by-watch-providers-use-case'
+import { GetMovieSourcesUseCase } from '../application/use-cases/get-movie-sources-use-case'
+import { GetEpisodeSourcesUseCase } from '../application/use-cases/get-episode-sources-use-case'
 
 // Controllers (order matters: static routes before :id params)
 import { TrendingController } from './controllers/trending.controller'
@@ -40,14 +42,18 @@ import { OnTheAirSeriesController } from './controllers/on-the-air-series.contro
 import { SeriesByGenreController } from './controllers/series-by-genre.controller'
 import { MovieDetailController } from './controllers/movie-detail.controller'
 import { SimilarMoviesController } from './controllers/similar-movies.controller'
+import { MovieSourcesController } from './controllers/movie-sources.controller'
 import { SeriesDetailController } from './controllers/series-detail.controller'
 import { SeasonEpisodesController } from './controllers/season-episodes.controller'
 import { SimilarSeriesController } from './controllers/similar-series.controller'
+import { EpisodeSourcesController } from './controllers/episode-sources.controller'
 
 // Infra
 import { CatalogCacheService } from './catalog-cache.service'
 import { CatalogProviderPort } from '../domain/ports/catalog-provider.port'
 import { TmdbCatalogProvider } from './tmdb-catalog-provider'
+import { EmbedSourcesProviderPort } from '../domain/ports/embed-sources-provider.port'
+import { EmbedplaySourcesProvider } from './embed/embedplay-sources-provider'
 
 @Module({
   controllers: [
@@ -66,6 +72,7 @@ import { TmdbCatalogProvider } from './tmdb-catalog-provider'
     MoviesByGenreController,
     MovieDetailController,
     SimilarMoviesController,
+    MovieSourcesController,
 
     // Series static routes before :id
     PopularSeriesController,
@@ -76,6 +83,7 @@ import { TmdbCatalogProvider } from './tmdb-catalog-provider'
     SeriesDetailController,
     SeasonEpisodesController,
     SimilarSeriesController,
+    EpisodeSourcesController,
   ],
   providers: [
     // Use cases
@@ -99,10 +107,13 @@ import { TmdbCatalogProvider } from './tmdb-catalog-provider'
     GetAiringTodaySeriesUseCase,
     GetOnTheAirSeriesUseCase,
     GetByWatchProvidersUseCase,
+    GetMovieSourcesUseCase,
+    GetEpisodeSourcesUseCase,
 
     // Infra
     CatalogCacheService,
     { provide: CatalogProviderPort, useClass: TmdbCatalogProvider },
+    { provide: EmbedSourcesProviderPort, useClass: EmbedplaySourcesProvider },
   ],
 })
 export class CatalogModule {}

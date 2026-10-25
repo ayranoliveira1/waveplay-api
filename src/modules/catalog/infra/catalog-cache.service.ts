@@ -11,6 +11,10 @@ import {
   type TMDBPaginatedResponse,
   type TMDBMultiResult,
 } from '../domain/ports/catalog-provider.port'
+import {
+  EmbedSourcesProviderPort,
+  type EmbedSource,
+} from '../domain/ports/embed-sources-provider.port'
 import { MoviePresenter } from './presenters/movie-presenter'
 import { SeriesPresenter } from './presenters/series-presenter'
 
@@ -31,6 +35,7 @@ const TTL = {
   DETAIL: 86400,
   SEARCH: 1800,
   LIST: 3600,
+  SOURCES: 3600,
 } as const
 
 @Injectable()
@@ -38,12 +43,14 @@ export class CatalogCacheService {
   constructor(
     @Inject(REDIS_CLIENT) private redis: Redis,
     private catalogProvider: CatalogProviderPort,
+    private embedSourcesProvider: EmbedSourcesProviderPort,
   ) {}
 
   private async getOrFetch<T>(
     key: string,
     ttl: number,
     fetcher: () => Promise<T>,
+    cacheable: (data: T) => boolean = () => true,
   ): Promise<T> {
     try {
       const cached = await this.redis.get(key)
@@ -53,6 +60,7 @@ export class CatalogCacheService {
     }
 
     const data = await fetcher()
+    if (!cacheable(data)) return data
 
     try {
       await this.redis.set(key, JSON.stringify(data), 'EX', ttl)
@@ -277,5 +285,33 @@ export class CatalogCacheService {
         totalPages: Math.max(movies.total_pages ?? 0, series.total_pages ?? 0),
       }
     })
+  }
+
+  // Lista vazia não entra no cache: a falha do embed deve ser tentada de novo no próximo pedido
+  async getMovieSources(id: number): Promise<EmbedSource[]> {
+    return this.getOrFetch(
+      `catalog:sources:movie:${id}`,
+      TTL.SOURCES,
+      () => this.embedSourcesProvider.getMovieSources(id),
+      (sources) => sources.length > 0,
+    )
+  }
+
+  async getEpisodeSources(
+    seriesId: number,
+    seasonNumber: number,
+    episodeNumber: number,
+  ): Promise<EmbedSource[]> {
+    return this.getOrFetch(
+      `catalog:sources:tv:${seriesId}:${seasonNumber}:${episodeNumber}`,
+      TTL.SOURCES,
+      () =>
+        this.embedSourcesProvider.getEpisodeSources(
+          seriesId,
+          seasonNumber,
+          episodeNumber,
+        ),
+      (sources) => sources.length > 0,
+    )
   }
 }

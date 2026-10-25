@@ -10,8 +10,10 @@ import { SeriesDetailController } from './series-detail.controller'
 import { GetSeriesDetailUseCase } from '../../application/use-cases/get-series-detail-use-case'
 import { CatalogCacheService } from '../catalog-cache.service'
 import { CatalogProviderPort } from '../../domain/ports/catalog-provider.port'
+import { EmbedSourcesProviderPort } from '../../domain/ports/embed-sources-provider.port'
 import { REDIS_CLIENT } from '@/shared/redis/redis.module'
 import { FakeCatalogProvider } from 'test/providers/fake-catalog-provider'
+import { FakeEmbedSourcesProvider } from 'test/providers/fake-embed-sources-provider'
 import { FakeAuthGuard } from 'test/guards/fake-auth.guard'
 import { AllExceptionsFilter } from '@/shared/filters/nest-exception-filter'
 
@@ -36,6 +38,10 @@ describe('SeriesDetailController', () => {
         GetSeriesDetailUseCase,
         CatalogCacheService,
         { provide: CatalogProviderPort, useClass: FakeCatalogProvider },
+        {
+          provide: EmbedSourcesProviderPort,
+          useClass: FakeEmbedSourcesProvider,
+        },
         { provide: REDIS_CLIENT, useValue: fakeRedis },
         { provide: APP_GUARD, useClass: FakeAuthGuard },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
