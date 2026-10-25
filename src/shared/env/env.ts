@@ -17,8 +17,6 @@ export const envSchema = z.object({
     .url()
     .optional()
     .default('https://embedplay.vip'),
-  FOOTBALL_DATA_API_TOKEN: z.string(),
-  YOUTUBE_API_KEY: z.string(),
   CORS_ORIGIN: z.string().optional().default('http://localhost:3000'),
   REDIS_URL: z.string(),
   EMAIL_USER: z.string().email(),

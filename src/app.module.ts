@@ -13,7 +13,6 @@ import { LibraryModule } from '@/modules/library/infra/library.module'
 import { PlaybackModule } from '@/modules/playback/infra/playback.module'
 import { AdminModule } from '@/modules/admin/infra/admin.module'
 import { MobileAppModule } from '@/modules/mobile-app/infra/mobile-app.module'
-import { SportsModule } from '@/modules/sports/infra/sports.module'
 
 @Module({
   imports: [
@@ -37,7 +36,6 @@ import { SportsModule } from '@/modules/sports/infra/sports.module'
     PlaybackModule,
     AdminModule,
     MobileAppModule,
-    SportsModule,
   ],
   providers: [
     {
