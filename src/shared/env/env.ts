@@ -12,6 +12,11 @@ export const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().optional().default('48h'),
   TMDB_ACCESS_TOKEN: z.string(),
   TMDB_BASE_URL: z.string().url(),
+  EMBED_SOURCES_BASE_URL: z
+    .string()
+    .url()
+    .optional()
+    .default('https://embedplay.vip'),
   FOOTBALL_DATA_API_TOKEN: z.string(),
   YOUTUBE_API_KEY: z.string(),
   CORS_ORIGIN: z.string().optional().default('http://localhost:3000'),

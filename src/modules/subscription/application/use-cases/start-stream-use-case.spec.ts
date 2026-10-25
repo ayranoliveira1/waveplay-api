@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 
 import { StartStreamUseCase } from './start-stream-use-case'
+import { StopStreamUseCase } from './stop-stream-use-case'
 import { InMemoryActiveStreamsRepository } from 'test/repositories/in-memory-active-streams-repository'
+import { InMemoryStreamSessionsRepository } from 'test/repositories/in-memory-stream-sessions-repository'
 import { InMemorySubscriptionsRepository } from 'test/repositories/in-memory-subscriptions-repository'
 import { InMemoryPlansRepository } from 'test/repositories/in-memory-plans-repository'
 import { FakeProfileOwnershipGateway } from 'test/ports/fake-profile-ownership-gateway'
@@ -258,6 +260,45 @@ describe('StartStreamUseCase', () => {
     expect(result.isRight()).toBe(true)
     expect(activeStreamsRepository.items).toHaveLength(1)
     expect(activeStreamsRepository.items[0].tmdbId).toBe(200)
+  })
+
+  it('should keep the existing row id when the same profile starts again', async () => {
+    const first = await sut.execute({
+      userId: 'user-1',
+      profileId: 'profile-1',
+      tmdbId: 1396,
+      type: 'series',
+      title: 'Breaking Bad',
+    })
+    const second = await sut.execute({
+      userId: 'user-1',
+      profileId: 'profile-1',
+      tmdbId: 1396,
+      type: 'series',
+      title: 'Breaking Bad',
+    })
+
+    expect(first.isRight() && second.isRight()).toBe(true)
+    if (!first.isRight() || !second.isRight()) return
+
+    const rowId = activeStreamsRepository.items[0].id.toValue()
+    expect(second.value.streamId).toBe(first.value.streamId)
+    expect(second.value.streamId).toBe(rowId)
+    expect([...streamCache.streams.keys()]).toEqual([rowId])
+
+    const stop = new StopStreamUseCase(
+      activeStreamsRepository,
+      new InMemoryStreamSessionsRepository(),
+      streamCache,
+    )
+    const stopped = await stop.execute({
+      userId: 'user-1',
+      streamId: second.value.streamId,
+    })
+
+    expect(stopped.isRight()).toBe(true)
+    expect(activeStreamsRepository.items).toHaveLength(0)
+    expect(streamCache.streams.size).toBe(0)
   })
 
   it('should return error when profile does not belong to user', async () => {

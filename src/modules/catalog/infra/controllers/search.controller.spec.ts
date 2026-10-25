@@ -10,11 +10,13 @@ import { SearchController } from './search.controller'
 import { SearchCatalogUseCase } from '../../application/use-cases/search-catalog-use-case'
 import { CatalogCacheService } from '../catalog-cache.service'
 import { CatalogProviderPort } from '../../domain/ports/catalog-provider.port'
+import { EmbedSourcesProviderPort } from '../../domain/ports/embed-sources-provider.port'
 import { REDIS_CLIENT } from '@/shared/redis/redis.module'
 import {
   FakeCatalogProvider,
   makeFakeMultiResult,
 } from 'test/providers/fake-catalog-provider'
+import { FakeEmbedSourcesProvider } from 'test/providers/fake-embed-sources-provider'
 import { FakeAuthGuard } from 'test/guards/fake-auth.guard'
 import { AllExceptionsFilter } from '@/shared/filters/nest-exception-filter'
 
@@ -39,6 +41,10 @@ describe('SearchController', () => {
         SearchCatalogUseCase,
         CatalogCacheService,
         { provide: CatalogProviderPort, useClass: FakeCatalogProvider },
+        {
+          provide: EmbedSourcesProviderPort,
+          useClass: FakeEmbedSourcesProvider,
+        },
         { provide: REDIS_CLIENT, useValue: fakeRedis },
         { provide: APP_GUARD, useClass: FakeAuthGuard },
         { provide: APP_GUARD, useClass: ThrottlerGuard },

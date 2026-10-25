@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { GetSeriesGenresUseCase } from './get-series-genres-use-case'
 import { CatalogCacheService } from '../../infra/catalog-cache.service'
 import { FakeCatalogProvider } from 'test/providers/fake-catalog-provider'
+import { FakeEmbedSourcesProvider } from 'test/providers/fake-embed-sources-provider'
 
 let cacheService: CatalogCacheService
 let sut: GetSeriesGenresUseCase
@@ -15,7 +16,11 @@ const fakeRedis = {
 describe('GetSeriesGenresUseCase', () => {
   beforeEach(() => {
     const provider = new FakeCatalogProvider()
-    cacheService = new CatalogCacheService(fakeRedis, provider)
+    cacheService = new CatalogCacheService(
+      fakeRedis,
+      provider,
+      new FakeEmbedSourcesProvider(),
+    )
     sut = new GetSeriesGenresUseCase(cacheService)
   })
 
